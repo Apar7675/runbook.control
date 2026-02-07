@@ -3,15 +3,53 @@ import GlassCard from "@/components/GlassCard";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rbGetShop } from "@/lib/rb";
+import Link from "next/link";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+
+function isUuid(v: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+function TabBar({ shopId, active }: { shopId: string; active: "overview" | "devices" | "members" | "audit" }) {
+  const item = (href: string, label: string, isActive: boolean) => (
+    <Link
+      href={href}
+      style={{
+        textDecoration: "none",
+        padding: "8px 12px",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: isActive ? "rgba(139,140,255,0.16)" : "rgba(255,255,255,0.04)",
+        fontWeight: 900,
+        color: "inherit",
+        opacity: isActive ? 1 : 0.85,
+      }}
+    >
+      {label}
+    </Link>
+  );
+
+  return (
+    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      {item(`/shops/${shopId}`, "Overview", active === "overview")}
+      {item(`/shops/${shopId}/devices`, "Devices", active === "devices")}
+      {item(`/shops/${shopId}/members`, "Members", active === "members")}
+      {item(`/audit?shop=${shopId}`, "Audit", active === "audit")}
+    </div>
+  );
+}
 
 async function inviteAndAddMember(formData: FormData) {
   "use server";
 
   const shopId = String(formData.get("shopId") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const role = String(formData.get("role") ?? "member").trim();
+  const roleRaw = String(formData.get("role") ?? "member").trim();
+  const role = roleRaw === "admin" ? "admin" : "member";
 
-  if (!shopId || !email) return;
+  if (!isUuid(shopId) || !email) return;
 
   const supabase = await supabaseServer();
   const { data: me } = await supabase.auth.getUser();
@@ -19,12 +57,8 @@ async function inviteAndAddMember(formData: FormData) {
 
   const admin = supabaseAdmin();
 
-  // Create or invite. createUser will fail if exists in some configs; invite is fallback.
-  const created = await admin.auth.admin.createUser({
-    email,
-    email_confirm: true,
-  });
-
+  // Create if missing, otherwise invite
+  const created = await admin.auth.admin.createUser({ email, email_confirm: true });
   let userId = created.data.user?.id ?? null;
 
   if (!userId) {
@@ -33,58 +67,88 @@ async function inviteAndAddMember(formData: FormData) {
     if (!userId) throw new Error(invited.error?.message ?? "Failed to create/invite user.");
   }
 
-  const { error } = await supabase.from("rb_shop_members").insert({
-    shop_id: shopId,
-    user_id: userId,
-    role,
-  });
-
+  // Membership insert is admin-only via RLS (good)
+  const { error } = await supabase.from("rb_shop_members").insert({ shop_id: shopId, user_id: userId, role });
   if (error) throw new Error(error.message);
+
+  revalidatePath(`/shops/${shopId}/members`);
 }
 
 async function removeMember(formData: FormData) {
   "use server";
 
-  const id = String(formData.get("id") ?? "").trim();
   const shopId = String(formData.get("shopId") ?? "").trim();
-  const role = String(formData.get("role") ?? "").trim();
+  const userId = String(formData.get("userId") ?? "").trim();
 
-  if (!id || !shopId) return;
+  if (!isUuid(shopId) || !isUuid(userId)) return;
 
   const supabase = await supabaseServer();
 
-  // Prevent removing last admin
-  if (role === "admin") {
-    const { data: admins, error: e1 } = await supabase
-      .from("rb_shop_members")
-      .select("id")
-      .eq("shop_id", shopId)
-      .eq("role", "admin");
+  // DB is the authority: prevents removing last admin
+  const { error } = await supabase.rpc("rb_remove_shop_member", {
+    p_shop_id: shopId,
+    p_user_id: userId,
+  });
 
-    if (e1) throw new Error(e1.message);
-    if ((admins ?? []).length <= 1) {
-      throw new Error("Cannot remove the last admin for this shop.");
-    }
-  }
-
-  const { error } = await supabase.from("rb_shop_members").delete().eq("id", id);
   if (error) throw new Error(error.message);
+
+  revalidatePath(`/shops/${shopId}/members`);
 }
 
-export default async function ShopMembersPage({ params }: { params: { shopId: string } }) {
-  const shop = await rbGetShop(params.shopId);
+async function setMemberRole(formData: FormData) {
+  "use server";
+
+  const shopId = String(formData.get("shopId") ?? "").trim();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const roleRaw = String(formData.get("role") ?? "").trim();
+  const role = roleRaw === "admin" ? "admin" : roleRaw === "member" ? "member" : "";
+
+  if (!isUuid(shopId) || !isUuid(userId) || !role) return;
+
+  const supabase = await supabaseServer();
+
+  // DB is the authority: prevents demoting last admin
+  const { error } = await supabase.rpc("rb_set_shop_member_role", {
+    p_shop_id: shopId,
+    p_user_id: userId,
+    p_role: role,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/shops/${shopId}/members`);
+}
+
+export default async function ShopMembersPage({ params }: { params: Promise<{ shopId: string }> }) {
+  const { shopId } = await params;
+  const sid = String(shopId ?? "").trim();
+
+  if (!isUuid(sid)) {
+    return (
+      <div style={{ display: "grid", gap: 18, maxWidth: 900 }}>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Members</h1>
+        <GlassCard title="Invalid Shop ID">
+          <Link href="/shops" style={{ textDecoration: "none" }}>
+            ← Back to Shops
+          </Link>
+        </GlassCard>
+      </div>
+    );
+  }
+
+  const shop = await rbGetShop(sid);
+
   const supabase = await supabaseServer();
   const admin = supabaseAdmin();
 
   const { data: members, error } = await supabase
     .from("rb_shop_members")
     .select("*")
-    .eq("shop_id", params.shopId)
+    .eq("shop_id", sid)
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
 
-  // Resolve emails via service role (best UX)
   const ids = Array.from(new Set((members ?? []).map((m: any) => m.user_id)));
   const emailById = new Map<string, string>();
 
@@ -93,20 +157,21 @@ export default async function ShopMembersPage({ params }: { params: { shopId: st
       const res = await admin.auth.admin.getUserById(uid);
       const em = res.data.user?.email ?? "";
       if (em) emailById.set(uid, em);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Members — {shop.name}</h1>
+      <div style={{ display: "grid", gap: 10 }}>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Members — {shop.name}</h1>
+        <TabBar shopId={shop.id} active="members" />
+      </div>
 
       <GlassCard title="Invite / Add Member">
         <form action={inviteAndAddMember} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input type="hidden" name="shopId" value={params.shopId} />
+          <input type="hidden" name="shopId" value={sid} />
           <input name="email" placeholder="email@domain.com" style={{ padding: 10, borderRadius: 12, minWidth: 320 }} />
-          <select name="role" style={{ padding: 10, borderRadius: 12, minWidth: 160 }}>
+          <select name="role" defaultValue="member" style={{ padding: 10, borderRadius: 12, minWidth: 160 }}>
             <option value="member">member</option>
             <option value="admin">admin</option>
           </select>
@@ -114,17 +179,14 @@ export default async function ShopMembersPage({ params }: { params: { shopId: st
             Add
           </button>
         </form>
-        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
-          Shows email if available. Prevents removing last admin.
-        </div>
       </GlassCard>
 
       <GlassCard title="Current Members">
-        {members.length === 0 ? (
+        {(members ?? []).length === 0 ? (
           <div style={{ opacity: 0.75 }}>No members found.</div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
-            {members.map((m: any) => {
+            {(members ?? []).map((m: any) => {
               const email = emailById.get(m.user_id) ?? "";
               return (
                 <div
@@ -137,7 +199,7 @@ export default async function ShopMembersPage({ params }: { params: { shopId: st
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    gap: 10,
+                    gap: 12,
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
@@ -150,14 +212,29 @@ export default async function ShopMembersPage({ params }: { params: { shopId: st
                     <div style={{ fontSize: 12, opacity: 0.65 }}>User ID: {m.user_id}</div>
                   </div>
 
-                  <form action={removeMember}>
-                    <input type="hidden" name="id" value={m.id} />
-                    <input type="hidden" name="shopId" value={params.shopId} />
-                    <input type="hidden" name="role" value={m.role} />
-                    <button type="submit" style={{ padding: "8px 12px", borderRadius: 12, fontWeight: 800 }}>
-                      Remove
-                    </button>
-                  </form>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    {/* Change role via RPC */}
+                    <form action={setMemberRole} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input type="hidden" name="shopId" value={sid} />
+                      <input type="hidden" name="userId" value={m.user_id} />
+                      <select name="role" defaultValue={m.role} style={{ padding: "8px 10px", borderRadius: 12 }}>
+                        <option value="member">member</option>
+                        <option value="admin">admin</option>
+                      </select>
+                      <button type="submit" style={{ padding: "8px 12px", borderRadius: 12, fontWeight: 800 }}>
+                        Save
+                      </button>
+                    </form>
+
+                    {/* Remove via RPC */}
+                    <form action={removeMember}>
+                      <input type="hidden" name="shopId" value={sid} />
+                      <input type="hidden" name="userId" value={m.user_id} />
+                      <button type="submit" style={{ padding: "8px 12px", borderRadius: 12, fontWeight: 800 }}>
+                        Remove
+                      </button>
+                    </form>
+                  </div>
                 </div>
               );
             })}

@@ -1,4 +1,5 @@
 import React from "react";
+import { theme } from "@/lib/ui/theme";
 
 export default function GlassCard({
   title,
@@ -11,23 +12,22 @@ export default function GlassCard({
     <div
       style={{
         padding: 18,
-        borderRadius: 16,
-        border: "1px solid rgba(255,255,255,0.14)",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+        borderRadius: theme.radius.lg,
+        border: theme.border.soft,
+        background: theme.bg.panel,
         backdropFilter: "blur(10px)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-        color: "#e6e8ef",
+        boxShadow: theme.shadow.panel,
+        color: theme.text.primary,
       }}
     >
       {title && (
         <div
           style={{
-            fontSize: 14,
-            fontWeight: 700,
-            letterSpacing: 0.4,
-            color: "#9fa3ff",
-            marginBottom: 10,
+            fontSize: 13,
+            fontWeight: 800,
+            letterSpacing: 0.6,
+            color: theme.text.accent,
+            marginBottom: 12,
             textTransform: "uppercase",
           }}
         >

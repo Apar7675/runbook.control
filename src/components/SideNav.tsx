@@ -30,6 +30,8 @@ export default function SideNav() {
       <NavItem href="/updates" label="Updates" />
       <NavItem href="/updates/packages" label="Update Packages" />
       <NavItem href="/support" label="Support Bundles" />
+      <NavItem href="/audit" label="Audit Log" />
+      <NavItem href="/settings" label="Settings" />
     </nav>
   );
 }

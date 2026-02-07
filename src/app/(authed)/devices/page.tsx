@@ -1,13 +1,18 @@
 import React from "react";
 import GlassCard from "@/components/GlassCard";
+import RevealSecretModal from "@/components/RevealSecretModal";
+import DeviceActionsTableClient from "@/components/DeviceActionsTableClient";
 import { rbListMyShops, rbGetUserIdOrThrow } from "@/lib/rb";
 import { supabaseServer } from "@/lib/supabase/server";
 import { newToken, sha256Hex } from "@/lib/crypto";
-import RevealSecretModal from "@/components/RevealSecretModal";
 import { redirect } from "next/navigation";
 
 function b64Json(obj: any) {
   return Buffer.from(JSON.stringify(obj), "utf8").toString("base64");
+}
+
+function isUuid(v: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
 async function createDevice(formData: FormData) {
@@ -15,7 +20,7 @@ async function createDevice(formData: FormData) {
 
   const shopId = String(formData.get("shopId") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
-  if (!shopId || !name) redirect("/devices");
+  if (!isUuid(shopId) || !name) redirect("/devices");
 
   const supabase = await supabaseServer();
   await rbGetUserIdOrThrow();
@@ -41,13 +46,16 @@ async function createDevice(formData: FormData) {
   const token_hash = sha256Hex(activationPlain);
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
-  const { error: e2 } = await supabase.from("rb_device_activation_tokens").insert({
-    shop_id: shopId,
-    device_id: device.id,
-    token_hash,
-    expires_at: expires.toISOString(),
-    used_at: null,
-  });
+  const { error: e2 } = await supabase.from("rb_device_activation_tokens").upsert(
+    {
+      shop_id: shopId,
+      device_id: device.id,
+      token_hash,
+      expires_at: expires.toISOString(),
+      used_at: null,
+    },
+    { onConflict: "device_id" }
+  );
 
   if (e2) throw new Error(e2.message);
 
@@ -58,11 +66,17 @@ async function createDevice(formData: FormData) {
     activationPlain,
   });
 
-  redirect(`/devices?reveal=${encodeURIComponent(reveal)}`);
+  redirect(`/devices?shop=${encodeURIComponent(shopId)}&reveal=${encodeURIComponent(reveal)}`);
 }
 
-export default async function DevicesPage() {
+export default async function DevicesPage({
+  searchParams,
+}: {
+  searchParams: { shop?: string };
+}) {
   const shops = await rbListMyShops();
+  const preselect = isUuid(String(searchParams.shop ?? "")) ? String(searchParams.shop) : "";
+
   const supabase = await supabaseServer();
 
   const { data: devices, error } = await supabase
@@ -81,7 +95,7 @@ export default async function DevicesPage() {
   (tokens ?? []).forEach((t: any) => tokenByDevice.set(t.device_id, t));
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
+    <div style={{ display: "grid", gap: 18, maxWidth: 1200 }}>
       {/* @ts-expect-error server->client */}
       <RevealSecretModal />
 
@@ -89,7 +103,11 @@ export default async function DevicesPage() {
 
       <GlassCard title="Register Device">
         <form action={createDevice} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <select name="shopId" style={{ padding: 10, borderRadius: 12, minWidth: 260 }}>
+          <select
+            name="shopId"
+            defaultValue={preselect}
+            style={{ padding: 10, borderRadius: 12, minWidth: 260 }}
+          >
             <option value="">Select shop…</option>
             {shops.map((s) => (
               <option key={s.id} value={s.id}>
@@ -98,7 +116,11 @@ export default async function DevicesPage() {
             ))}
           </select>
 
-          <input name="name" placeholder="Device name (e.g. Front Office PC)" style={{ padding: 10, borderRadius: 12, minWidth: 280 }} />
+          <input
+            name="name"
+            placeholder="Device name (e.g. Front Office PC)"
+            style={{ padding: 10, borderRadius: 12, minWidth: 280 }}
+          />
 
           <button type="submit" style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}>
             Create
@@ -111,37 +133,7 @@ export default async function DevicesPage() {
       </GlassCard>
 
       <GlassCard title="All Devices">
-        {devices.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No devices yet.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {devices.map((d: any) => {
-              const t = tokenByDevice.get(d.id);
-              return (
-                <div
-                  key={d.id}
-                  style={{
-                    padding: 12,
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <div style={{ fontWeight: 900 }}>{d.name}</div>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>Shop: {d.shop_id}</div>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>Status: {d.status}</div>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    Key Hash: <code>{String(d.device_key_hash ?? "").slice(0, 16)}…</code>
-                  </div>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    Activation: {t?.used_at ? "USED" : t ? "READY" : "—"}{" "}
-                    {t ? `(expires ${new Date(t.expires_at).toLocaleString()})` : ""}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <DeviceActionsTableClient devices={devices ?? []} tokenByDevice={Array.from(tokenByDevice.entries())} />
       </GlassCard>
     </div>
   );

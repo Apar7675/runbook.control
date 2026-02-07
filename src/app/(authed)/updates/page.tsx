@@ -2,6 +2,7 @@ import React from "react";
 import GlassCard from "@/components/GlassCard";
 import { rbListMyShops } from "@/lib/rb";
 import { supabaseServer } from "@/lib/supabase/server";
+import { auditLog } from "@/lib/audit";
 
 async function savePolicy(formData: FormData) {
   "use server";
@@ -18,18 +19,44 @@ async function savePolicy(formData: FormData) {
 
   const supabase = await supabaseServer();
 
+  // BEFORE
+  const { data: before, error: e0 } = await supabase
+    .from("rb_update_policy")
+    .select("*")
+    .eq("shop_id", shopId)
+    .maybeSingle();
+
+  if (e0) throw new Error(e0.message);
+
   // Upsert by unique(shop_id)
-  const { error } = await supabase.from("rb_update_policy").upsert(
-    {
-      shop_id: shopId,
-      channel,
-      min_version,
-      pinned_version,
-    },
-    { onConflict: "shop_id" }
-  );
+  const { data: after, error } = await supabase
+    .from("rb_update_policy")
+    .upsert(
+      {
+        shop_id: shopId,
+        channel,
+        min_version,
+        pinned_version,
+      },
+      { onConflict: "shop_id" }
+    )
+    .select("*")
+    .single();
 
   if (error) throw new Error(error.message);
+
+  await auditLog({
+    shop_id: shopId,
+    action: "policy.changed",
+    entity_type: "policy",
+    entity_id: after.id,
+    details: {
+      before: before
+        ? { channel: before.channel, min_version: before.min_version, pinned_version: before.pinned_version }
+        : null,
+      after: { channel: after.channel, min_version: after.min_version, pinned_version: after.pinned_version },
+    },
+  });
 }
 
 export default async function UpdatesPage() {
