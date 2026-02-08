@@ -1,9 +1,9 @@
+// REPLACE ENTIRE FILE: src/app/devices/page.tsx
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import GlassCard from "@/components/GlassCard";
-
-type Shop = { id: string; name: string; created_at: string };
 
 type Device = {
   id: string;
@@ -25,9 +25,6 @@ type Token = {
 };
 
 export default function DevicesPage() {
-  const [shops, setShops] = useState<Shop[]>([]);
-  const shopNameById = useMemo(() => new Map(shops.map((s) => [s.id, s.name])), [shops]);
-
   const [devices, setDevices] = useState<Device[]>([]);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +32,6 @@ export default function DevicesPage() {
 
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState("desktop");
-  const [newShopId, setNewShopId] = useState<string>("");
 
   const tokensByDevice = useMemo(() => {
     const m = new Map<string, Token[]>();
@@ -47,31 +43,18 @@ export default function DevicesPage() {
     return m;
   }, [tokens]);
 
-  async function loadShops() {
-    const res = await fetch("/api/shops/list-simple", { credentials: "include" });
-    const j = await res.json().catch(() => null);
-    if (!j?.ok) throw new Error(j?.error ?? "Failed to load shops");
-    const s: Shop[] = j.shops ?? [];
-    setShops(s);
-    if (!newShopId && s.length) setNewShopId(s[0].id);
-  }
-
-  async function loadDevices() {
-    const res = await fetch("/api/device/list", { credentials: "include" });
-    const j = await res.json().catch(() => null);
-    if (!j?.ok) throw new Error(j?.error ?? "Failed to load devices");
-    setDevices(j.devices ?? []);
-    setTokens(j.tokens ?? []);
-  }
-
   async function reload() {
     setLoading(true);
     setStatus("");
+    const res = await fetch("/api/device/list", { credentials: "include" });
+    const text = await res.text();
     try {
-      await loadShops();
-      await loadDevices();
-    } catch (e: any) {
-      setStatus(e?.message ?? "Failed");
+      const j = JSON.parse(text);
+      if (!j.ok) throw new Error(j.error ?? "Failed");
+      setDevices(j.devices ?? []);
+      setTokens(j.tokens ?? []);
+    } catch {
+      setStatus(text);
     } finally {
       setLoading(false);
     }
@@ -79,25 +62,23 @@ export default function DevicesPage() {
 
   useEffect(() => {
     reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function createDevice() {
     setStatus("");
-    if (!newShopId) return setStatus("Pick a shop first.");
-
     const res = await fetch("/api/device/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: newName.trim(), device_type: newType, shop_id: newShopId }),
+      body: JSON.stringify({ name: newName.trim(), device_type: newType }),
     });
-
     const j = await res.json().catch(() => null);
-    if (!j?.ok) return setStatus(j?.error ?? "Create failed");
-
+    if (!j?.ok) {
+      setStatus(j?.error ?? "Create failed");
+      return;
+    }
     setNewName("");
-    await loadDevices();
+    await reload();
   }
 
   async function issueToken(deviceId: string) {
@@ -108,12 +89,15 @@ export default function DevicesPage() {
       credentials: "include",
       body: JSON.stringify({ device_id: deviceId, label: "issued-from-ui" }),
     });
-
     const j = await res.json().catch(() => null);
-    if (!j?.ok) return setStatus(j?.error ?? "Issue token failed");
+    if (!j?.ok) {
+      setStatus(j?.error ?? "Issue token failed");
+      return;
+    }
 
+    // One-time token display:
     alert(`DEVICE TOKEN (COPY NOW)\n\n${j.token}\n\nThis will not be shown again.`);
-    await loadDevices();
+    await reload();
   }
 
   async function revokeToken(tokenId: string) {
@@ -124,29 +108,12 @@ export default function DevicesPage() {
       credentials: "include",
       body: JSON.stringify({ token_id: tokenId }),
     });
-
     const j = await res.json().catch(() => null);
-    if (!j?.ok) return setStatus(j?.error ?? "Revoke failed");
-
-    await loadDevices();
-  }
-
-  async function deleteDevice(deviceId: string, deviceName: string) {
-    const ok = window.confirm(`Delete device "${deviceName}"?\n\nThis permanently deletes the device and ALL its tokens.`);
-    if (!ok) return;
-
-    setStatus("");
-    const res = await fetch("/api/device/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ device_id: deviceId }),
-    });
-
-    const j = await res.json().catch(() => null);
-    if (!j?.ok) return setStatus(j?.error ?? "Delete failed");
-
-    await loadDevices();
+    if (!j?.ok) {
+      setStatus(j?.error ?? "Revoke failed");
+      return;
+    }
+    await reload();
   }
 
   return (
@@ -161,30 +128,22 @@ export default function DevicesPage() {
             placeholder="Device name (e.g., Front Office PC)"
             style={{ padding: 10, borderRadius: 12, minWidth: 320 }}
           />
-
-          <select value={newShopId} onChange={(e) => setNewShopId(e.target.value)} style={{ padding: 10, borderRadius: 12, minWidth: 220 }}>
-            {shops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
           <select value={newType} onChange={(e) => setNewType(e.target.value)} style={{ padding: 10, borderRadius: 12 }}>
             <option value="desktop">desktop</option>
             <option value="kiosk">kiosk</option>
             <option value="mobile">mobile</option>
           </select>
-
-          <button onClick={createDevice} disabled={!newName.trim() || !newShopId} style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}>
+          <button
+            onClick={createDevice}
+            disabled={!newName.trim()}
+            style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}
+          >
             Create
           </button>
-
           <button onClick={reload} style={{ padding: "10px 14px", borderRadius: 12 }}>
             Refresh
           </button>
         </div>
-
         {status ? <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>{status}</div> : null}
       </GlassCard>
 
@@ -194,9 +153,9 @@ export default function DevicesPage() {
         ) : (
           <div style={{ display: "grid", gap: 14 }}>
             {devices.map((d) => {
-              const t = (tokensByDevice.get(d.id) ?? []).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-              const shopName = d.shop_id ? shopNameById.get(d.shop_id) : null;
-
+              const t = (tokensByDevice.get(d.id) ?? []).sort(
+                (a, b) => (a.created_at < b.created_at ? 1 : -1)
+              );
               return (
                 <div
                   key={d.id}
@@ -213,23 +172,15 @@ export default function DevicesPage() {
                       <div style={{ fontSize: 12, opacity: 0.75 }}>
                         {d.device_type} • {d.status} • {d.id}
                       </div>
-                      <div style={{ fontSize: 12, opacity: 0.7 }}>
-                        Shop: <span style={{ fontWeight: 900 }}>{shopName ?? d.shop_id ?? "—"}</span>
-                      </div>
                     </div>
-
                     <div style={{ display: "flex", gap: 10 }}>
                       <button onClick={() => issueToken(d.id)} style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900 }}>
                         Issue Token (rotates)
-                      </button>
-                      <button onClick={() => deleteDevice(d.id, d.name)} style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900, opacity: 0.9 }}>
-                        Delete
                       </button>
                     </div>
                   </div>
 
                   <div style={{ marginTop: 10, fontSize: 12, opacity: 0.8, fontWeight: 900 }}>Tokens</div>
-
                   {t.length === 0 ? (
                     <div style={{ fontSize: 12, opacity: 0.7 }}>No tokens yet.</div>
                   ) : (
@@ -243,36 +194,4 @@ export default function DevicesPage() {
                             gap: 10,
                             alignItems: "center",
                             border: "1px solid rgba(255,255,255,0.06)",
-                            borderRadius: 12,
-                            padding: "10px 12px",
-                          }}
-                        >
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 12, opacity: 0.9 }}>
-                              {tok.id} {tok.label ? `• ${tok.label}` : ""}
-                            </div>
-                            <div style={{ fontSize: 12, opacity: 0.65 }}>
-                              revoked: {tok.revoked_at ? "yes" : "no"} • last_seen: {tok.last_seen_at ?? "—"}
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={() => revokeToken(tok.id)}
-                            disabled={!!tok.revoked_at}
-                            style={{ padding: "8px 10px", borderRadius: 12, fontWeight: 900 }}
-                          >
-                            Revoke
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </GlassCard>
-    </div>
-  );
-}
+                            borderRadius:

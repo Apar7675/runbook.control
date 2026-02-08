@@ -1,118 +1,241 @@
-import React from "react";
+// REPLACE ENTIRE FILE: src/app/(authed)/devices/[deviceId]/page.tsx
+
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import GlassCard from "@/components/GlassCard";
-import { supabaseServer } from "@/lib/supabase/server";
-import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+type Device = {
+  id: string;
+  created_at: string;
+  shop_id: string | null;
+  name: string;
+  device_type: string;
+  status: string;
+};
 
-function isUuid(v: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-}
+type Token = {
+  id: string;
+  device_id: string;
+  created_at: string;
+  issued_at: string;
+  revoked_at: string | null;
+  last_seen_at: string | null;
+  label: string | null;
+};
 
-export default async function DeviceDetailPage({
-  params,
-}: {
-  params: Promise<{ deviceId: string }>;
-}) {
-  const { deviceId } = await params;
-  const id = String(deviceId ?? "").trim();
+export default function DeviceDetailPage() {
+  const params = useParams<{ deviceId: string }>();
+  const deviceId = params.deviceId;
+  const router = useRouter();
 
-  if (!isUuid(id)) {
-    return (
-      <div style={{ display: "grid", gap: 18, maxWidth: 900 }}>
-        <h1 style={{ fontSize: 28, margin: 0 }}>Device</h1>
-        <GlassCard title="Invalid Device ID">
-          <div style={{ opacity: 0.8 }}>Bad device id received.</div>
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
-            Received: <code>{id || "(empty)"}</code>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Link href="/devices" style={{ textDecoration: "none" }}>
-              ← Back to Devices
-            </Link>
-          </div>
-        </GlassCard>
-      </div>
-    );
+  const [device, setDevice] = useState<Device | null>(null);
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<string>("");
+
+  const activeToken = useMemo(() => {
+    return tokens.find((t) => !t.revoked_at) ?? null;
+  }, [tokens]);
+
+  async function reload() {
+    setLoading(true);
+    setStatus("");
+
+    const res = await fetch("/api/device/list", { credentials: "include" });
+    const text = await res.text();
+
+    try {
+      const j = JSON.parse(text);
+      if (!j.ok) throw new Error(j.error ?? "Failed to load devices");
+
+      const allDevices: Device[] = (j.devices ?? []) as Device[];
+      const allTokens: Token[] = (j.tokens ?? []) as Token[];
+
+      const d = allDevices.find((x) => x.id === deviceId) ?? null;
+      setDevice(d);
+
+      const t = allTokens
+        .filter((x) => x.device_id === deviceId)
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+      setTokens(t);
+
+      if (!d) setStatus("Device not found (it may have been deleted).");
+    } catch (e: any) {
+      setStatus(e?.message ?? text);
+      setDevice(null);
+      setTokens([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const supabase = await supabaseServer();
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deviceId]);
 
-  const { data: device, error: e1 } = await supabase
-    .from("rb_devices")
-    .select("*")
-    .eq("id", id)
-    .single();
+  async function issueToken() {
+    setStatus("");
+    const res = await fetch("/api/device/issue-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ device_id: deviceId, label: "issued-from-details" }),
+    });
 
-  if (e1) throw new Error(e1.message);
+    const j = await res.json().catch(() => null);
+    if (!j?.ok) {
+      setStatus(j?.error ?? "Issue token failed");
+      return;
+    }
 
-  const { data: token } = await supabase
-    .from("rb_device_activation_tokens")
-    .select("*")
-    .eq("device_id", id)
-    .maybeSingle();
+    alert(`DEVICE TOKEN (COPY NOW)\n\n${j.token}\n\nThis will not be shown again.`);
+    await reload();
+  }
+
+  async function revokeToken(tokenId: string) {
+    setStatus("");
+    const res = await fetch("/api/device/revoke-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ token_id: tokenId }),
+    });
+
+    const j = await res.json().catch(() => null);
+    if (!j?.ok) {
+      setStatus(j?.error ?? "Revoke failed");
+      return;
+    }
+
+    await reload();
+  }
+
+  async function deleteDevice() {
+    if (!device) return;
+
+    const ok = window.confirm(
+      `Delete device "${device.name}"?\n\nThis permanently deletes the device and ALL its tokens.`
+    );
+    if (!ok) return;
+
+    setStatus("");
+    const res = await fetch("/api/device/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ device_id: device.id }),
+    });
+
+    const j = await res.json().catch(() => null);
+    if (!j?.ok) {
+      setStatus(j?.error ?? "Delete failed");
+      return;
+    }
+
+    router.replace("/devices");
+  }
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Device</h1>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 18,
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-        }}
-      >
-        <GlassCard title="Device Info">
-          <div style={{ display: "grid", gap: 8 }}>
-            <div>
-              <span style={{ opacity: 0.7 }}>Name:</span>{" "}
-              <b>{device.name}</b>
-            </div>
-            <div>
-              <span style={{ opacity: 0.7 }}>Status:</span>{" "}
-              <b>{device.status}</b>
-            </div>
-            <div>
-              <span style={{ opacity: 0.7 }}>Shop:</span>{" "}
-              <code>{device.shop_id}</code>
-            </div>
-            <div>
-              <span style={{ opacity: 0.7 }}>Device ID:</span>{" "}
-              <code>{device.id}</code>
-            </div>
-            <div>
-              <span style={{ opacity: 0.7 }}>Key Hash:</span>{" "}
-              <code>{String(device.device_key_hash ?? "").slice(0, 24)}…</code>
-            </div>
-          </div>
-        </GlassCard>
-
-        <GlassCard title="Activation Token">
-          {!token ? (
-            <div style={{ opacity: 0.75 }}>No activation token row found.</div>
-          ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              <div>
-                <span style={{ opacity: 0.7 }}>Used:</span>{" "}
-                <b>{token.used_at ? "YES" : "NO"}</b>
-              </div>
-              <div>
-                <span style={{ opacity: 0.7 }}>Expires:</span>{" "}
-                <b>{new Date(token.expires_at).toLocaleString()}</b>
-              </div>
-              <div>
-                <span style={{ opacity: 0.7 }}>Token Hash:</span>{" "}
-                <code>{String(token.token_hash).slice(0, 24)}…</code>
-              </div>
-            </div>
-          )}
-
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
-            Plaintext token is only shown once (on creation / regenerate).
-          </div>
-        </GlassCard>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0 }}>Device Details</h1>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => router.back()} style={{ padding: "10px 14px", borderRadius: 12 }}>
+            Back
+          </button>
+          <button onClick={reload} style={{ padding: "10px 14px", borderRadius: 12 }}>
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {status ? (
+        <div style={{ fontSize: 12, opacity: 0.85, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 12 }}>
+          {status}
+        </div>
+      ) : null}
+
+      <GlassCard title="Device">
+        {loading ? (
+          <div style={{ opacity: 0.75 }}>Loading…</div>
+        ) : !device ? (
+          <div style={{ opacity: 0.75 }}>No device.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>{device.name}</div>
+            <div style={{ fontSize: 12, opacity: 0.75 }}>
+              {device.device_type} • {device.status}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.65 }}>Device ID: {device.id}</div>
+            <div style={{ fontSize: 12, opacity: 0.65 }}>Shop ID: {device.shop_id ?? "—"}</div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+              <button onClick={issueToken} style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900 }}>
+                Issue Token (rotates)
+              </button>
+              <button onClick={deleteDevice} style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900, opacity: 0.9 }}>
+                Delete Device
+              </button>
+            </div>
+          </div>
+        )}
+      </GlassCard>
+
+      <GlassCard title="Tokens">
+        {loading ? (
+          <div style={{ opacity: 0.75 }}>Loading…</div>
+        ) : tokens.length === 0 ? (
+          <div style={{ opacity: 0.75 }}>No tokens yet.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {activeToken ? (
+              <div style={{ fontSize: 12, opacity: 0.85 }}>
+                Active token: <span style={{ fontWeight: 900 }}>{activeToken.id}</span>
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, opacity: 0.85 }}>No active token.</div>
+            )}
+
+            {tokens.map((t) => (
+              <div
+                key={t.id}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 14,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, opacity: 0.95 }}>
+                    {t.id} {t.label ? `• ${t.label}` : ""}
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.65 }}>
+                    revoked: {t.revoked_at ? "yes" : "no"} • last_seen: {t.last_seen_at ?? "—"}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => revokeToken(t.id)}
+                  disabled={!!t.revoked_at}
+                  style={{ padding: "8px 10px", borderRadius: 12, fontWeight: 900 }}
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </GlassCard>
     </div>
   );
 }

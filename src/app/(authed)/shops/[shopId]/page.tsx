@@ -1,3 +1,5 @@
+// REPLACE ENTIRE FILE: src/app/(authed)/shops/[shopId]/page.tsx
+
 import React from "react";
 import Link from "next/link";
 import GlassCard from "@/components/GlassCard";
@@ -28,11 +30,7 @@ async function savePolicy(formData: FormData) {
 
   const supabase = await supabaseServer();
 
-  const { data: before } = await supabase
-    .from("rb_update_policy")
-    .select("*")
-    .eq("shop_id", shopId)
-    .maybeSingle();
+  const { data: before } = await supabase.from("rb_update_policy").select("*").eq("shop_id", shopId).maybeSingle();
 
   const { data: after, error } = await supabase
     .from("rb_update_policy")
@@ -58,7 +56,13 @@ async function savePolicy(formData: FormData) {
   redirect(`/shops/${shopId}`);
 }
 
-function TabBar({ shopId, active }: { shopId: string; active: "overview" | "devices" | "members" | "audit" }) {
+function TabBar({
+  shopId,
+  active,
+}: {
+  shopId: string;
+  active: "overview" | "devices" | "admins" | "audit";
+}) {
   const item = (href: string, label: string, isActive: boolean) => (
     <Link
       href={href}
@@ -81,7 +85,7 @@ function TabBar({ shopId, active }: { shopId: string; active: "overview" | "devi
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
       {item(`/shops/${shopId}`, "Overview", active === "overview")}
       {item(`/shops/${shopId}/devices`, "Devices", active === "devices")}
-      {item(`/shops/${shopId}/members`, "Members", active === "members")}
+      {item(`/shops/${shopId}/members`, "Admins", active === "admins")}
       {item(`/audit?shop=${shopId}`, "Audit", active === "audit")}
     </div>
   );
@@ -105,22 +109,40 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
   }
 
   const shop = await rbGetShop(sid);
+
+  // ✅ IMPORTANT: rbGetShop can now return null (RLS or deleted)
+  if (!shop) {
+    return (
+      <div style={{ display: "grid", gap: 18, maxWidth: 900 }}>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Shop</h1>
+        <GlassCard title="Not found / no access">
+          <div style={{ opacity: 0.85, marginBottom: 10 }}>
+            This shop either doesn’t exist anymore or your account doesn’t have access to it.
+          </div>
+          <Link href="/shops" style={{ textDecoration: "none" }}>
+            ← Back to Shops
+          </Link>
+        </GlassCard>
+      </div>
+    );
+  }
+
   const devices = await rbListShopDevices(sid);
   const policy = await rbGetUpdatePolicy(sid);
 
   const supabase = await supabaseServer();
-  const { count: membersCount } = await supabase
+  const { count: adminsCount } = await supabase
     .from("rb_shop_members")
     .select("id", { count: "exact", head: true })
     .eq("shop_id", sid);
 
   const checklistItems = [
     {
-      key: "members",
-      title: "Add members (optional)",
-      done: (membersCount ?? 0) > 1,
-      hint: "Invite another admin or member so you’re not the only user with access.",
-      ctaLabel: "Manage Members",
+      key: "admins",
+      title: "Add admins (optional)",
+      done: (adminsCount ?? 0) > 1,
+      hint: "Admins can log into RunBook.Control to manage devices, updates, and access.",
+      ctaLabel: "Manage Admins",
       ctaHref: `/shops/${shop.id}/members`,
     },
     {
@@ -156,11 +178,7 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
         <TabBar shopId={shop.id} active="overview" />
       </div>
 
-      <SetupChecklist
-        title="Getting Started"
-        subtitle="Follow these steps to bring a shop online safely."
-        items={checklistItems}
-      />
+      <SetupChecklist title="Getting Started" subtitle="Follow these steps to bring a shop online safely." items={checklistItems} />
 
       <GlassCard title="Quick Actions">
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -195,6 +213,21 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
           </Link>
 
           <Link
+            href={`/shops/${shop.id}/members`}
+            style={{
+              textDecoration: "none",
+              padding: "10px 14px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.05)",
+              fontWeight: 900,
+              color: "inherit",
+            }}
+          >
+            Manage Admins
+          </Link>
+
+          <Link
             href={`/audit?shop=${shop.id}`}
             style={{
               textDecoration: "none",
@@ -218,7 +251,7 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
 
           <div style={{ marginTop: 12, display: "grid", gap: 6, fontSize: 13, opacity: 0.8 }}>
             <div>
-              Members: <b>{membersCount ?? 0}</b>
+              Admins: <b>{adminsCount ?? 0}</b>
             </div>
             <div>
               Devices: <b>{devices.length}</b>
@@ -248,12 +281,22 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
 
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontSize: 12, opacity: 0.75 }}>Min version (optional)</span>
-              <input name="min_version" defaultValue={policy?.min_version ?? ""} placeholder="e.g. 1.0.0" style={{ padding: 10, borderRadius: 12 }} />
+              <input
+                name="min_version"
+                defaultValue={policy?.min_version ?? ""}
+                placeholder="e.g. 1.0.0"
+                style={{ padding: 10, borderRadius: 12 }}
+              />
             </label>
 
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontSize: 12, opacity: 0.75 }}>Pinned version (optional)</span>
-              <input name="pinned_version" defaultValue={policy?.pinned_version ?? ""} placeholder="e.g. 1.2.3" style={{ padding: 10, borderRadius: 12 }} />
+              <input
+                name="pinned_version"
+                defaultValue={policy?.pinned_version ?? ""}
+                placeholder="e.g. 1.2.3"
+                style={{ padding: 10, borderRadius: 12 }}
+              />
             </label>
 
             <button type="submit" style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}>
@@ -268,7 +311,9 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
 
         <GlassCard title="Devices (quick view)">
           {devices.length === 0 ? (
-            <div style={{ opacity: 0.75 }}>No devices yet. Use <b>Create Device</b> above.</div>
+            <div style={{ opacity: 0.75 }}>
+              No devices yet. Use <b>Create Device</b> above.
+            </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {devices.slice(0, 5).map((d) => (
