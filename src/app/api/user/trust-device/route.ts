@@ -6,9 +6,10 @@ import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 export const dynamic = "force-dynamic";
 
+const TRUST_HOURS = 24;
+
 export async function POST(req: Request) {
   try {
-    // Next 16: cookies() is async in the type system
     await cookies();
 
     const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -17,14 +18,12 @@ export async function POST(req: Request) {
     const supabase = await supabaseServer();
     const admin = supabaseAdmin();
 
-    // Auth
     const { data: userRes, error: authErr } = await supabase.auth.getUser();
     if (authErr || !userRes.user) {
       return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
     const user = userRes.user;
 
-    // AAL2
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
     if (aal !== "aal2") {
@@ -40,8 +39,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
     }
 
-    // Upsert trust record (service role)
-    // NOTE: adjust table/columns if your schema differs.
+    const now = new Date();
+    const trusted_until = new Date(now.getTime() + TRUST_HOURS * 60 * 60 * 1000).toISOString();
+
     const { error: upErr } = await admin
       .from("rb_trusted_devices")
       .upsert(
@@ -50,8 +50,9 @@ export async function POST(req: Request) {
           device_id,
           device_name,
           device_type,
-          trusted_at: new Date().toISOString(),
-          last_seen_at: new Date().toISOString(),
+          trusted_at: now.toISOString(),
+          trusted_until,
+          last_seen_at: now.toISOString(),
         },
         { onConflict: "user_id,device_id" }
       );
@@ -60,22 +61,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: upErr.message }, { status: 500 });
     }
 
-    // Set a cookie (best-effort). If your project uses a different cookie name, change here.
-    // We do NOT read x-forwarded-for from cookies anymore (that was the build-breaking line).
-    try {
-      const store = await cookies();
-      store.set({
-        name: "rb_trusted_device",
-        value: device_id,
-        httpOnly: true,
-        sameSite: "lax",
-        secure: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
-    } catch {}
-
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, trusted_until });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message ?? "Server error" }, { status: 500 });
   }

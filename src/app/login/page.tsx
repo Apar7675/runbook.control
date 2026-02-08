@@ -2,7 +2,7 @@
 
 import React, { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import GlassCard from "@/components/GlassCard";
 
 export const dynamic = "force-dynamic";
@@ -11,15 +11,36 @@ function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   if (!url || !anon) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  return createBrowserClient(url, anon);
+  return createClient(url, anon, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+}
+
+function sanitizeNext(raw: string | null) {
+  const fallback = "/dashboard";
+  const next = (raw ?? "").trim();
+
+  if (!next) return fallback;
+
+  // Only allow internal paths
+  if (!next.startsWith("/")) return fallback;
+
+  // Prevent loops/back to login
+  if (next.startsWith("/login")) return fallback;
+
+  return next;
 }
 
 function LoginInner() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  // Optional redirect target: /login?next=/devices
-  const next = (sp.get("next") ?? "/").trim() || "/";
+  // Default to dashboard, not "/"
+  const next = sanitizeNext(sp.get("next"));
 
   const supabase = useMemo(() => getSupabase(), []);
 
@@ -34,13 +55,30 @@ function LoginInner() {
     setBusy(true);
     try {
       const e = email.trim();
-      if (!e) return setStatus("Enter email.");
-      if (!password) return setStatus("Enter password.");
+      if (!e) {
+        setStatus("Enter email.");
+        return;
+      }
+      if (!password) {
+        setStatus("Enter password.");
+        return;
+      }
 
-      const { error } = await supabase.auth.signInWithPassword({ email: e, password });
-      if (error) return setStatus(error.message);
+      const { data, error } = await supabase.auth.signInWithPassword({ email: e, password });
+      if (error) {
+        setStatus(error.message);
+        return;
+      }
+
+      // Confirm session exists
+      const session = data?.session ?? (await supabase.auth.getSession()).data.session;
+      if (!session) {
+        setStatus("Signed in, but no session was established. Check Supabase auth settings.");
+        return;
+      }
 
       router.replace(next);
+      router.refresh();
     } catch (err: any) {
       setStatus(err?.message ?? "Login failed");
     } finally {
@@ -53,7 +91,10 @@ function LoginInner() {
     setBusy(true);
     try {
       const e = email.trim();
-      if (!e) return setStatus("Enter email.");
+      if (!e) {
+        setStatus("Enter email.");
+        return;
+      }
 
       const redirectTo =
         typeof window !== "undefined"
@@ -65,7 +106,10 @@ function LoginInner() {
         options: { emailRedirectTo: redirectTo },
       });
 
-      if (error) return setStatus(error.message);
+      if (error) {
+        setStatus(error.message);
+        return;
+      }
 
       setStatus("Magic link sent. Check your email.");
     } catch (err: any) {
@@ -96,6 +140,9 @@ function LoginInner() {
             type="password"
             autoComplete="current-password"
             style={{ padding: 10, borderRadius: 12 }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") signInEmailPassword();
+            }}
           />
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -104,7 +151,7 @@ function LoginInner() {
               disabled={busy}
               style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}
             >
-              Sign in
+              {busy ? "Signing in…" : "Sign in"}
             </button>
 
             <button
@@ -123,7 +170,7 @@ function LoginInner() {
           ) : null}
 
           <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Tip: you can pass a redirect like <span style={{ fontWeight: 900 }}>/login?next=/devices</span>
+            Redirect after login: <span style={{ fontWeight: 900 }}>{next}</span>
           </div>
         </div>
       </GlassCard>
@@ -132,8 +179,6 @@ function LoginInner() {
 }
 
 export default function LoginPage() {
-  // Required by Next.js when using useSearchParams() on a page:
-  // it must be inside a Suspense boundary to avoid CSR bailout build failure.
   return (
     <Suspense fallback={<div style={{ padding: 24, opacity: 0.75 }}>Loading…</div>}>
       <LoginInner />
