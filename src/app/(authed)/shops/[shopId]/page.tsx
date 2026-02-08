@@ -178,7 +178,7 @@ export default async function ShopDetailPage({ params }: { params: Promise<{ sho
         <TabBar shopId={shop.id} active="overview" />
       </div>
 
-      <SetupChecklist title="Getting Started" subtitle="Follow these steps to bring a shop online safely." items={checklistItems} />
+      <SetupChecklist title="Getting Started" subtitle="Follow these steps to bring a shop online safely." items={(checklistItems.map((i:any)=>({...i, done: !!i.done})) as any)} />
 
       <GlassCard title="Quick Actions">
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>

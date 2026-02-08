@@ -31,15 +31,21 @@ export async function GET(req: Request) {
 
     const admin = supabaseAdmin();
 
-    const { data: devices, error: dErr } = await admin
+    // Include shop name via FK relation if available (rb_devices.shop_id -> rb_shops.id)
+    const { data: devicesRaw, error: dErr } = await admin
       .from("rb_devices")
-      .select("*")
+      .select("*, rb_shops(name)")
       .order("created_at", { ascending: false })
       .limit(200);
 
     if (dErr) return NextResponse.json({ error: dErr.message }, { status: 500 });
 
-    const deviceIds = (devices ?? []).map((d: any) => d.id);
+    const devices = (devicesRaw ?? []).map((d: any) => ({
+      ...d,
+      shop_name: d?.rb_shops?.name ?? null,
+    }));
+
+    const deviceIds = devices.map((d: any) => d.id);
     const { data: tokens, error: tErr } = await admin
       .from("rb_device_tokens")
       .select("id,device_id,created_at,issued_at,revoked_at,last_seen_at,label")
@@ -47,7 +53,7 @@ export async function GET(req: Request) {
 
     if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
 
-    return NextResponse.json({ ok: true, devices: devices ?? [], tokens: tokens ?? [] });
+    return NextResponse.json({ ok: true, devices, tokens: tokens ?? [] });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
   }

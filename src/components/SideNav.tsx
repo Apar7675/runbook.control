@@ -54,6 +54,7 @@ export default function SideNav({ isPlatformAdmin }: { isPlatformAdmin: boolean 
       ) : null}
 
       <NavItem href="/dashboard" label="Dashboard" />
+      <NavItem href="/status" label="Status" />
       <NavItem href="/shops" label="Shops" />
       <NavItem href="/devices" label="Devices" />
       <NavItem href="/updates" label="Updates" />

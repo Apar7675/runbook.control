@@ -125,6 +125,9 @@ export default async function AuthedLayout({ children }: { children: React.React
           <Link href="/dashboard" style={{ textDecoration: "none", color: "#e6e8ef", opacity: 0.85 }}>
             Dashboard
           </Link>
+          <Link href="/status" style={{ textDecoration: "none", color: "#e6e8ef", opacity: 0.85 }}>
+            Status
+          </Link>
           <SignOutButton />
         </div>
       </header>

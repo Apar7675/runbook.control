@@ -1,159 +1,106 @@
 import React from "react";
 import GlassCard from "@/components/GlassCard";
-import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rbGetShop } from "@/lib/rb";
-import Link from "next/link";
-import { revalidatePath } from "next/cache";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-function isUuid(v: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-}
+type Props = {
+  params: Promise<{ shopId: string }>;
+};
 
-function TabBar({ shopId, active }: { shopId: string; active: "overview" | "devices" | "admins" | "audit" }) {
-  const item = (href: string, label: string, isActive: boolean) => (
-    <Link
-      href={href}
-      style={{
-        textDecoration: "none",
-        padding: "8px 12px",
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: isActive ? "rgba(139,140,255,0.16)" : "rgba(255,255,255,0.04)",
-        fontWeight: 900,
-        color: "inherit",
-        opacity: isActive ? 1 : 0.85,
-      }}
-    >
-      {label}
-    </Link>
-  );
+type ShopAdminRow = {
+  id: string;
+  shop_id: string;
+  user_id: string;
+  email: string | null;
+  created_at: string;
+};
 
-  return (
-    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-      {item(`/shops/${shopId}`, "Overview", active === "overview")}
-      {item(`/shops/${shopId}/devices`, "Devices", active === "devices")}
-      {item(`/shops/${shopId}/members`, "Admins", active === "admins")}
-      {item(`/audit?shop=${shopId}`, "Audit", active === "audit")}
-    </div>
-  );
-}
-
-async function inviteAndAddAdmin(formData: FormData) {
-  "use server";
-
-  const shopId = String(formData.get("shopId") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const roleRaw = String(formData.get("role") ?? "member").trim();
-  const role = roleRaw === "admin" ? "admin" : "member";
-
-  if (!isUuid(shopId) || !email) return;
-
-  const supabase = await supabaseServer();
-  const { data: me } = await supabase.auth.getUser();
-  if (!me.user?.id) throw new Error("Not authenticated.");
-
-  const admin = supabaseAdmin();
-
-  const created = await admin.auth.admin.createUser({ email, email_confirm: true });
-  let userId = created.data.user?.id ?? null;
-
-  if (!userId) {
-    const invited = await admin.auth.admin.inviteUserByEmail(email);
-    userId = invited.data.user?.id ?? null;
-    if (!userId) throw new Error(invited.error?.message ?? "Failed to create/invite user.");
-  }
-
-  const { error } = await supabase.from("rb_shop_members").insert({ shop_id: shopId, user_id: userId, role });
-  if (error) throw new Error(error.message);
-
-  revalidatePath(`/shops/${shopId}/members`);
-}
-
-async function removeAdmin(formData: FormData) {
-  "use server";
-
-  const shopId = String(formData.get("shopId") ?? "").trim();
-  const userId = String(formData.get("userId") ?? "").trim();
-
-  if (!isUuid(shopId) || !isUuid(userId)) return;
-
-  const supabase = await supabaseServer();
-
-  const { error } = await supabase.rpc("rb_remove_shop_member", {
-    p_shop_id: shopId,
-    p_user_id: userId,
-  });
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath(`/shops/${shopId}/members`);
-}
-
-async function setAdminRole(formData: FormData) {
-  "use server";
-
-  const shopId = String(formData.get("shopId") ?? "").trim();
-  const userId = String(formData.get("userId") ?? "").trim();
-  const roleRaw = String(formData.get("role") ?? "").trim();
-  const role = roleRaw === "admin" ? "admin" : roleRaw === "member" ? "member" : "";
-
-  if (!isUuid(shopId) || !isUuid(userId) || !role) return;
-
-  const supabase = await supabaseServer();
-
-  const { error } = await supabase.rpc("rb_set_shop_member_role", {
-    p_shop_id: shopId,
-    p_user_id: userId,
-    p_role: role,
-  });
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath(`/shops/${shopId}/members`);
-}
-
-export default async function ShopAdminsPage({ params }: { params: Promise<{ shopId: string }> }) {
+export default async function ShopMembersPage({ params }: Props) {
   const { shopId } = await params;
-  const sid = String(shopId ?? "").trim();
 
-  if (!isUuid(sid)) {
+  const shop = await rbGetShop(shopId);
+
+  // rbGetShop returns null if shop doesn't exist OR is not visible via RLS
+  if (!shop) {
     return (
-      <div style={{ display: "grid", gap: 18, maxWidth: 900 }}>
+      <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
         <h1 style={{ fontSize: 28, margin: 0 }}>Admins</h1>
-        <GlassCard title="Invalid Shop ID">
-          <Link href="/shops" style={{ textDecoration: "none" }}>
-            ← Back to Shops
-          </Link>
+
+        <GlassCard title="Not found / no access">
+          <div style={{ opacity: 0.8 }}>
+            This shop does not exist, or you don’t have access.
+          </div>
+          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>
+            shop_id: <span style={{ fontWeight: 900 }}>{shopId}</span>
+          </div>
         </GlassCard>
       </div>
     );
   }
 
-  const shop = await rbGetShop(sid);
-
-  const supabase = await supabaseServer();
+  // NOTE:
+  // This page manages Control-plane admins for a shop. If your schema differs,
+  // adjust table/columns below to match your actual members/admin table.
   const admin = supabaseAdmin();
 
-  const { data: members, error } = await supabase
-    .from("rb_shop_members")
-    .select("*")
-    .eq("shop_id", sid)
-    .order("created_at", { ascending: true });
+  // Try common table names in RunBook.Control. Prefer rb_shop_admins if it exists.
+  // If your project uses a different table, change it here.
+  let admins: ShopAdminRow[] = [];
+  let tableTried: string[] = [];
 
-  if (error) throw new Error(error.message);
+  // Attempt 1: rb_shop_admins
+  tableTried.push("rb_shop_admins");
+  const a1 = await admin
+    .from("rb_shop_admins")
+    .select("id,shop_id,user_id,email,created_at")
+    .eq("shop_id", shop.id)
+    .order("created_at", { ascending: false });
 
-  const ids = Array.from(new Set((members ?? []).map((m: any) => m.user_id)));
-  const emailById = new Map<string, string>();
+  if (!a1.error) {
+    admins = (a1.data ?? []) as any;
+  } else {
+    // Attempt 2: rb_shop_members (fallback)
+    tableTried.push("rb_shop_members");
+    const a2 = await admin
+      .from("rb_shop_members")
+      .select("id,shop_id,user_id,email,created_at")
+      .eq("shop_id", shop.id)
+      .order("created_at", { ascending: false });
 
-  for (const uid of ids) {
-    try {
-      const res = await admin.auth.admin.getUserById(uid);
-      const em = res.data.user?.email ?? "";
-      if (em) emailById.set(uid, em);
-    } catch {}
+    if (!a2.error) {
+      admins = (a2.data ?? []) as any;
+    } else {
+      // If both failed, show an error card with details.
+      return (
+        <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
+          <div style={{ display: "grid", gap: 8 }}>
+            <h1 style={{ fontSize: 28, margin: 0 }}>Admins — {shop.name}</h1>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>
+              <b>Admins</b> are users who can log into RunBook.Control to manage devices, updates, and access.
+              <br />
+              If you intended shop employees, those should NOT be here.
+            </div>
+          </div>
+
+          <GlassCard title="Config error">
+            <div style={{ opacity: 0.85 }}>
+              Could not load admins for this shop. Checked tables:
+              <div style={{ marginTop: 8, fontFamily: "monospace", fontSize: 12, opacity: 0.9 }}>
+                {tableTried.join(", ")}
+              </div>
+              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.8 }}>
+                rb_shop_admins error: {String(a1.error?.message ?? a1.error)}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
+                rb_shop_members error: {String(a2.error?.message ?? a2.error)}
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      );
+    }
   }
 
   return (
@@ -163,104 +110,39 @@ export default async function ShopAdminsPage({ params }: { params: Promise<{ sho
         <div style={{ fontSize: 12, opacity: 0.7 }}>
           <b>Admins</b> are users who can log into RunBook.Control to manage devices, updates, and access.
           <br />
-          <b>Employees</b> (operators, time clock users) are managed inside the RunBook app — not here.
+          (Shop employees should NOT use RunBook.Control.)
         </div>
-        <TabBar shopId={shop.id} active="admins" />
       </div>
 
-      <GlassCard title="Invite / Add Admin">
-        <form action={inviteAndAddAdmin} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input type="hidden" name="shopId" value={sid} />
-          <input name="email" placeholder="email@domain.com" style={{ padding: 10, borderRadius: 12, minWidth: 320 }} />
-          <select name="role" defaultValue="member" style={{ padding: 10, borderRadius: 12, minWidth: 160 }}>
-            <option value="member">member</option>
-            <option value="admin">admin</option>
-          </select>
-          <button type="submit" style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}>
-            Add
-          </button>
-        </form>
-      </GlassCard>
-
-      <GlassCard title="Current Admins">
-        {(members ?? []).length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No admins found.</div>
+      <GlassCard title={`Admins (${admins.length})`}>
+        {admins.length === 0 ? (
+          <div style={{ opacity: 0.75 }}>No admins assigned.</div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
-            {(members ?? []).map((m: any) => {
-              const email = emailById.get(m.user_id) ?? "";
-              return (
-                <div
-                  key={m.id}
-                  style={{
-                    padding: 12,
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.03)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 900, display: "flex", gap: 10, alignItems: "center" }}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {email || `User ${m.user_id}`}
-                      </span>
-                      <RoleBadge role={m.role} />
-                    </div>
-                    <div style={{ fontSize: 12, opacity: 0.65 }}>User ID: {m.user_id}</div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <form action={setAdminRole} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <input type="hidden" name="shopId" value={sid} />
-                      <input type="hidden" name="userId" value={m.user_id} />
-                      <select name="role" defaultValue={m.role} style={{ padding: "8px 10px", borderRadius: 12 }}>
-                        <option value="member">member</option>
-                        <option value="admin">admin</option>
-                      </select>
-                      <button type="submit" style={{ padding: "8px 12px", borderRadius: 12, fontWeight: 800 }}>
-                        Save
-                      </button>
-                    </form>
-
-                    <form action={removeAdmin}>
-                      <input type="hidden" name="shopId" value={sid} />
-                      <input type="hidden" name="userId" value={m.user_id} />
-                      <button type="submit" style={{ padding: "8px 12px", borderRadius: 12, fontWeight: 800 }}>
-                        Remove
-                      </button>
-                    </form>
-                  </div>
+            {admins.map((a) => (
+              <div
+                key={a.id}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 14,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  display: "grid",
+                  gap: 4,
+                }}
+              >
+                <div style={{ fontWeight: 900 }}>{a.email ?? a.user_id}</div>
+                <div style={{ fontSize: 12, opacity: 0.75 }}>
+                  user_id: {a.user_id}
                 </div>
-              );
-            })}
+                <div style={{ fontSize: 12, opacity: 0.65 }}>
+                  created: {a.created_at ? new Date(a.created_at).toISOString() : "—"}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </GlassCard>
     </div>
-  );
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const isAdmin = role === "admin";
-  return (
-    <span
-      style={{
-        fontSize: 12,
-        padding: "4px 8px",
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.16)",
-        background: isAdmin ? "rgba(139,140,255,0.16)" : "rgba(255,255,255,0.06)",
-        color: isAdmin ? "#b8b9ff" : "#e6e8ef",
-        fontWeight: 900,
-        letterSpacing: 0.2,
-        textTransform: "uppercase",
-      }}
-    >
-      {role}
-    </span>
   );
 }

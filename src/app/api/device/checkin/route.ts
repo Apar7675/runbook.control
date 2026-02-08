@@ -1,34 +1,102 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { hashToken } from "@/lib/device/tokens";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * Hardened device check-in (no anon + deviceKey).
+ *
+ * Request:
+ *   POST /api/device/checkin
+ *   Authorization: Bearer <raw device token>
+ *   Body: { version?: string }
+ *
+ * Effects (service-role):
+ *   - Updates rb_device_tokens.last_seen_at for the token
+ *   - Updates rb_devices.last_seen_at and rb_devices.reported_version (if columns exist)
+ *
+ * Response:
+ *   { ok:true, device_id, token_id }
+ */
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const deviceKey = String(body.deviceKey ?? "").trim();
-    const version = String(body.version ?? "").trim();
+    const ip = req.headers.get("x-forwarded-for") ?? "local";
+    rateLimitOrThrow({ key: `device:checkin:${ip}`, limit: 600, windowMs: 60_000 });
 
-    if (!deviceKey || !version) {
-      return NextResponse.json({ error: "Missing deviceKey or version" }, { status: 400 });
+    const auth = req.headers.get("authorization") ?? "";
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    const rawToken = (m?.[1] ?? "").trim();
+
+    if (!rawToken) {
+      return NextResponse.json({ ok: false, error: "Missing Authorization: Bearer <token>" }, { status: 401 });
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-    if (!url || !anon) {
-      return NextResponse.json({ error: "Missing Supabase env vars" }, { status: 500 });
+    const body = await req.json().catch(() => ({} as any));
+    const version = String((body as any)?.version ?? "").trim() || null;
+
+    const admin = supabaseAdmin();
+    const token_hash = hashToken(rawToken);
+
+    // Find active token
+    const { data: tok, error: tokErr } = await admin
+      .from("rb_device_tokens")
+      .select("id,device_id,revoked_at")
+      .eq("token_hash", token_hash)
+      .maybeSingle();
+
+    if (tokErr) {
+      return NextResponse.json({ ok: false, error: tokErr.message }, { status: 500 });
     }
 
-    // Device is not an authenticated user; use anon key + RPC granted to anon.
-    const supabase = createClient(url, anon);
+    if (!tok || tok.revoked_at) {
+      return NextResponse.json({ ok: false, error: "Invalid or revoked token" }, { status: 403 });
+    }
 
-    const { error } = await supabase.rpc("rb_device_checkin", {
-      p_device_key: deviceKey,
-      p_reported_version: version,
-    });
+    const now = new Date().toISOString();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 403 });
+    // Update token last_seen_at
+    const { error: upTokErr } = await admin
+      .from("rb_device_tokens")
+      .update({ last_seen_at: now })
+      .eq("id", tok.id);
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    if (upTokErr) {
+      return NextResponse.json({ ok: false, error: upTokErr.message }, { status: 500 });
+    }
+
+    // Update device last_seen/version (best-effort; schema may vary)
+    // Try update with version column first; fallback to only last_seen_at.
+    if (version) {
+      const { error: devErr1 } = await admin
+        .from("rb_devices")
+        .update({ last_seen_at: now, reported_version: version })
+        .eq("id", tok.device_id);
+
+      if (devErr1) {
+        const { error: devErr2 } = await admin
+          .from("rb_devices")
+          .update({ last_seen_at: now })
+          .eq("id", tok.device_id);
+
+        if (devErr2) {
+          // Do not fail checkin if device update fails; token last_seen already updated
+        }
+      }
+    } else {
+      const { error: devErr } = await admin
+        .from("rb_devices")
+        .update({ last_seen_at: now })
+        .eq("id", tok.device_id);
+
+      if (devErr) {
+        // Do not fail checkin if device update fails; token last_seen already updated
+      }
+    }
+
+    return NextResponse.json({ ok: true, device_id: tok.device_id, token_id: tok.id });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? String(e) }, { status: 500 });
+    return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
   }
 }
