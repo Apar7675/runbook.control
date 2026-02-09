@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import GlassCard from "@/components/GlassCard";
 import { safeFetch } from "@/lib/http/safeFetch";
+import { useParams } from "next/navigation";
 
 type AuditRow = {
   id: string;
@@ -30,12 +31,14 @@ function prettyMeta(meta: any) {
   }
 }
 
-export default function AuditPage() {
+export default function ShopAuditPage() {
+  const params = useParams<{ shopId: string }>();
+  const shopId = params.shopId;
+
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
 
-  const [shopId, setShopId] = useState("");
   const [action, setAction] = useState("");
   const [actorEmail, setActorEmail] = useState("");
   const [targetId, setTargetId] = useState("");
@@ -56,25 +59,13 @@ export default function AuditPage() {
     const b = (nextBefore ?? before).trim();
     if (b) sp.set("before", b);
 
-    if (shopId.trim()) sp.set("shop_id", shopId.trim());
+    sp.set("shop_id", shopId);
+
     if (action.trim()) sp.set("action", action.trim());
     if (actorEmail.trim()) sp.set("actor_email", actorEmail.trim());
     if (targetId.trim()) sp.set("target_id", targetId.trim());
 
     return `/api/audit/list?${sp.toString()}`;
-  }
-
-  function buildExportUrl() {
-    const sp = new URLSearchParams();
-    if (shopId.trim()) sp.set("shop", shopId.trim());
-
-    const qParts = [action.trim(), actorEmail.trim(), targetId.trim()].filter(Boolean);
-    if (qParts.length) sp.set("q", qParts.join(" "));
-
-    const exportLimit = Math.min(Math.max(limit, 200), 5000);
-    sp.set("limit", String(exportLimit));
-
-    return `/api/audit/export?${sp.toString()}`;
   }
 
   async function load(reset: boolean) {
@@ -121,48 +112,14 @@ export default function AuditPage() {
 
   useEffect(() => {
     load(true);
-  }, []);
-
-  function exportCsv() {
-    setStatus("");
-    window.location.href = buildExportUrl();
-  }
-
-  function shopLabel(r: AuditRow) {
-    if (r.shop_name && r.shop_name.trim()) return r.shop_name.trim();
-    if (r.shop_id) return r.shop_id;
-    return "—";
-  }
+  }, [shopId]);
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1200 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Audit Log</h1>
+      <h1 style={{ margin: 0, fontSize: 28 }}>Audit</h1>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button
-            onClick={exportCsv}
-            disabled={loading}
-            style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}
-            title="Downloads CSV using /api/audit/export with current filters"
-          >
-            Export CSV
-          </button>
-
-          <button onClick={() => load(true)} disabled={loading} style={{ padding: "10px 14px", borderRadius: 12 }}>
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      <GlassCard title="Filters">
+      <GlassCard title="Filters (shop-scoped)">
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            value={shopId}
-            onChange={(e) => setShopId(e.target.value)}
-            placeholder="shop_id (optional)"
-            style={{ padding: 10, borderRadius: 12, minWidth: 260 }}
-          />
           <input
             value={action}
             onChange={(e) => setAction(e.target.value)}
@@ -203,7 +160,6 @@ export default function AuditPage() {
 
           <button
             onClick={() => {
-              setShopId("");
               setAction("");
               setActorEmail("");
               setTargetId("");
@@ -224,7 +180,7 @@ export default function AuditPage() {
         {loading && rows.length === 0 ? (
           <div style={{ opacity: 0.75 }}>Loading…</div>
         ) : rows.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No audit events found.</div>
+          <div style={{ opacity: 0.75 }}>No audit events found for this shop.</div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {rows.map((r) => (
@@ -240,10 +196,7 @@ export default function AuditPage() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 900 }}>
-                    {r.action}
-                    {r.shop_id ? <span style={{ fontWeight: 600, opacity: 0.75 }}> • {shopLabel(r)}</span> : null}
-                  </div>
+                  <div style={{ fontWeight: 900 }}>{r.action}</div>
                   <div style={{ fontSize: 12, opacity: 0.75 }}>{new Date(r.created_at).toISOString()}</div>
                 </div>
 
@@ -281,6 +234,14 @@ export default function AuditPage() {
             style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}
           >
             Load more
+          </button>
+
+          <button
+            onClick={() => load(true)}
+            disabled={loading}
+            style={{ padding: "10px 14px", borderRadius: 12 }}
+          >
+            Refresh
           </button>
         </div>
       </GlassCard>

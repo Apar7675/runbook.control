@@ -1,20 +1,11 @@
-// REPLACE ENTIRE FILE: src/app/(authed)/dashboard/page.tsx
-
 import React from "react";
-import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function Card({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
       style={{
@@ -27,9 +18,29 @@ function Card({
       <div style={{ fontSize: 12, opacity: 0.7, letterSpacing: 0.4, fontWeight: 900 }}>
         {title.toUpperCase()}
       </div>
-      <div style={{ marginTop: 8 }}>{children}</div>
+      <div style={{ marginTop: 10 }}>{children}</div>
     </div>
   );
+}
+
+type AuditRow = {
+  id: string;
+  created_at: string;
+  actor_email: string | null;
+  action: string;
+  shop_id: string | null;
+  shop_name?: string | null;
+  target_type: string | null;
+  target_id: string | null;
+};
+
+function iso(ts?: string | null) {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toISOString();
+  } catch {
+    return ts;
+  }
 }
 
 export default async function DashboardPage() {
@@ -37,128 +48,113 @@ export default async function DashboardPage() {
 
   const { data: userRes } = await supabase.auth.getUser();
   const user = userRes.user ?? null;
+  const email = user?.email ?? "—";
 
-  const email = user?.email ?? "";
+  const admin = supabaseAdmin();
 
-  // Recent shops: keep your existing membership model (RLS should allow this)
-  const { data: shops, error: shopsErr } = await supabase
-    .from("rb_shops")
-    .select("id,name,created_at")
-    .order("created_at", { ascending: false })
-    .limit(6);
-
-  // Recent devices: use service role because rb_devices is locked down
-  let devices: any[] = [];
-  try {
-    const admin = supabaseAdmin();
-    const { data: devs, error: devErr } = await admin
-      .from("rb_devices")
-      .select("id,name,status,created_at")
+  const [shopsCountRes, devicesCountRes, tokensCountRes, auditRes] = await Promise.all([
+    admin.from("rb_shops").select("id", { count: "exact", head: true }),
+    admin.from("rb_devices").select("id", { count: "exact", head: true }),
+    admin.from("rb_device_tokens").select("id", { count: "exact", head: true }),
+    admin
+      .from("rb_audit_log")
+      .select("id,created_at,actor_email,action,shop_id,target_type,target_id,rb_shops(name)")
       .order("created_at", { ascending: false })
-      .limit(6);
+      .limit(15),
+  ]);
 
-    if (!devErr) devices = devs ?? [];
-  } catch {
-    // If service key missing, dashboard still renders; devices panel will be empty.
-    devices = [];
-  }
+  const shopsCount = shopsCountRes.count ?? 0;
+  const devicesCount = devicesCountRes.count ?? 0;
+  const tokensCount = tokensCountRes.count ?? 0;
+
+  const auditRows: AuditRow[] = (auditRes.data ?? []).map((r: any) => ({
+    id: r.id,
+    created_at: r.created_at,
+    actor_email: r.actor_email ?? null,
+    action: r.action,
+    shop_id: r.shop_id ?? null,
+    shop_name: r?.rb_shops?.name ?? null,
+    target_type: r.target_type ?? null,
+    target_id: r.target_id ?? null,
+  }));
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1200 }}>
-      <h1 style={{ margin: 0 }}>Dashboard</h1>
+      <h1 style={{ margin: 0 }}>Platform Overview</h1>
 
-      <Card title="Signed in">
-        <div style={{ fontWeight: 900, fontSize: 16 }}>{email || "—"}</div>
+      <Card title="Session">
+        <div style={{ fontSize: 13, opacity: 0.85 }}>
+          Signed in as <span style={{ fontWeight: 900 }}>{email}</span> ·{" "}
+          <span style={{ fontWeight: 900 }}>Platform Control</span>
+        </div>
       </Card>
 
-      <Card title="Recent">
-        <div style={{ display: "grid", gap: 14 }}>
-          <div>
-            <div style={{ fontSize: 12, opacity: 0.7, fontWeight: 900 }}>SHOPS</div>
-            {shopsErr ? (
-              <div style={{ fontSize: 12, opacity: 0.75 }}>Unable to load shops.</div>
-            ) : (shops ?? []).length === 0 ? (
-              <div style={{ fontSize: 12, opacity: 0.75 }}>No shops yet.</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
-                {(shops ?? []).slice(0, 2).map((s: any) => (
-                  <div
-                    key={s.id}
-                    style={{
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 14,
-                      padding: 12,
-                      background: "rgba(255,255,255,0.02)",
-                    }}
-                  >
-                    <div style={{ fontWeight: 900 }}>{s.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.65 }}>Shop ID: {String(s.id).slice(0, 8)}…</div>
-                  </div>
-                ))}
-              </div>
-            )}
+      <Card title="Counts">
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+          <div style={{ minWidth: 180 }}>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>Shops</div>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>{shopsCount}</div>
           </div>
-
-          <div>
-            <div style={{ fontSize: 12, opacity: 0.7, fontWeight: 900 }}>DEVICES</div>
-            {devices.length === 0 ? (
-              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 8 }}>
-                No devices yet (or service key not configured).
-              </div>
-            ) : (
-              <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
-                {devices.slice(0, 1).map((d: any) => (
-                  <div
-                    key={d.id}
-                    style={{
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 14,
-                      padding: 12,
-                      background: "rgba(255,255,255,0.02)",
-                    }}
-                  >
-                    <div style={{ fontWeight: 900 }}>{d.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.65 }}>
-                      Status: {d.status} • {String(d.id).slice(0, 8)}…
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div style={{ minWidth: 180 }}>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>Devices</div>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>{devicesCount}</div>
+          </div>
+          <div style={{ minWidth: 180 }}>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>Device tokens</div>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>{tokensCount}</div>
           </div>
         </div>
       </Card>
 
-      <Card title="All pages">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
-          {[
-            { title: "Shops", href: "/shops", desc: "Create/manage shops (top-level container)." },
-            { title: "Create Shop", href: "/shops/new", desc: "Start a new shop (bootstrap admin + policy)." },
-            { title: "Devices", href: "/devices", desc: "Register devices, tokens, disable/delete." },
-            { title: "Updates", href: "/updates", desc: "Set policy per shop (stable/beta/min/pinned)." },
-            { title: "Audit Log", href: "/audit", desc: "Everything that happened (filter + export)." },
-            { title: "Settings", href: "/settings", desc: "Preferences, novice mode toggle." },
-          ].map((x) => (
-            <Link
-              key={x.href}
-              href={x.href}
-              style={{
-                textDecoration: "none",
-                color: "#e6e8ef",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 14,
-                padding: 14,
-                background: "rgba(255,255,255,0.02)",
-                display: "grid",
-                gap: 8,
-              }}
-            >
-              <div style={{ fontWeight: 900 }}>{x.title}</div>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>{x.desc}</div>
-              <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 900 }}>Open →</div>
-            </Link>
-          ))}
-        </div>
+      <Card title="Recent platform activity">
+        {auditRes.error ? (
+          <div style={{ fontSize: 12, opacity: 0.8, whiteSpace: "pre-wrap" }}>
+            Unable to load recent activity.
+          </div>
+        ) : auditRows.length === 0 ? (
+          <div style={{ fontSize: 12, opacity: 0.8 }}>No audit events yet.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {auditRows.map((r) => (
+              <div
+                key={r.id}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 14,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  display: "grid",
+                  gap: 4,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 900 }}>
+                    {r.action}
+                    {r.shop_id ? (
+                      <span style={{ fontWeight: 600, opacity: 0.75 }}>
+                        {" "}
+                        • {r.shop_name ?? r.shop_id}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75 }}>{iso(r.created_at)}</div>
+                </div>
+
+                <div style={{ fontSize: 12, opacity: 0.8 }}>
+                  actor: <span style={{ fontWeight: 900 }}>{r.actor_email ?? "—"}</span>
+                </div>
+
+                <div style={{ fontSize: 12, opacity: 0.75 }}>
+                  target:{" "}
+                  <span style={{ fontWeight: 900 }}>
+                    {r.target_type ?? "—"} {r.target_id ?? ""}
+                  </span>
+                  <span style={{ opacity: 0.65 }}> • event {r.id}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

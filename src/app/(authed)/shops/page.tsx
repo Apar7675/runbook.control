@@ -1,90 +1,76 @@
 import React from "react";
 import Link from "next/link";
 import GlassCard from "@/components/GlassCard";
-import DataTable from "@/components/DataTable";
-import DeleteShopButton from "@/components/DeleteShopButton";
-import { rbListMyShops } from "@/lib/rb";
-import { theme } from "@/lib/ui/theme";
+import { supabaseServer } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 export default async function ShopsPage() {
-  const shops = await rbListMyShops();
+  const supabase = await supabaseServer();
+
+  const { data, error } = await supabase
+    .from("rb_shops")
+    .select("id,name,created_at")
+    .order("created_at", { ascending: false });
+
+  const shops = data ?? [];
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1200 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-        <h1 style={{ fontSize: 28, margin: 0 }}>Shops</h1>
+    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0 }}>All Shops</h1>
+
         <Link
           href="/shops/new"
           style={{
-            textDecoration: "none",
             padding: "10px 14px",
             borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: "rgba(255,255,255,0.05)",
-            color: theme.text.primary,
+            textDecoration: "none",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(255,255,255,0.03)",
+            color: "#e6e8ef",
             fontWeight: 900,
           }}
         >
-          + Create Shop
+          Create Shop
         </Link>
       </div>
 
-      <GlassCard title="All Shops">
-        <DataTable
-          rows={shops}
-          empty="No shops created yet."
-          columns={[
-            {
-              key: "name",
-              header: "Name",
-              render: (s: any) => {
-                const id = String(s?.id ?? "");
-                const name = String(s?.name ?? "Unnamed");
-                if (!id) return <span style={{ fontWeight: 800 }}>{name}</span>;
+      {error ? (
+        <GlassCard title="Error">
+          <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>{error.message}</div>
+        </GlassCard>
+      ) : null}
 
-                return (
-                  <Link
-                    href={`/shops/${id}`}
-                    style={{
-                      fontWeight: 800,
-                      color: theme.text.primary,
-                      textDecoration: "none",
-                    }}
-                  >
-                    {name}
-                  </Link>
-                );
-              },
-            },
-            {
-              key: "id",
-              header: "ID",
-              render: (s: any) => {
-                const id = String(s?.id ?? "");
-                return id ? <code style={{ opacity: 0.7 }}>{id.slice(0, 8)}…</code> : <span style={{ opacity: 0.5 }}>—</span>;
-              },
-              width: "220px",
-            },
-            {
-              key: "created",
-              header: "Created",
-              render: (s: any) => (s?.created_at ? new Date(s.created_at).toLocaleDateString() : "—"),
-              width: "140px",
-            },
-            {
-              key: "actions",
-              header: "Actions",
-              width: "140px",
-              render: (s: any) => {
-                const id = String(s?.id ?? "");
-                const name = String(s?.name ?? "Shop");
-                if (!id) return <span style={{ opacity: 0.5 }}>—</span>;
-
-                return <DeleteShopButton shopId={id} shopName={name} />;
-              },
-            },
-          ]}
-        />
+      <GlassCard title={`Shops (${shops.length})`}>
+        {shops.length === 0 ? (
+          <div style={{ opacity: 0.75 }}>No shops yet.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {shops.map((s: any) => (
+              <Link
+                key={s.id}
+                href={`/shops/${s.id}`}
+                style={{
+                  textDecoration: "none",
+                  color: "#e6e8ef",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 14,
+                  padding: 14,
+                  background: "rgba(255,255,255,0.02)",
+                  display: "grid",
+                  gap: 6,
+                }}
+              >
+                <div style={{ fontWeight: 900 }}>{s.name}</div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  {s.created_at ? new Date(s.created_at).toISOString() : "—"} • {s.id}
+                </div>
+                <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 900 }}>Enter Shop →</div>
+              </Link>
+            ))}
+          </div>
+        )}
       </GlassCard>
     </div>
   );

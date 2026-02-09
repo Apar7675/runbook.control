@@ -6,6 +6,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import SideNav from "@/components/SideNav";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
+import { rbGetShop } from "@/lib/rb";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -52,7 +53,14 @@ async function isTrustedDevice(supabase: any, userId: string) {
   }
 }
 
-export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
+type Props = {
+  params: Promise<{ shopId: string }>;
+  children: React.ReactNode;
+};
+
+export default async function ShopLayout({ params, children }: Props) {
+  const { shopId } = await params;
+
   const supabase = await supabaseServer();
 
   const { data: userRes } = await supabase.auth.getUser();
@@ -77,6 +85,9 @@ export default async function AuthedLayout({ children }: { children: React.React
     if (!trusted) redirect("/mfa");
   }
 
+  const shop = await rbGetShop(shopId);
+  const shopName = shop?.name ?? "Shop";
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <DeviceIdBootstrap />
@@ -94,20 +105,22 @@ export default async function AuthedLayout({ children }: { children: React.React
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link
-            href="/dashboard"
+            href="/shops"
             style={{
-              fontWeight: 900,
               textDecoration: "none",
-              color: "#8b8cff",
-              letterSpacing: 0.3,
+              color: "#e6e8ef",
+              opacity: 0.85,
+              fontWeight: 900,
+              whiteSpace: "nowrap",
             }}
           >
-            RunBook.Control
+            ← Back to Platform
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 13, opacity: 0.75 }}>{email}</span>
-            {isPlatformAdmin ? <Pill>Platform Control</Pill> : null}
+            <span style={{ fontSize: 15, fontWeight: 900, opacity: 0.95 }}>{shopName}</span>
+            <Pill>Shop Workspace</Pill>
+            <span style={{ fontSize: 12, opacity: 0.65 }}>{email}</span>
           </div>
         </div>
 
@@ -139,7 +152,7 @@ export default async function AuthedLayout({ children }: { children: React.React
             top: 18,
           }}
         >
-          <SideNav isPlatformAdmin={isPlatformAdmin} mode="platform" />
+          <SideNav isPlatformAdmin={isPlatformAdmin} mode="shop" shopId={shopId} shopName={shopName} />
         </aside>
 
         <main style={{ minWidth: 0 }}>{children}</main>
