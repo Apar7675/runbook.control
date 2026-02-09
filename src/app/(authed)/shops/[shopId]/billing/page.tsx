@@ -17,6 +17,16 @@ type BillingOk = { ok: true; shop: ShopBilling };
 type BillingErr = { ok: false; error?: string };
 type BillingResp = BillingOk | BillingErr;
 
+function formatIsoToLocal(iso: string) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
 export default function ShopBillingPage() {
   const params = useParams();
   const shopId = (params as any)?.shopId as string | undefined;
@@ -125,11 +135,43 @@ export default function ShopBillingPage() {
     }
   }
 
+  // Load when shopId becomes available
   useEffect(() => {
     if (!shopId) return;
     refreshStatus(shopId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId]);
+
+  // After checkout success, auto-refresh a few times to catch invoice/subscription updates
+  useEffect(() => {
+    if (statusParam !== "success") return;
+    if (!shopId) return;
+
+    let tries = 0;
+    const maxTries = 6; // ~30s total
+    const t = setInterval(() => {
+      tries++;
+      refreshStatus(shopId);
+
+      // stop early if period end shows up
+      if (shop?.billing_current_period_end) {
+        clearInterval(t);
+        return;
+      }
+
+      if (tries >= maxTries) clearInterval(t);
+    }, 5000);
+
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusParam, shopId]);
+
+  const periodEndLabel =
+    shop?.billing_current_period_end
+      ? formatIsoToLocal(shop.billing_current_period_end)
+      : shop?.billing_status
+        ? "Billing period initializing…"
+        : "—";
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
@@ -164,7 +206,7 @@ export default function ShopBillingPage() {
               Status: <b>{shop.billing_status ?? "none"}</b>
             </div>
             <div>
-              Period end: <b>{shop.billing_current_period_end ?? "—"}</b>
+              Period end: <b>{periodEndLabel}</b>
             </div>
             <div>
               Stripe customer: <b>{shop.stripe_customer_id ?? "—"}</b>
@@ -199,7 +241,7 @@ export default function ShopBillingPage() {
           </button>
 
           <div style={{ fontSize: 12, opacity: 0.7 }}>
-            After checkout completes, your webhook (or manual sync) should update <b>rb_shops</b>.
+            After checkout completes, webhook updates <b>rb_shops</b>. Period end may appear a few seconds later after invoice finalizes.
           </div>
         </div>
       </GlassCard>

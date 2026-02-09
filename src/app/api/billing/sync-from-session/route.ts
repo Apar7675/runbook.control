@@ -7,6 +7,11 @@ import { getStripe } from "@/lib/stripe/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function isoFromSeconds(sec?: number | null): string | undefined {
+  if (!sec) return undefined;
+  return new Date(Number(sec) * 1000).toISOString();
+}
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -36,48 +41,44 @@ export async function POST(req: Request) {
       );
     }
 
-    let billing_status: string | null = "active";
-    let billing_current_period_end: string | null = null;
-
     const subId = session.subscription ? String(session.subscription) : null;
 
-    if (subId) {
-      const sub: any = await stripe.subscriptions.retrieve(subId);
-      billing_status = sub.status ?? billing_status;
-      billing_current_period_end = sub.current_period_end
-        ? new Date(sub.current_period_end * 1000).toISOString()
-        : null;
+    let billing_status: string | null = "active";
+    let nextPeriodEnd: string | undefined;
 
-      // Helpful for webhook follow-ups
+    if (subId) {
+      const sub: any = await stripe.subscriptions.retrieve(subId, { expand: ["latest_invoice.lines"] });
+      billing_status = sub.status ?? billing_status;
+
+      const line = sub?.latest_invoice?.lines?.data?.[0];
+      const periodEndSec = line?.period?.end;
+      nextPeriodEnd = isoFromSeconds(periodEndSec);
+
       await stripe.subscriptions.update(sub.id, { metadata: { shop_id: shopId, app: "runbook.control" } });
     }
 
     const admin = supabaseAdmin();
 
+    const patch: any = {
+      stripe_customer_id: session.customer ?? null,
+      stripe_subscription_id: subId,
+      billing_status,
+    };
+    if (nextPeriodEnd) patch.billing_current_period_end = nextPeriodEnd;
+
     const { data, error } = await admin
       .from("rb_shops")
-      .update({
-        stripe_customer_id: session.customer ?? null,
-        stripe_subscription_id: subId,
-        billing_status,
-        billing_current_period_end,
-      })
+      .update(patch)
       .eq("id", shopId)
       .select("id,name,billing_status,stripe_customer_id,stripe_subscription_id,billing_current_period_end")
       .single();
 
     if (error) {
-      console.error("sync-from-session db update failed:", { shopId, error });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      ok: true,
-      shop: data,
-      stripe: { session_id: session.id, customer: session.customer ?? null, subscription: subId },
-    });
+    return NextResponse.json({ ok: true, shop: data });
   } catch (e: any) {
-    console.error("sync-from-session error:", e);
     return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
   }
 }
