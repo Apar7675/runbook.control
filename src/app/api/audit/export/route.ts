@@ -1,9 +1,20 @@
+// REPLACE ENTIRE FILE: src/app/api/audit/export/route.ts
+//
+// REFACTOR (this pass):
+// - Uses centralized authz.ts: requirePlatformAdminAal2().
+// - Adds UUID tripwire for shop filter when provided.
+// - Keeps output CSV format + headers.
+// - Uses admin client to read rb_audit_log (service role).
+// - Keeps rate limiting.
+// - Adds runtime/nodejs export + consistent error/status mapping.
+
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { assertUuid, requirePlatformAdminAal2 } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 function csvEscape(v: any) {
   const s = v === null || v === undefined ? "" : String(v);
@@ -17,34 +28,14 @@ export async function GET(req: Request) {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
     rateLimitOrThrow({ key: `audit:export:${ip}`, limit: 60, windowMs: 60_000 });
 
+    await requirePlatformAdminAal2();
+
     const url = new URL(req.url);
     const shop = (url.searchParams.get("shop") ?? "").trim();
     const q = (url.searchParams.get("q") ?? "").trim();
     const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? "1000"), 1), 5000);
 
-    const supabase = await supabaseServer();
-
-    const { data: userRes, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !userRes.user) {
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-    }
-    const user = userRes.user;
-
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
-    if (aal !== "aal2") {
-      return NextResponse.json({ ok: false, error: "MFA required (AAL2)" }, { status: 403 });
-    }
-
-    const { data: adminRow } = await supabase
-      .from("rb_control_admins")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!adminRow) {
-      return NextResponse.json({ ok: false, error: "Not a platform admin" }, { status: 403 });
-    }
+    if (shop) assertUuid("shop", shop);
 
     const admin = supabaseAdmin();
 
@@ -58,9 +49,7 @@ export async function GET(req: Request) {
 
     if (q) {
       const like = `%${q}%`;
-      query = query.or(
-        `action.ilike.${like},target_type.ilike.${like},actor_email.ilike.${like},target_id.ilike.${like}`
-      );
+      query = query.or(`action.ilike.${like},target_type.ilike.${like},actor_email.ilike.${like},target_id.ilike.${like}`);
     }
 
     const { data: rowsRaw, error } = await query;
@@ -80,17 +69,7 @@ export async function GET(req: Request) {
       meta: r.meta ?? null,
     }));
 
-    const header = [
-      "created_at",
-      "action",
-      "shop_id",
-      "shop_name",
-      "actor_email",
-      "actor_user_id",
-      "target_type",
-      "target_id",
-      "meta",
-    ];
+    const header = ["created_at", "action", "shop_id", "shop_name", "actor_email", "actor_user_id", "target_type", "target_id", "meta"];
 
     const lines: string[] = [];
     lines.push(header.join(","));
@@ -121,6 +100,14 @@ export async function GET(req: Request) {
       },
     });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
+    const msg = e?.message ?? String(e);
+    const status =
+      /not authenticated/i.test(msg) ? 401
+      : /mfa required/i.test(msg) ? 403
+      : /not a platform admin/i.test(msg) ? 403
+      : /must be a uuid/i.test(msg) ? 400
+      : 500;
+
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

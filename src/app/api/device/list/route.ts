@@ -1,60 +1,68 @@
-// REPLACE ENTIRE FILE: src/app/api/device/list/route.ts
-
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { requirePlatformAdminAal2, assertUuid } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
     rateLimitOrThrow({ key: `device:list:${ip}`, limit: 120, windowMs: 60_000 });
 
-    const supabase = await supabaseServer();
-
-    const { data: userRes } = await supabase.auth.getUser();
-    const user = userRes.user ?? null;
-    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
-    if (aal !== "aal2") return NextResponse.json({ error: "MFA required (AAL2)" }, { status: 403 });
-
-    const { data: row } = await supabase
-      .from("rb_control_admins")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!row) return NextResponse.json({ error: "Not a platform admin" }, { status: 403 });
+    await requirePlatformAdminAal2();
 
     const admin = supabaseAdmin();
 
-    // Include shop name via FK relation if available (rb_devices.shop_id -> rb_shops.id)
     const { data: devicesRaw, error: dErr } = await admin
       .from("rb_devices")
-      .select("*, rb_shops(name)")
+      .select("id,shop_id,name,status,created_at,last_seen_at,reported_version,device_type,device_key,device_key_hash, rb_shops(name)")
       .order("created_at", { ascending: false })
       .limit(200);
 
-    if (dErr) return NextResponse.json({ error: dErr.message }, { status: 500 });
+    if (dErr) return NextResponse.json({ ok: false, error: dErr.message }, { status: 500 });
 
     const devices = (devicesRaw ?? []).map((d: any) => ({
-      ...d,
+      id: d.id,
+      shop_id: d.shop_id,
+      name: d.name,
+      status: d.status,
+      created_at: d.created_at,
+      last_seen_at: d.last_seen_at ?? null,
+      reported_version: d.reported_version ?? null,
+      device_type: d.device_type ?? null,
+      // compatibility
+      device_key: d.device_key ?? null,
+      device_key_hash: d.device_key_hash ?? null,
       shop_name: d?.rb_shops?.name ?? null,
     }));
 
-    const deviceIds = devices.map((d: any) => d.id);
-    const { data: tokens, error: tErr } = await admin
-      .from("rb_device_tokens")
-      .select("id,device_id,created_at,issued_at,revoked_at,last_seen_at,label")
-      .in("device_id", deviceIds.length ? deviceIds : ["00000000-0000-0000-0000-000000000000"]);
+    const deviceIds = devices.map((d: any) => {
+      assertUuid("device.id", String(d.id));
+      return d.id;
+    });
 
-    if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
+    let tokens: any[] = [];
+    if (deviceIds.length) {
+      const { data: tokData, error: tErr } = await admin
+        .from("rb_device_tokens")
+        .select("id,device_id,created_at,issued_at,revoked_at,last_seen_at,label")
+        .in("device_id", deviceIds);
 
-    return NextResponse.json({ ok: true, devices, tokens: tokens ?? [] });
+      if (tErr) return NextResponse.json({ ok: false, error: tErr.message }, { status: 500 });
+      tokens = tokData ?? [];
+    }
+
+    return NextResponse.json({ ok: true, devices, tokens });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
+    const msg = e?.message ?? "Server error";
+    const status =
+      /not authenticated/i.test(msg) ? 401
+      : /mfa required/i.test(msg) ? 403
+      : /not a platform admin/i.test(msg) ? 403
+      : /must be a uuid/i.test(msg) ? 400
+      : 500;
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

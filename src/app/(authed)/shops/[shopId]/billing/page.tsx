@@ -17,6 +17,9 @@ type BillingOk = { ok: true; shop: ShopBilling };
 type BillingErr = { ok: false; error?: string };
 type BillingResp = BillingOk | BillingErr;
 
+const TRIAL_LABEL = "30-day free trial";
+const PRICE_LABEL = "$149 / month";
+
 function formatIsoToLocal(iso: string) {
   try {
     const d = new Date(iso);
@@ -37,6 +40,7 @@ export default function ShopBillingPage() {
 
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [shop, setShop] = useState<ShopBilling | null>(null);
 
@@ -135,7 +139,44 @@ export default function ShopBillingPage() {
     }
   }
 
-  // Load when shopId becomes available
+  async function openPortal() {
+    if (!shopId) return setMsg("Missing shopId.");
+    setMsg("");
+    setPortalBusy(true);
+
+    try {
+      const res = await fetch("/api/billing/create-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({ shop_id: shopId }),
+      });
+
+      const text = await res.text();
+      let j: any = null;
+      try {
+        j = text ? JSON.parse(text) : null;
+      } catch {}
+
+      if (!res.ok) {
+        setMsg(`[${res.status}] ${j?.error ?? text ?? "Failed to open billing portal"}`);
+        return;
+      }
+
+      if (!j?.ok || !j?.url) {
+        setMsg(j?.error ?? "Failed to open billing portal");
+        return;
+      }
+
+      window.location.href = j.url;
+    } catch (e: any) {
+      setMsg(e?.message ?? String(e));
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (!shopId) return;
     refreshStatus(shopId);
@@ -148,17 +189,10 @@ export default function ShopBillingPage() {
     if (!shopId) return;
 
     let tries = 0;
-    const maxTries = 6; // ~30s total
+    const maxTries = 8; // ~40s
     const t = setInterval(() => {
       tries++;
       refreshStatus(shopId);
-
-      // stop early if period end shows up
-      if (shop?.billing_current_period_end) {
-        clearInterval(t);
-        return;
-      }
-
       if (tries >= maxTries) clearInterval(t);
     }, 5000);
 
@@ -173,12 +207,15 @@ export default function ShopBillingPage() {
         ? "Billing period initializing…"
         : "—";
 
+  const status = shop?.billing_status ?? "none";
+  const isAllowed = status === "trialing" || status === "active";
+
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
       <div style={{ display: "grid", gap: 6 }}>
         <h1 style={{ margin: 0, fontSize: 28 }}>Billing</h1>
         <div style={{ fontSize: 12, opacity: 0.75 }}>
-          Shop-scoped billing (Stripe Test Mode).{" "}
+          {TRIAL_LABEL} then <b>{PRICE_LABEL}</b>. Card required up-front. Cancel anytime before trial ends to avoid charges.{" "}
           <span style={{ opacity: 0.8 }}>
             ShopId: <b>{shopId ?? "—"}</b>
           </span>
@@ -202,26 +239,32 @@ export default function ShopBillingPage() {
           <div style={{ opacity: 0.75 }}>{loading ? "Loading…" : "No billing data yet."}</div>
         ) : (
           <div style={{ display: "grid", gap: 8, fontSize: 12, opacity: 0.85 }}>
-            <div>
-              Status: <b>{shop.billing_status ?? "none"}</b>
-            </div>
-            <div>
-              Period end: <b>{periodEndLabel}</b>
-            </div>
-            <div>
-              Stripe customer: <b>{shop.stripe_customer_id ?? "—"}</b>
-            </div>
-            <div>
-              Stripe subscription: <b>{shop.stripe_subscription_id ?? "—"}</b>
+            <div>Status: <b>{status}</b> {isAllowed ? "(access allowed)" : "(access blocked)"}</div>
+            <div>Period end: <b>{periodEndLabel}</b></div>
+            <div>Stripe customer: <b>{shop.stripe_customer_id ?? "—"}</b></div>
+            <div>Stripe subscription: <b>{shop.stripe_subscription_id ?? "—"}</b></div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                onClick={() => refreshStatus()}
+                disabled={!shopId || loading}
+                style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
+              >
+                {loading ? "Refreshing…" : "Refresh billing status"}
+              </button>
+
+              <button
+                onClick={openPortal}
+                disabled={!shopId || portalBusy || !shop.stripe_customer_id}
+                style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
+              >
+                {portalBusy ? "Opening…" : "Manage billing in Stripe"}
+              </button>
             </div>
 
-            <button
-              onClick={() => refreshStatus()}
-              disabled={!shopId || loading}
-              style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
-            >
-              {loading ? "Refreshing…" : "Refresh billing status"}
-            </button>
+            <div style={{ fontSize: 12, opacity: 0.75 }}>
+              “Manage billing in Stripe” lets the customer cancel during trial (no charge), update card, and view invoices.
+            </div>
           </div>
         )}
       </GlassCard>
@@ -229,7 +272,7 @@ export default function ShopBillingPage() {
       <GlassCard title="Subscription">
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
-            Plan: <b>$149 / month</b> (test price)
+            You get <b>{TRIAL_LABEL}</b>. After the trial, Stripe charges <b>{PRICE_LABEL}</b> automatically unless you cancel.
           </div>
 
           <button
@@ -237,11 +280,11 @@ export default function ShopBillingPage() {
             disabled={busy || !shopId}
             style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
           >
-            {busy ? "Starting…" : "Start Subscription (Test)"}
+            {busy ? "Starting…" : "Start Free Trial (Card Required)"}
           </button>
 
           <div style={{ fontSize: 12, opacity: 0.7 }}>
-            After checkout completes, webhook updates <b>rb_shops</b>. Period end may appear a few seconds later after invoice finalizes.
+            In dev, webhooks require <code>stripe listen</code>. In production, Stripe sends webhooks directly to your domain.
           </div>
         </div>
       </GlassCard>

@@ -1,9 +1,20 @@
+// REPLACE ENTIRE FILE: src/app/api/audit/list/route.ts
+//
+// REFACTOR (this pass):
+// - Uses centralized authz.ts: requirePlatformAdminAal2().
+// - Adds UUID tripwire for shop_id filter when provided.
+// - Keeps same query params + output shape.
+// - Uses admin client to read rb_audit_log (service role).
+// - Keeps rate limiting.
+// - Adds runtime/nodejs export + consistent error/status mapping.
+
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { assertUuid, requirePlatformAdminAal2 } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * GET /api/audit/list
@@ -24,27 +35,7 @@ export async function GET(req: Request) {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
     rateLimitOrThrow({ key: `audit:list:${ip}`, limit: 120, windowMs: 60_000 });
 
-    const supabase = await supabaseServer();
-
-    // Auth
-    const { data: userRes, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userRes.user) {
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-    }
-    const user = userRes.user;
-
-    // AAL2
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
-    if (aal !== "aal2") return NextResponse.json({ ok: false, error: "MFA required (AAL2)" }, { status: 403 });
-
-    // Platform admin
-    const { data: adminRow } = await supabase
-      .from("rb_control_admins")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!adminRow) return NextResponse.json({ ok: false, error: "Not a platform admin" }, { status: 403 });
+    await requirePlatformAdminAal2();
 
     const url = new URL(req.url);
     const sp = url.searchParams;
@@ -57,6 +48,8 @@ export async function GET(req: Request) {
     const action = (sp.get("action") ?? "").trim();
     const actor_email = (sp.get("actor_email") ?? "").trim();
     const target_id = (sp.get("target_id") ?? "").trim();
+
+    if (shop_id) assertUuid("shop_id", shop_id);
 
     const admin = supabaseAdmin();
 
@@ -92,6 +85,14 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ ok: true, rows });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Server error" }, { status: 500 });
+    const msg = e?.message ?? "Server error";
+    const status =
+      /not authenticated/i.test(msg) ? 401
+      : /mfa required/i.test(msg) ? 403
+      : /not a platform admin/i.test(msg) ? 403
+      : /must be a uuid/i.test(msg) ? 400
+      : 500;
+
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

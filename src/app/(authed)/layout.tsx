@@ -52,18 +52,36 @@ async function isTrustedDevice(supabase: any, userId: string) {
   }
 }
 
-export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await supabaseServer();
 
-  const { data: userRes } = await supabase.auth.getUser();
-  const user = userRes.user ?? null;
+  // 1) Session gate (fast, avoids redirect loop)
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) redirect("/login");
+
+  // 2) Verify user with Auth server (removes warning + stronger)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (!user) redirect("/login");
 
   const email = user.email ?? "";
 
-  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
+  // MFA level
+  const { data: aalData } =
+    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const aal =
+    (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
 
+  // Platform admin check (DB)
   const { data: row } = await supabase
     .from("rb_control_admins")
     .select("user_id")
@@ -72,6 +90,7 @@ export default async function AuthedLayout({ children }: { children: React.React
 
   const isPlatformAdmin = !!row;
 
+  // Enforce MFA for platform admins
   if (isPlatformAdmin && aal !== "aal2") {
     const trusted = await isTrustedDevice(supabase, user.id);
     if (!trusted) redirect("/mfa");

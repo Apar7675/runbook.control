@@ -1,52 +1,31 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { writeAudit } from "@/lib/audit/writeAudit";
+import { assertUuid, requirePlatformAdminAal2 } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
     rateLimitOrThrow({ key: `device:set-status:${ip}`, limit: 60, windowMs: 60_000 });
 
-    const supabase = await supabaseServer();
-    const admin = supabaseAdmin();
-
-    const { data: userRes, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !userRes.user) {
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-    }
-    const user = userRes.user;
-
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
-    if (aal !== "aal2") {
-      return NextResponse.json({ ok: false, error: "MFA required (AAL2)" }, { status: 403 });
-    }
-
-    const { data: adminRow } = await supabase
-      .from("rb_control_admins")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!adminRow) {
-      return NextResponse.json({ ok: false, error: "Not a platform admin" }, { status: 403 });
-    }
+    const { user } = await requirePlatformAdminAal2();
 
     const body = await req.json().catch(() => ({}));
     const device_id = String((body as any)?.device_id ?? "").trim();
     const status = String((body as any)?.status ?? "").trim();
 
-    if (!device_id) {
-      return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
-    }
+    if (!device_id) return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
+    assertUuid("device_id", device_id);
+
     if (status !== "active" && status !== "disabled") {
       return NextResponse.json({ ok: false, error: "Invalid status (use active|disabled)" }, { status: 400 });
     }
 
+    const admin = supabaseAdmin();
     const { data: dev, error: devErr } = await admin
       .from("rb_devices")
       .select("id,shop_id,name,device_type,status")
@@ -80,6 +59,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Server error" }, { status: 500 });
+    const msg = e?.message ?? "Server error";
+    const status =
+      /not authenticated/i.test(msg) ? 401
+      : /mfa required/i.test(msg) ? 403
+      : /not a platform admin/i.test(msg) ? 403
+      : /must be a uuid/i.test(msg) ? 400
+      : 500;
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

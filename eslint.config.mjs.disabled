@@ -1,0 +1,44 @@
+import js from "@eslint/js";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const compat = new FlatCompat({
+  baseDirectory: process.cwd(),
+  recommendedConfig: js.configs.recommended,
+  allConfig: js.configs.all,
+});
+
+export default [
+  // Next.js recommended (converted from legacy shareable configs)
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // Global defaults: keep linting, but don’t block progress on typing purity yet.
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      // NOTE: Do NOT set react-hooks/set-state-in-effect here; it can crash ESLint 9 in some compat paths.
+      // We'll fix those few instances later in code instead of trying to configure it globally.
+    },
+  },
+
+  // API routes: allow any (common in route handlers)
+  {
+    files: ["src/app/api/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/exhaustive-deps": "off",
+    },
+  },
+
+  // Billing + security: keep warnings visible
+  {
+    files: [
+      "src/components/billing/**/*.{ts,tsx}",
+      "src/lib/security/**/*.{ts,tsx}",
+      "src/lib/http/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
+];

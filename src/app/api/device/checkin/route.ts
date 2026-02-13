@@ -1,9 +1,21 @@
+// REPLACE ENTIRE FILE: src/app/api/device/checkin/route.ts
+//
+// HARDENING (this pass):
+// - Adds UUID tripwire for token_id/device_id.
+// - Adds runtime/nodejs export.
+// - Adds optional audit write (best-effort) without failing checkin.
+// - Tightens status codes: 401 missing bearer, 403 invalid/revoked.
+// - Keeps rate limit and best-effort device update.
+//
+// NOTE: This is device-to-server; no user session / billing gate here.
+
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { hashToken } from "@/lib/device/tokens";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * Hardened device check-in (no anon + deviceKey).
@@ -20,6 +32,12 @@ export const dynamic = "force-dynamic";
  * Response:
  *   { ok:true, device_id, token_id }
  */
+
+function rbAssertUuid(label: string, value: string) {
+  const ok = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  if (!ok) throw new Error(`${label} must be a UUID. Got: ${value}`);
+}
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -53,6 +71,9 @@ export async function POST(req: Request) {
     if (!tok || tok.revoked_at) {
       return NextResponse.json({ ok: false, error: "Invalid or revoked token" }, { status: 403 });
     }
+
+    rbAssertUuid("token_id", String(tok.id));
+    rbAssertUuid("device_id", String(tok.device_id));
 
     const now = new Date().toISOString();
 
@@ -95,8 +116,25 @@ export async function POST(req: Request) {
       }
     }
 
+    // Best-effort audit (do not fail checkin if audit fails)
+    try {
+      await admin.from("rb_audit").insert({
+        shop_id: null,
+        actor_kind: "device",
+        actor_user_id: null,
+        action: "device.checkin",
+        entity_type: "device",
+        entity_id: tok.device_id,
+        details: { token_id: tok.id, reported_version: version, at: now },
+      });
+    } catch {
+      // ignore
+    }
+
     return NextResponse.json({ ok: true, device_id: tok.device_id, token_id: tok.id });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
+    const msg = e?.message ?? String(e);
+    const status = /missing authorization/i.test(msg) ? 401 : /must be a uuid/i.test(msg) ? 400 : 500;
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

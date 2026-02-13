@@ -1,12 +1,13 @@
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import SideNav from "@/components/SideNav";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { rbGetShop } from "@/lib/rb";
+import { BillingGate, BillingGateMode } from "@/components/billing/BillingGate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,6 +54,27 @@ async function isTrustedDevice(supabase: any, userId: string) {
   }
 }
 
+function getGateMode(): BillingGateMode {
+  const m = (process.env.RUNBOOK_BILLING_GATE_MODE ?? "").trim().toLowerCase();
+  if (m === "hard" || m === "soft" || m === "hybrid") return m;
+  return "hybrid";
+}
+
+function getGraceDays(): number {
+  const v = Number.parseInt(process.env.RUNBOOK_BILLING_GRACE_DAYS ?? "14", 10);
+  if (!Number.isFinite(v) || v < 0 || v > 120) return 14;
+  return v;
+}
+
+function getEmergencyUnlock(): boolean {
+  const s = (process.env.RUNBOOK_BILLING_EMERGENCY_UNLOCK ?? "false").trim().toLowerCase();
+  return s === "1" || s === "true" || s === "yes" || s === "on";
+}
+
+function getUnlockShopsCsv(): string {
+  return (process.env.RUNBOOK_BILLING_UNLOCK_SHOPS ?? "").trim();
+}
+
 type Props = {
   params: Promise<{ shopId: string }>;
   children: React.ReactNode;
@@ -87,6 +109,16 @@ export default async function ShopLayout({ params, children }: Props) {
 
   const shop = await rbGetShop(shopId);
   const shopName = shop?.name ?? "Shop";
+
+  const gateMode = getGateMode();
+  const graceDays = getGraceDays();
+  const emergencyUnlock = getEmergencyUnlock();
+  const unlockShopsCsv = getUnlockShopsCsv();
+
+  // Allow /billing to always render (even hard mode), so users can subscribe/cancel.
+  const h = await headers();
+  const nextUrl = h.get("next-url") ?? "";
+  const isBillingPath = nextUrl.includes(`/shops/${shopId}/billing`);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -155,7 +187,21 @@ export default async function ShopLayout({ params, children }: Props) {
           <SideNav isPlatformAdmin={isPlatformAdmin} mode="shop" shopId={shopId} shopName={shopName} />
         </aside>
 
-        <main style={{ minWidth: 0 }}>{children}</main>
+        <main style={{ minWidth: 0 }}>
+          {isBillingPath ? (
+            children
+          ) : (
+            <BillingGate
+              shopId={shopId}
+              mode={gateMode}
+              graceDays={graceDays}
+              emergencyUnlock={emergencyUnlock}
+              unlockShopsCsv={unlockShopsCsv}
+            >
+              {children}
+            </BillingGate>
+          )}
+        </main>
       </div>
     </div>
   );

@@ -1,8 +1,18 @@
+// REPLACE ENTIRE FILE: src/app/api/billing/sync-from-session/route.ts
+//
+// REFACTOR (this pass):
+// - Uses centralized authz.ts (AAL2 + shop access/admin).
+// - Keeps rate limit, Stripe sync logic, and metadata stamping.
+// - UUID tripwire handled by authz.assertUuid.
+//
+// NOTE: This is a billing sync route; it should NOT be blocked by billing gate.
+// It *must* be protected by shop access / admin only.
+
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { getStripe } from "@/lib/stripe/server";
+import { assertUuid, requireAal2, requireShopAccessOrAdminAal2 } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,11 +27,8 @@ export async function POST(req: Request) {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
     rateLimitOrThrow({ key: `billing:sync:${ip}`, limit: 60, windowMs: 60_000 });
 
-    const supabase = await supabaseServer();
-    const { data: userRes, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !userRes.user) {
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-    }
+    // Require user + AAL2 (gives us user identity; shop access checked after we learn shopId from session)
+    await requireAal2();
 
     const body = await req.json().catch(() => ({}));
     const session_id = String((body as any)?.session_id ?? "").trim();
@@ -41,6 +48,11 @@ export async function POST(req: Request) {
       );
     }
 
+    assertUuid("shopId", shopId);
+
+    // Protect: caller must be a member of this shop or platform admin (AAL2 required).
+    await requireShopAccessOrAdminAal2(shopId);
+
     const subId = session.subscription ? String(session.subscription) : null;
 
     let billing_status: string | null = "active";
@@ -54,10 +66,9 @@ export async function POST(req: Request) {
       const periodEndSec = line?.period?.end;
       nextPeriodEnd = isoFromSeconds(periodEndSec);
 
+      // Ensure future subscription events can map back to shop.
       await stripe.subscriptions.update(sub.id, { metadata: { shop_id: shopId, app: "runbook.control" } });
     }
-
-    const admin = supabaseAdmin();
 
     const patch: any = {
       stripe_customer_id: session.customer ?? null,
@@ -66,6 +77,7 @@ export async function POST(req: Request) {
     };
     if (nextPeriodEnd) patch.billing_current_period_end = nextPeriodEnd;
 
+    const admin = supabaseAdmin();
     const { data, error } = await admin
       .from("rb_shops")
       .update(patch)
@@ -73,12 +85,18 @@ export async function POST(req: Request) {
       .select("id,name,billing_status,stripe_customer_id,stripe_subscription_id,billing_current_period_end")
       .single();
 
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
     return NextResponse.json({ ok: true, shop: data });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
+    const msg = e?.message ?? String(e);
+    const status =
+      /not authenticated/i.test(msg) ? 401
+      : /mfa required/i.test(msg) ? 403
+      : /access denied/i.test(msg) ? 403
+      : /must be a uuid/i.test(msg) ? 400
+      : 500;
+
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

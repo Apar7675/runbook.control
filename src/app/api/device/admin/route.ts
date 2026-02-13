@@ -1,20 +1,42 @@
+// REPLACE ENTIRE FILE: src/app/api/device/admin/route.ts
+//
+// HARDENING (this pass):
+// - Rate limit.
+// - UUID tripwire for deviceId.
+// - Centralized authz: requires platform admin + AAL2.
+// - Keeps DB-enforced RPC model (best place to centralize permissions + auditing).
+// - Normalizes response shape to { ok, ... }.
+// - Keeps activation token generation server-side and returns plaintext once.
+// - Uses consistent status mapping from RPC errors.
+
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { newToken, sha256Hex } from "@/lib/crypto";
+import { assertUuid, requirePlatformAdminAal2 } from "@/lib/authz";
+import { supabaseServer } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") ?? "local";
+    rateLimitOrThrow({ key: `device:admin:${ip}`, limit: 120, windowMs: 60_000 });
+
     const body = await req.json().catch(() => ({}));
-    const action = String(body.action ?? "").trim(); // toggle_status | regen_activation | delete_device | deactivate_token | force_reactivation
-    const deviceId = String(body.deviceId ?? "").trim();
+    const action = String((body as any)?.action ?? "").trim(); // toggle_status | regen_activation | delete_device | deactivate_token | force_reactivation
+    const deviceId = String((body as any)?.deviceId ?? "").trim();
 
     if (!action || !deviceId) {
-      return NextResponse.json({ error: "Missing action or deviceId" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Missing action or deviceId" }, { status: 400 });
     }
 
+    assertUuid("deviceId", deviceId);
+
+    // Require platform admin with MFA
+    await requirePlatformAdminAal2();
+
     const supabase = await supabaseServer();
-    const { data: me } = await supabase.auth.getUser();
-    if (!me.user?.id) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     // Helper to map common business errors to better status codes
     const mapRpcError = (msg: string) => {
@@ -29,7 +51,7 @@ export async function POST(req: Request) {
         p_device_id: deviceId,
       });
 
-      if (error) return NextResponse.json({ error: error.message }, { status: mapRpcError(error.message) });
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: mapRpcError(error.message) });
 
       return NextResponse.json({ ok: true, status: data }, { status: 200 });
     }
@@ -47,7 +69,7 @@ export async function POST(req: Request) {
         p_force: action === "force_reactivation",
       });
 
-      if (error) return NextResponse.json({ error: error.message }, { status: mapRpcError(error.message) });
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: mapRpcError(error.message) });
 
       // Only plaintext token is returned once, from server
       return NextResponse.json({ ok: true, activationPlain, expiresAt }, { status: 200 });
@@ -58,26 +80,29 @@ export async function POST(req: Request) {
         p_device_id: deviceId,
       });
 
-      if (error) return NextResponse.json({ error: error.message }, { status: mapRpcError(error.message) });
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: mapRpcError(error.message) });
 
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
     if (action === "delete_device") {
-      const confirmName = String(body.confirmName ?? "").trim();
+      const confirmName = String((body as any)?.confirmName ?? "").trim();
 
       const { error } = await supabase.rpc("rb_device_delete", {
         p_device_id: deviceId,
         p_confirm_name: confirmName,
       });
 
-      if (error) return NextResponse.json({ error: error.message }, { status: mapRpcError(error.message) });
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: mapRpcError(error.message) });
 
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400 });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? String(e) }, { status: 500 });
+    const msg = e?.message ?? String(e);
+    const status =
+      /not authenticated/i.test(msg) ? 401 : /mfa required/i.test(msg) ? 403 : /not a platform admin/i.test(msg) ? 403 : /must be a uuid/i.test(msg) ? 400 : 500;
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
