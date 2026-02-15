@@ -1,13 +1,3 @@
-// REPLACE ENTIRE FILE: src/app/api/audit/export/route.ts
-//
-// REFACTOR (this pass):
-// - Uses centralized authz.ts: requirePlatformAdminAal2().
-// - Adds UUID tripwire for shop filter when provided.
-// - Keeps output CSV format + headers.
-// - Uses admin client to read rb_audit_log (service role).
-// - Keeps rate limiting.
-// - Adds runtime/nodejs export + consistent error/status mapping.
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
@@ -16,10 +6,17 @@ import { assertUuid, requirePlatformAdminAal2 } from "@/lib/authz";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function csvEscape(v: any) {
-  const s = v === null || v === undefined ? "" : String(v);
+function csvSafeCell(v: any) {
+  // CSV injection prevention: if a cell begins with = + - @, prefix with '
+  // Also escape quotes/newlines/commas correctly.
+  let s = v === null || v === undefined ? "" : String(v);
+
+  // prevent formulas
+  if (s.length > 0 && /^[=+\-@]/.test(s)) s = "'" + s;
+
   const needs = s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r");
   if (!needs) return s;
+
   return `"${s.replace(/"/g, '""')}"`;
 }
 
@@ -31,61 +28,61 @@ export async function GET(req: Request) {
     await requirePlatformAdminAal2();
 
     const url = new URL(req.url);
-    const shop = (url.searchParams.get("shop") ?? "").trim();
-    const q = (url.searchParams.get("q") ?? "").trim();
-    const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? "1000"), 1), 5000);
+    const sp = url.searchParams;
 
-    if (shop) assertUuid("shop", shop);
+    const limitRaw = Number(sp.get("limit") ?? "1000");
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 5000) : 1000;
+
+    const before = (sp.get("before") ?? "").trim();
+    const shop_id = (sp.get("shop_id") ?? "").trim();
+    const action = (sp.get("action") ?? "").trim();
+    const actor_email = (sp.get("actor_email") ?? "").trim();
+    const target_id = (sp.get("target_id") ?? "").trim();
+
+    if (shop_id) assertUuid("shop_id", shop_id);
 
     const admin = supabaseAdmin();
 
-    let query = admin
+    let q = admin
       .from("rb_audit_log")
-      .select("created_at,action,shop_id,rb_shops(name),actor_email,actor_user_id,target_type,target_id,meta")
+      .select("created_at,action,shop_id,actor_email,actor_user_id,target_type,target_id,meta")
       .order("created_at", { ascending: false })
       .limit(limit);
 
-    if (shop) query = query.eq("shop_id", shop);
+    if (before) q = q.lt("created_at", before);
+    if (shop_id) q = q.eq("shop_id", shop_id);
+    if (action) q = q.ilike("action", `%${action}%`);
+    if (actor_email) q = q.ilike("actor_email", `%${actor_email}%`);
+    if (target_id) q = q.ilike("target_id", `%${target_id}%`);
 
-    if (q) {
-      const like = `%${q}%`;
-      query = query.or(`action.ilike.${like},target_type.ilike.${like},actor_email.ilike.${like},target_id.ilike.${like}`);
-    }
+    const { data: rowsRaw, error } = await q;
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
-    const { data: rowsRaw, error } = await query;
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-
-    const rows = (rowsRaw ?? []).map((r: any) => ({
-      created_at: r.created_at,
-      action: r.action,
-      shop_id: r.shop_id ?? null,
-      shop_name: r?.rb_shops?.name ?? null,
-      actor_email: r.actor_email ?? null,
-      actor_user_id: r.actor_user_id ?? null,
-      target_type: r.target_type ?? null,
-      target_id: r.target_id ?? null,
-      meta: r.meta ?? null,
-    }));
-
-    const header = ["created_at", "action", "shop_id", "shop_name", "actor_email", "actor_user_id", "target_type", "target_id", "meta"];
+    const header = [
+      "created_at",
+      "action",
+      "shop_id",
+      "actor_email",
+      "actor_user_id",
+      "target_type",
+      "target_id",
+      "meta",
+    ];
 
     const lines: string[] = [];
     lines.push(header.join(","));
 
-    for (const r of rows) {
+    for (const r of rowsRaw ?? []) {
       lines.push(
         [
-          csvEscape(r.created_at),
-          csvEscape(r.action),
-          csvEscape(r.shop_id),
-          csvEscape(r.shop_name),
-          csvEscape(r.actor_email),
-          csvEscape(r.actor_user_id),
-          csvEscape(r.target_type),
-          csvEscape(r.target_id),
-          csvEscape(JSON.stringify(r.meta ?? {})),
+          csvSafeCell(r.created_at),
+          csvSafeCell(r.action),
+          csvSafeCell(r.shop_id),
+          csvSafeCell(r.actor_email),
+          csvSafeCell(r.actor_user_id),
+          csvSafeCell(r.target_type),
+          csvSafeCell(r.target_id),
+          csvSafeCell(JSON.stringify(r.meta ?? {})),
         ].join(",")
       );
     }
@@ -97,6 +94,7 @@ export async function GET(req: Request) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
       },
     });
   } catch (e: any) {

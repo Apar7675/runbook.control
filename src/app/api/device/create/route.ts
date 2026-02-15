@@ -24,13 +24,16 @@ export async function POST(req: Request) {
     assertUuid("shop_id", shop_id);
 
     const admin = supabaseAdmin();
+
     const { data: device, error } = await admin
       .from("rb_devices")
       .insert({ name, device_type, shop_id, status: "active" })
       .select("*")
       .maybeSingle();
 
-    if (error || !device) return NextResponse.json({ ok: false, error: error?.message ?? "Insert failed" }, { status: 500 });
+    if (error || !device) {
+      return NextResponse.json({ ok: false, error: error?.message ?? "Insert failed" }, { status: 500 });
+    }
 
     try {
       await writeAudit({
@@ -48,11 +51,12 @@ export async function POST(req: Request) {
   } catch (e: any) {
     const msg = e?.message ?? "Server error";
     const status =
-      /not authenticated/i.test(msg) ? 401
-      : /mfa required/i.test(msg) ? 403
-      : /not a platform admin/i.test(msg) ? 403
-      : /must be a uuid/i.test(msg) ? 400
-      : 500;
+      /not authenticated/i.test(msg) ? 401 :
+      /mfa required/i.test(msg) ? 403 :
+      /not a platform admin/i.test(msg) ? 403 :
+      /must be a uuid/i.test(msg) ? 400 :
+      500;
+
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

@@ -1,52 +1,39 @@
-// REPLACE ENTIRE FILE: src/app/api/device/checkin/route.ts
-//
-// HARDENING (this pass):
-// - Adds UUID tripwire for token_id/device_id.
-// - Adds runtime/nodejs export.
-// - Adds optional audit write (best-effort) without failing checkin.
-// - Tightens status codes: 401 missing bearer, 403 invalid/revoked.
-// - Keeps rate limit and best-effort device update.
-//
-// NOTE: This is device-to-server; no user session / billing gate here.
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { writeAudit } from "@/lib/audit/writeAudit";
 import { hashToken } from "@/lib/device/tokens";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-/**
- * Hardened device check-in (no anon + deviceKey).
- *
- * Request:
- *   POST /api/device/checkin
- *   Authorization: Bearer <raw device token>
- *   Body: { version?: string }
- *
- * Effects (service-role):
- *   - Updates rb_device_tokens.last_seen_at for the token
- *   - Updates rb_devices.last_seen_at and rb_devices.reported_version (if columns exist)
- *
- * Response:
- *   { ok:true, device_id, token_id }
- */
 
 function rbAssertUuid(label: string, value: string) {
   const ok = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   if (!ok) throw new Error(`${label} must be a UUID. Got: ${value}`);
 }
 
+function getBearerToken(req: Request): string | null {
+  const h = req.headers.get("authorization") ?? "";
+  const m = h.match(/^Bearer\s+(.+)$/i);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * POST /api/device/checkin
+ * Authorization: Bearer <raw token>
+ * Body: { version?: string }
+ *
+ * Effects:
+ * - Updates rb_device_tokens.last_seen_at
+ * - Updates rb_devices.last_seen_at (+ reported_version if exists)
+ */
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
-    rateLimitOrThrow({ key: `device:checkin:${ip}`, limit: 600, windowMs: 60_000 });
+    // IP limiter (pre-token)
+    rateLimitOrThrow({ key: `device:checkin:ip:${ip}`, limit: 600, windowMs: 60_000 });
 
-    const auth = req.headers.get("authorization") ?? "";
-    const m = auth.match(/^Bearer\s+(.+)$/i);
-    const rawToken = (m?.[1] ?? "").trim();
-
+    const rawToken = getBearerToken(req);
     if (!rawToken) {
       return NextResponse.json({ ok: false, error: "Missing Authorization: Bearer <token>" }, { status: 401 });
     }
@@ -57,38 +44,51 @@ export async function POST(req: Request) {
     const admin = supabaseAdmin();
     const token_hash = hashToken(rawToken);
 
-    // Find active token
+    // Find token by hash
     const { data: tok, error: tokErr } = await admin
       .from("rb_device_tokens")
       .select("id,device_id,revoked_at")
       .eq("token_hash", token_hash)
       .maybeSingle();
 
-    if (tokErr) {
-      return NextResponse.json({ ok: false, error: tokErr.message }, { status: 500 });
-    }
+    if (tokErr) return NextResponse.json({ ok: false, error: tokErr.message }, { status: 500 });
 
-    if (!tok || tok.revoked_at) {
-      return NextResponse.json({ ok: false, error: "Invalid or revoked token" }, { status: 403 });
-    }
+    if (!tok) return NextResponse.json({ ok: false, error: "Invalid token" }, { status: 401 });
 
     rbAssertUuid("token_id", String(tok.id));
     rbAssertUuid("device_id", String(tok.device_id));
 
-    const now = new Date().toISOString();
+    if (tok.revoked_at) return NextResponse.json({ ok: false, error: "Token revoked" }, { status: 403 });
 
-    // Update token last_seen_at
-    const { error: upTokErr } = await admin
-      .from("rb_device_tokens")
-      .update({ last_seen_at: now })
-      .eq("id", tok.id);
+    // device limiter (post-token)
+    rateLimitOrThrow({ key: `device:checkin:dev:${tok.device_id}`, limit: 600, windowMs: 60_000 });
 
-    if (upTokErr) {
-      return NextResponse.json({ ok: false, error: upTokErr.message }, { status: 500 });
+    // Enforce device status (disabled devices should not keep checking in)
+    const { data: dev, error: devErr } = await admin
+      .from("rb_devices")
+      .select("id,shop_id,status,name,device_type")
+      .eq("id", tok.device_id)
+      .maybeSingle();
+
+    if (devErr) return NextResponse.json({ ok: false, error: devErr.message }, { status: 500 });
+
+    // If device missing, treat token as invalid (no info leak)
+    if (!dev) return NextResponse.json({ ok: false, error: "Invalid token" }, { status: 401 });
+
+    rbAssertUuid("device.id", String(dev.id));
+    rbAssertUuid("device.shop_id", String(dev.shop_id));
+
+    if (String(dev.status ?? "").toLowerCase() !== "active") {
+      return NextResponse.json({ ok: false, error: "Device inactive" }, { status: 403 });
     }
 
-    // Update device last_seen/version (best-effort; schema may vary)
-    // Try update with version column first; fallback to only last_seen_at.
+    const now = new Date().toISOString();
+
+    // Update token last_seen_at (required)
+    const { error: upTokErr } = await admin.from("rb_device_tokens").update({ last_seen_at: now }).eq("id", tok.id);
+    if (upTokErr) return NextResponse.json({ ok: false, error: upTokErr.message }, { status: 500 });
+
+    // Update device last_seen/version (best-effort schema compatibility)
     if (version) {
       const { error: devErr1 } = await admin
         .from("rb_devices")
@@ -96,45 +96,39 @@ export async function POST(req: Request) {
         .eq("id", tok.device_id);
 
       if (devErr1) {
-        const { error: devErr2 } = await admin
-          .from("rb_devices")
-          .update({ last_seen_at: now })
-          .eq("id", tok.device_id);
-
-        if (devErr2) {
-          // Do not fail checkin if device update fails; token last_seen already updated
-        }
+        // fallback
+        await admin.from("rb_devices").update({ last_seen_at: now }).eq("id", tok.device_id);
       }
     } else {
-      const { error: devErr } = await admin
-        .from("rb_devices")
-        .update({ last_seen_at: now })
-        .eq("id", tok.device_id);
-
-      if (devErr) {
-        // Do not fail checkin if device update fails; token last_seen already updated
-      }
+      await admin.from("rb_devices").update({ last_seen_at: now }).eq("id", tok.device_id);
     }
 
-    // Best-effort audit (do not fail checkin if audit fails)
+    // Best-effort audit (consistent with rest of codebase)
     try {
-      await admin.from("rb_audit").insert({
-        shop_id: null,
-        actor_kind: "device",
+      await writeAudit({
         actor_user_id: null,
+        actor_email: null,
         action: "device.checkin",
-        entity_type: "device",
-        entity_id: tok.device_id,
-        details: { token_id: tok.id, reported_version: version, at: now },
+        target_type: "device",
+        target_id: tok.device_id,
+        shop_id: dev.shop_id ?? null,
+        meta: {
+          token_id: tok.id,
+          reported_version: version,
+          device_name: dev.name ?? null,
+          device_type: dev.device_type ?? null,
+          at: now,
+        },
       });
-    } catch {
-      // ignore
-    }
+    } catch {}
 
-    return NextResponse.json({ ok: true, device_id: tok.device_id, token_id: tok.id });
+    return NextResponse.json({ ok: true, device_id: tok.device_id, token_id: tok.id, at: now });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status = /missing authorization/i.test(msg) ? 401 : /must be a uuid/i.test(msg) ? 400 : 500;
+    const status =
+      /missing authorization/i.test(msg) ? 401 :
+      /must be a uuid/i.test(msg) ? 400 :
+      500;
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

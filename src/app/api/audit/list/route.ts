@@ -1,13 +1,3 @@
-// REPLACE ENTIRE FILE: src/app/api/audit/list/route.ts
-//
-// REFACTOR (this pass):
-// - Uses centralized authz.ts: requirePlatformAdminAal2().
-// - Adds UUID tripwire for shop_id filter when provided.
-// - Keeps same query params + output shape.
-// - Uses admin client to read rb_audit_log (service role).
-// - Keeps rate limiting.
-// - Adds runtime/nodejs export + consistent error/status mapping.
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
@@ -18,17 +8,17 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/audit/list
+ *
  * Query params:
- *   limit=number (default 200, max 500)
- *   before=ISO timestamp (optional pagination, returns rows < before)
- *   shop_id=uuid (optional)
- *   action=string (optional substring match)
- *   actor_email=string (optional substring match)
- *   target_id=string (optional substring match)
+ *   limit (default 200, max 500)
+ *   before (ISO pagination)
+ *   shop_id (uuid)
+ *   action (substring)
+ *   actor_email (substring)
+ *   target_id (substring)
  *
  * Returns:
  *   { ok:true, rows: AuditRow[] }
- *   or { ok:false, error }
  */
 export async function GET(req: Request) {
   try {
@@ -41,7 +31,9 @@ export async function GET(req: Request) {
     const sp = url.searchParams;
 
     const limitRaw = Number(sp.get("limit") ?? "200");
-    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 200;
+    const limit = Number.isFinite(limitRaw)
+      ? Math.min(Math.max(limitRaw, 1), 500)
+      : 200;
 
     const before = (sp.get("before") ?? "").trim();
     const shop_id = (sp.get("shop_id") ?? "").trim();
@@ -53,22 +45,22 @@ export async function GET(req: Request) {
 
     const admin = supabaseAdmin();
 
-    // Include shop name via FK relation if available (rb_audit_log.shop_id -> rb_shops.id)
     let q = admin
       .from("rb_audit_log")
-      .select("id,created_at,actor_user_id,actor_email,action,target_type,target_id,shop_id,meta, rb_shops(name)")
+      .select("id,created_at,actor_user_id,actor_email,action,target_type,target_id,shop_id,meta")
       .order("created_at", { ascending: false })
       .limit(limit);
 
     if (before) q = q.lt("created_at", before);
-
     if (shop_id) q = q.eq("shop_id", shop_id);
     if (action) q = q.ilike("action", `%${action}%`);
     if (actor_email) q = q.ilike("actor_email", `%${actor_email}%`);
     if (target_id) q = q.ilike("target_id", `%${target_id}%`);
 
     const { data: rowsRaw, error } = await q;
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
 
     const rows = (rowsRaw ?? []).map((r: any) => ({
       id: r.id,
@@ -79,7 +71,6 @@ export async function GET(req: Request) {
       target_type: r.target_type ?? null,
       target_id: r.target_id ?? null,
       shop_id: r.shop_id ?? null,
-      shop_name: r?.rb_shops?.name ?? null,
       meta: r.meta ?? null,
     }));
 

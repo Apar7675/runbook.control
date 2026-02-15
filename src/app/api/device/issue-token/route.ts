@@ -1,12 +1,3 @@
-// REPLACE ENTIRE FILE: src/app/api/device/issue-token/route.ts
-//
-// REFACTOR (this pass):
-// - Uses centralized authz.ts: requirePlatformAdminAal2() + assertUuid().
-// - Keeps rate limit.
-// - Keeps best-effort idempotency via rb_idempotency_keys if table exists.
-// - Keeps audit write.
-// - No billing gate (admin endpoint).
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
@@ -40,9 +31,9 @@ async function rbTryConsumeIdempotencyKey(key: string): Promise<boolean> {
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
-    rateLimitOrThrow({ key: `device:issue:${ip}`, limit: 60, windowMs: 60_000 });
+    rateLimitOrThrow({ key: `device:issue:ip:${ip}`, limit: 60, windowMs: 60_000 });
 
-    // AAL2 + platform admin enforced here
+    // AAL2 + platform admin
     const { user } = await requirePlatformAdminAal2();
 
     const body = await req.json().catch(() => ({}));
@@ -52,22 +43,40 @@ export async function POST(req: Request) {
     if (!device_id) return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
     assertUuid("device_id", device_id);
 
+    // Rate limit by device too (helps if many admins behind one IP)
+    rateLimitOrThrow({ key: `device:issue:dev:${device_id}`, limit: 30, windowMs: 60_000 });
+
+    const admin = supabaseAdmin();
+
+    // Enforce device exists + active before issuing
+    const { data: dev, error: devErr } = await admin
+      .from("rb_devices")
+      .select("id,shop_id,name,device_type,status")
+      .eq("id", device_id)
+      .maybeSingle();
+
+    if (devErr) return NextResponse.json({ ok: false, error: devErr.message }, { status: 500 });
+    if (!dev) return NextResponse.json({ ok: false, error: "Device not found" }, { status: 404 });
+
+    const status = String(dev.status ?? "").toLowerCase();
+    if (status !== "active") {
+      return NextResponse.json({ ok: false, error: "Device inactive" }, { status: 403 });
+    }
+
     const idem = String(req.headers.get("idempotency-key") ?? "").trim();
     const canProceed = await rbTryConsumeIdempotencyKey(idem);
     if (!canProceed) {
-      // If you want to return the prior token, we need durable storage of the issued token_id by idem key.
       return NextResponse.json({ ok: true, deduped: true }, { status: 200 });
     }
 
     const raw = generateRawToken();
     const token_hash = hashToken(raw);
-
-    const admin = supabaseAdmin();
+    const nowIso = new Date().toISOString();
 
     // Rotate: revoke any active tokens for this device
     const { error: revokeErr } = await admin
       .from("rb_device_tokens")
-      .update({ revoked_at: new Date().toISOString() })
+      .update({ revoked_at: nowIso })
       .eq("device_id", device_id)
       .is("revoked_at", null);
 
@@ -81,7 +90,7 @@ export async function POST(req: Request) {
 
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
-    // Audit (best-effort)
+    // Best-effort audit with shop_id + device metadata
     try {
       await writeAudit({
         actor_user_id: user.id,
@@ -89,22 +98,28 @@ export async function POST(req: Request) {
         action: "device_token.issue",
         target_type: "device",
         target_id: device_id,
-        meta: { token_id: inserted?.id ?? null, label, idempotency_key: idem || null },
+        shop_id: dev.shop_id ?? null,
+        meta: {
+          token_id: inserted?.id ?? null,
+          label,
+          idempotency_key: idem || null,
+          device_name: dev.name ?? null,
+          device_type: dev.device_type ?? null,
+          at: nowIso,
+        },
       });
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     // Return raw token ONCE
     return NextResponse.json({ ok: true, token: raw, token_id: inserted?.id ?? null });
   } catch (e: any) {
     const msg = e?.message ?? "Server error";
     const status =
-      /not authenticated/i.test(msg) ? 401
-      : /mfa required/i.test(msg) ? 403
-      : /not a platform admin/i.test(msg) ? 403
-      : /must be a uuid/i.test(msg) ? 400
-      : 500;
+      /not authenticated/i.test(msg) ? 401 :
+      /mfa required/i.test(msg) ? 403 :
+      /not a platform admin/i.test(msg) ? 403 :
+      /must be a uuid/i.test(msg) ? 400 :
+      500;
 
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
