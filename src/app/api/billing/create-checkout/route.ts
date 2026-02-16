@@ -1,15 +1,16 @@
 // REPLACE ENTIRE FILE: src/app/api/billing/create-checkout/route.ts
 //
-// FIX:
-// - Desktop was hitting this endpoint with GET → 405 (Method Not Allowed)
-// - We now support BOTH GET (?shop_id=) and POST ({ shop_id }) so desktop + browser flows work.
-// - Keeps centralized authz.ts (AAL2 + shop access/admin + UUID tripwire).
-// - Keeps rate limit + TRIAL checkout behavior + metadata stamping.
+// Supports:
+// - Desktop Bearer token auth
+// - Browser session auth (AAL2)
+// - GET (?shop_id=) and POST ({ shop_id })
+// - Stripe 30-day trial checkout
 
 import { NextResponse } from "next/server";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { getStripe } from "@/lib/stripe/server";
 import { assertUuid, requireShopAccessOrAdminAal2 } from "@/lib/authz";
+import { requireUserFromBearer } from "@/lib/desktopAuth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,20 +22,38 @@ function getIp(req: Request) {
 }
 
 function getOrigin(req: Request) {
-  const url = new URL(req.url);
-  return url.origin;
+  return new URL(req.url).origin;
 }
 
-async function createCheckoutForShop(req: Request, shopIdRaw: string) {
+async function authenticate(req: Request, shopId: string) {
+  const authHeader = req.headers.get("authorization");
+
+  // Desktop flow (Bearer token)
+  if (authHeader?.startsWith("Bearer ")) {
+    const { user } = await requireUserFromBearer(req);
+    if (!user?.id) throw new Error("Invalid bearer token");
+    return user;
+  }
+
+  // Browser flow (Control UI session)
+  await requireShopAccessOrAdminAal2(shopId);
+  return null;
+}
+
+async function createCheckout(req: Request, shopIdRaw: string) {
   const shopId = String(shopIdRaw ?? "").trim();
-  if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
+  if (!shopId) {
+    return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
+  }
+
   assertUuid("shop_id", shopId);
 
-  // Requires AAL2 + (shop member OR platform admin)
-  await requireShopAccessOrAdminAal2(shopId);
+  await authenticate(req, shopId);
 
   const priceId = (process.env.STRIPE_PRICE_ID ?? "").trim();
-  if (!priceId) return NextResponse.json({ ok: false, error: "Missing STRIPE_PRICE_ID" }, { status: 500 });
+  if (!priceId) {
+    return NextResponse.json({ ok: false, error: "Missing STRIPE_PRICE_ID" }, { status: 500 });
+  }
 
   const stripe = getStripe();
   const origin = getOrigin(req);
@@ -60,58 +79,54 @@ async function createCheckoutForShop(req: Request, shopIdRaw: string) {
     cancel_url: cancelUrl,
   });
 
-  if (!session.url) return NextResponse.json({ ok: false, error: "No checkout URL returned" }, { status: 500 });
+  if (!session.url) {
+    return NextResponse.json({ ok: false, error: "Stripe did not return URL" }, { status: 500 });
+  }
 
-  return NextResponse.json({ ok: true, url: session.url, session_id: session.id, trial_days: TRIAL_DAYS });
+  return NextResponse.json({
+    ok: true,
+    url: session.url,
+    session_id: session.id,
+    trial_days: TRIAL_DAYS,
+  });
 }
 
-// Desktop/browser may preflight with OPTIONS; be nice.
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204 });
 }
 
 export async function GET(req: Request) {
   try {
-    const ip = getIp(req);
-    rateLimitOrThrow({ key: `billing:checkout:${ip}`, limit: 60, windowMs: 60_000 });
+    rateLimitOrThrow({
+      key: `billing:checkout:${getIp(req)}`,
+      limit: 60,
+      windowMs: 60_000,
+    });
 
     const url = new URL(req.url);
     const shopId = url.searchParams.get("shop_id") ?? "";
 
-    return await createCheckoutForShop(req, shopId);
+    return await createCheckout(req, shopId);
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status =
-      /not authenticated/i.test(msg) ? 401
-      : /mfa required/i.test(msg) ? 403
-      : /access denied/i.test(msg) ? 403
-      : /not a platform admin/i.test(msg) ? 403
-      : /must be a uuid/i.test(msg) ? 400
-      : 500;
-
-    return NextResponse.json({ ok: false, error: msg }, { status });
+    return NextResponse.json({ ok: false, error: msg }, { status: 401 });
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const ip = getIp(req);
-    rateLimitOrThrow({ key: `billing:checkout:${ip}`, limit: 60, windowMs: 60_000 });
+    rateLimitOrThrow({
+      key: `billing:checkout:${getIp(req)}`,
+      limit: 60,
+      windowMs: 60_000,
+    });
 
     const body = await req.json().catch(() => ({}));
     const shopId = String((body as any)?.shop_id ?? "").trim();
 
-    return await createCheckoutForShop(req, shopId);
+    return await createCheckout(req, shopId);
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status =
-      /not authenticated/i.test(msg) ? 401
-      : /mfa required/i.test(msg) ? 403
-      : /access denied/i.test(msg) ? 403
-      : /not a platform admin/i.test(msg) ? 403
-      : /must be a uuid/i.test(msg) ? 400
-      : 500;
-
-    return NextResponse.json({ ok: false, error: msg }, { status });
+    return NextResponse.json({ ok: false, error: msg }, { status: 401 });
   }
 }
