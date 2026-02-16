@@ -171,21 +171,28 @@ export async function POST(req: Request) {
       membership_table: MEMBER_TABLE,
     });
   } catch (e: any) {
-    const msg = String(e?.message ?? e);
+  const msg = String(e?.message ?? e);
 
-    // If this is the schema-cache error, call it out explicitly.
-    if (isPostgrestSchemaCacheError(msg)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            msg +
-            " | This usually means Control is NOT using the service-role key, or the role has no privileges on the table. " +
-            "Verify SUPABASE_SERVICE_ROLE_KEY in Vercel and that /lib/supabase/admin uses it.",
-        },
-        { status: 500 }
-      );
-    }
+  // 🔥 force the real error into Vercel logs
+  console.error("DESKTOP_BOOTSTRAP_ERROR:", msg);
+
+  if (isPostgrestSchemaCacheError(msg)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          msg +
+          " | This usually means Control is NOT using the service-role key, or the role has no privileges on the table. " +
+          "Verify SUPABASE_SERVICE_ROLE_KEY in Vercel and that /lib/supabase/admin uses it.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const status = /not authenticated/i.test(msg) ? 401 : 500;
+  return NextResponse.json({ ok: false, error: msg }, { status });
+}
+
 
     const status = /not authenticated/i.test(msg) ? 401 : 500;
     return NextResponse.json({ ok: false, error: msg }, { status });
