@@ -1,13 +1,23 @@
-﻿import { NextResponse } from "next/server";
+﻿// REPLACE ENTIRE FILE: src/app/api/desktop/bootstrap/route.ts
+
+import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireUserFromBearer } from "@/lib/desktopAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function s(v: any) { return String(v ?? "").trim(); }
-function sOrNull(v: any) { const x = s(v); return x ? x : null; }
+const SHOP_TABLE = "rb_shops";
+const MEMBER_TABLE = "rb_shop_members";
+const PROFILE_TABLE = "rb_profiles";
 
+function s(v: any) {
+  return String(v ?? "").trim();
+}
+function sOrNull(v: any) {
+  const x = s(v);
+  return x ? x : null;
+}
 function nInt(v: any, def = 0, min = 0, max = 100000) {
   const n = Number(v);
   if (!Number.isFinite(n)) return def;
@@ -17,9 +27,18 @@ function nInt(v: any, def = 0, min = 0, max = 100000) {
   return i;
 }
 
-function isMissingTable(msg: string) {
+function formatSbError(error: any) {
+  if (!error) return "Unknown error";
+  const msg = String(error.message ?? error ?? "");
+  const code = error.code ? ` code=${String(error.code)}` : "";
+  const details = error.details ? ` details=${String(error.details)}` : "";
+  const hint = error.hint ? ` hint=${String(error.hint)}` : "";
+  return `${msg}${code}${details}${hint}`;
+}
+
+function isPostgrestSchemaCacheError(msg: string) {
   const m = (msg || "").toLowerCase();
-  return m.includes("schema cache") || m.includes("not find the table") || m.includes("does not exist") || m.includes("relation");
+  return m.includes("schema cache") || m.includes("could not find the") || m.includes("not find the table");
 }
 
 function tryExtractMissingColumn(msg: string): string | null {
@@ -28,71 +47,62 @@ function tryExtractMissingColumn(msg: string): string | null {
   return m?.[1] ?? null;
 }
 
-async function insertWithAutoStrip(admin: any, table: string, payload: Record<string, any>, selectCols = "id,name") {
+async function insertWithAutoStrip(
+  admin: any,
+  table: string,
+  payload: Record<string, any>,
+  selectCols: string
+) {
   // Try insert; if a column doesn't exist, remove it and retry (up to 12 keys).
   let working: Record<string, any> = { ...payload };
 
   for (let attempt = 0; attempt < 12; attempt++) {
-    const q = admin.from(table).insert(working).select(selectCols).single();
-    const { data, error } = await q;
+    const { data, error } = await admin.from(table).insert(working).select(selectCols).single();
 
     if (!error) return data;
 
-    const msg = String(error.message || "");
+    const msg = formatSbError(error);
     const col = tryExtractMissingColumn(msg);
     if (col && Object.prototype.hasOwnProperty.call(working, col)) {
       delete working[col];
       continue;
     }
 
-    throw new Error(msg);
+    // Bubble the REAL error, not a fake “no table” wrapper.
+    throw new Error(`[${table}] ${msg}`);
   }
 
-  throw new Error(`Insert failed after stripping columns for table ${table}`);
+  throw new Error(`[${table}] Insert failed after stripping columns`);
+}
+
+async function serviceRolePreflight(admin: any, userId: string) {
+  // If supabaseAdmin() is accidentally using the ANON key,
+  // this will fail. If it passes, we KNOW we are service-role.
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+  if (error || !data?.user?.id) {
+    throw new Error(
+      `supabaseAdmin is NOT service-role (auth.admin.getUserById failed). ` +
+        `Check SUPABASE_SERVICE_ROLE_KEY in Vercel and /lib/supabase/admin wiring. ` +
+        `Error: ${formatSbError(error)}`
+    );
+  }
 }
 
 async function createShop(admin: any, shopPayload: Record<string, any>) {
-  // Prefer rb_shops, fallback to shops
-  const tables = ["rb_shops", "shops"];
-  let lastErr = "";
-
-  for (const t of tables) {
-    try {
-      const shop = await insertWithAutoStrip(admin, t, shopPayload, "id,name");
-      return { shop, table: t };
-    } catch (e: any) {
-      const msg = String(e?.message ?? e);
-      lastErr = msg;
-
-      // If table missing, try next
-      if (isMissingTable(msg)) continue;
-
-      // Other errors: stop
-      throw new Error(msg);
-    }
-  }
-
-  throw new Error(`No shop table available (tried rb_shops, shops). Last error: ${lastErr}`);
+  // Hard-require the canonical table.
+  // If this fails with “schema cache”, it’s permissions/key, not missing table.
+  const shop = await insertWithAutoStrip(admin, SHOP_TABLE, shopPayload, "id,name");
+  return shop;
 }
 
 async function createMembership(admin: any, shopId: string, userId: string) {
-  const tables = ["rb_shop_members", "shop_members"];
-  let lastErr = "";
-
-  for (const t of tables) {
-    try {
-      // Some schemas use role, some might not; strip if needed.
-      await insertWithAutoStrip(admin, t, { shop_id: shopId, user_id: userId, role: "owner" }, "shop_id,user_id");
-      return { table: t };
-    } catch (e: any) {
-      const msg = String(e?.message ?? e);
-      lastErr = msg;
-      if (isMissingTable(msg)) continue;
-      throw new Error(msg);
-    }
-  }
-
-  throw new Error(`No membership table available (tried rb_shop_members, shop_members). Last error: ${lastErr}`);
+  // Hard-require canonical membership table.
+  await insertWithAutoStrip(
+    admin,
+    MEMBER_TABLE,
+    { shop_id: shopId, user_id: userId, role: "owner" },
+    "shop_id,user_id"
+  );
 }
 
 export async function POST(req: Request) {
@@ -106,25 +116,33 @@ export async function POST(req: Request) {
 
     if (!first_name) return NextResponse.json({ ok: false, error: "first_name required" }, { status: 400 });
     if (!last_name) return NextResponse.json({ ok: false, error: "last_name required" }, { status: 400 });
-    if (!company_name || company_name.length < 2) return NextResponse.json({ ok: false, error: "company_name required" }, { status: 400 });
+    if (!company_name || company_name.length < 2)
+      return NextResponse.json({ ok: false, error: "company_name required" }, { status: 400 });
 
     const admin = supabaseAdmin();
 
+    // ✅ PROVE we’re really using service role (otherwise schema-cache errors are guaranteed).
+    await serviceRolePreflight(admin, user.id);
+
     // Optional profile upsert (ignore if table missing/columns mismatch)
     try {
-      await insertWithAutoStrip(admin, "rb_profiles", {
-        id: user.id,
-        first_name,
-        last_name,
-        phone: sOrNull(body.phone),
-        email: user.email ?? null,
-        updated_at: new Date().toISOString(),
-      }, "id");
+      await insertWithAutoStrip(
+        admin,
+        PROFILE_TABLE,
+        {
+          id: user.id,
+          first_name,
+          last_name,
+          phone: sOrNull(body.phone),
+          email: user.email ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        "id"
+      );
     } catch {
       // ignore
     }
 
-    // Shop payload (will auto-strip unknown columns)
     const shopPayload: Record<string, any> = {
       name: company_name,
       website: sOrNull(body.website),
@@ -142,13 +160,33 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { shop, table } = await createShop(admin, shopPayload);
-
+    const shop = await createShop(admin, shopPayload);
     await createMembership(admin, shop.id, user.id);
 
-    return NextResponse.json({ ok: true, shop_id: shop.id, shop_name: shop.name, shop_table: table });
+    return NextResponse.json({
+      ok: true,
+      shop_id: shop.id,
+      shop_name: shop.name,
+      shop_table: SHOP_TABLE,
+      membership_table: MEMBER_TABLE,
+    });
   } catch (e: any) {
-    const msg = e?.message ?? String(e);
+    const msg = String(e?.message ?? e);
+
+    // If this is the schema-cache error, call it out explicitly.
+    if (isPostgrestSchemaCacheError(msg)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            msg +
+            " | This usually means Control is NOT using the service-role key, or the role has no privileges on the table. " +
+            "Verify SUPABASE_SERVICE_ROLE_KEY in Vercel and that /lib/supabase/admin uses it.",
+        },
+        { status: 500 }
+      );
+    }
+
     const status = /not authenticated/i.test(msg) ? 401 : 500;
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
