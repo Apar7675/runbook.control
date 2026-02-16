@@ -1,7 +1,15 @@
 ﻿import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+
+  // Stripe return pages MUST be public
+  "/billing/complete",
+  "/billing/cancel",
+];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -10,23 +18,19 @@ function isPublicPath(pathname: string) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Always stamp path headers (used by billing bypass logic)
   const headers = new Headers(req.headers);
   headers.set("x-url", pathname);
   headers.set("x-original-url", pathname);
-  headers.set("next-url", pathname); // compat (some code reads this)
+  headers.set("next-url", pathname);
 
-  // Allow public routes through
   if (isPublicPath(pathname)) {
     return NextResponse.next({ request: { headers } });
   }
 
-  // Create response to attach refreshed cookies if needed
   const res = NextResponse.next({ request: { headers } });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-
   if (!url || !anon) return res;
 
   const supabase = createServerClient(url, anon, {
