@@ -1,10 +1,9 @@
 // REPLACE ENTIRE FILE: src/app/api/billing/create-checkout/route.ts
 //
-// Supports:
-// - Desktop Bearer token auth
-// - Browser session auth (AAL2)
-// - GET (?shop_id=) and POST ({ shop_id })
-// - Stripe 30-day trial checkout
+// Best UX for Desktop:
+// - Stripe success/cancel land on PUBLIC pages (/billing/complete, /billing/cancel)
+// - Supports Desktop Bearer token auth + Browser session auth
+// - Supports GET (?shop_id=) and POST ({ shop_id })
 
 import { NextResponse } from "next/server";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
@@ -32,34 +31,29 @@ async function authenticate(req: Request, shopId: string) {
   if (authHeader?.startsWith("Bearer ")) {
     const { user } = await requireUserFromBearer(req);
     if (!user?.id) throw new Error("Invalid bearer token");
-    return user;
+    return;
   }
 
   // Browser flow (Control UI session)
   await requireShopAccessOrAdminAal2(shopId);
-  return null;
 }
 
 async function createCheckout(req: Request, shopIdRaw: string) {
   const shopId = String(shopIdRaw ?? "").trim();
-  if (!shopId) {
-    return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
-  }
-
+  if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
   assertUuid("shop_id", shopId);
 
   await authenticate(req, shopId);
 
   const priceId = (process.env.STRIPE_PRICE_ID ?? "").trim();
-  if (!priceId) {
-    return NextResponse.json({ ok: false, error: "Missing STRIPE_PRICE_ID" }, { status: 500 });
-  }
+  if (!priceId) return NextResponse.json({ ok: false, error: "Missing STRIPE_PRICE_ID" }, { status: 500 });
 
   const stripe = getStripe();
   const origin = getOrigin(req);
 
-  const successUrl = `${origin}/shops/${shopId}/billing?status=success&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${origin}/shops/${shopId}/billing?status=cancel`;
+  // ✅ Public landing pages (NOT behind auth)
+  const successUrl = `${origin}/billing/complete?shop_id=${shopId}&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${origin}/billing/cancel?shop_id=${shopId}`;
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -79,16 +73,9 @@ async function createCheckout(req: Request, shopIdRaw: string) {
     cancel_url: cancelUrl,
   });
 
-  if (!session.url) {
-    return NextResponse.json({ ok: false, error: "Stripe did not return URL" }, { status: 500 });
-  }
+  if (!session.url) return NextResponse.json({ ok: false, error: "Stripe did not return URL" }, { status: 500 });
 
-  return NextResponse.json({
-    ok: true,
-    url: session.url,
-    session_id: session.id,
-    trial_days: TRIAL_DAYS,
-  });
+  return NextResponse.json({ ok: true, url: session.url, session_id: session.id, trial_days: TRIAL_DAYS });
 }
 
 export async function OPTIONS() {
@@ -97,36 +84,24 @@ export async function OPTIONS() {
 
 export async function GET(req: Request) {
   try {
-    rateLimitOrThrow({
-      key: `billing:checkout:${getIp(req)}`,
-      limit: 60,
-      windowMs: 60_000,
-    });
-
+    rateLimitOrThrow({ key: `billing:checkout:${getIp(req)}`, limit: 60, windowMs: 60_000 });
     const url = new URL(req.url);
-    const shopId = url.searchParams.get("shop_id") ?? "";
-
-    return await createCheckout(req, shopId);
+    return await createCheckout(req, url.searchParams.get("shop_id") ?? "");
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    return NextResponse.json({ ok: false, error: msg }, { status: 401 });
+    const status = /not authenticated|invalid bearer/i.test(msg) ? 401 : 500;
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
 
 export async function POST(req: Request) {
   try {
-    rateLimitOrThrow({
-      key: `billing:checkout:${getIp(req)}`,
-      limit: 60,
-      windowMs: 60_000,
-    });
-
+    rateLimitOrThrow({ key: `billing:checkout:${getIp(req)}`, limit: 60, windowMs: 60_000 });
     const body = await req.json().catch(() => ({}));
-    const shopId = String((body as any)?.shop_id ?? "").trim();
-
-    return await createCheckout(req, shopId);
+    return await createCheckout(req, String((body as any)?.shop_id ?? ""));
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    return NextResponse.json({ ok: false, error: msg }, { status: 401 });
+    const status = /not authenticated|invalid bearer/i.test(msg) ? 401 : 500;
+    return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
