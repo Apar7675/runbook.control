@@ -17,6 +17,84 @@ function nInt(v: any, def = 0, min = 0, max = 100000) {
   return i;
 }
 
+function isMissingTable(msg: string) {
+  const m = (msg || "").toLowerCase();
+  return m.includes("schema cache") || m.includes("not find the table") || m.includes("does not exist") || m.includes("relation");
+}
+
+function tryExtractMissingColumn(msg: string): string | null {
+  // Postgres style: column "foo" of relation "rb_shops" does not exist
+  const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation/i);
+  return m?.[1] ?? null;
+}
+
+async function insertWithAutoStrip(admin: any, table: string, payload: Record<string, any>, selectCols = "id,name") {
+  // Try insert; if a column doesn't exist, remove it and retry (up to 12 keys).
+  let working: Record<string, any> = { ...payload };
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const q = admin.from(table).insert(working).select(selectCols).single();
+    const { data, error } = await q;
+
+    if (!error) return data;
+
+    const msg = String(error.message || "");
+    const col = tryExtractMissingColumn(msg);
+    if (col && Object.prototype.hasOwnProperty.call(working, col)) {
+      delete working[col];
+      continue;
+    }
+
+    throw new Error(msg);
+  }
+
+  throw new Error(`Insert failed after stripping columns for table ${table}`);
+}
+
+async function createShop(admin: any, shopPayload: Record<string, any>) {
+  // Prefer rb_shops, fallback to shops
+  const tables = ["rb_shops", "shops"];
+  let lastErr = "";
+
+  for (const t of tables) {
+    try {
+      const shop = await insertWithAutoStrip(admin, t, shopPayload, "id,name");
+      return { shop, table: t };
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      lastErr = msg;
+
+      // If table missing, try next
+      if (isMissingTable(msg)) continue;
+
+      // Other errors: stop
+      throw new Error(msg);
+    }
+  }
+
+  throw new Error(`No shop table available (tried rb_shops, shops). Last error: ${lastErr}`);
+}
+
+async function createMembership(admin: any, shopId: string, userId: string) {
+  const tables = ["rb_shop_members", "shop_members"];
+  let lastErr = "";
+
+  for (const t of tables) {
+    try {
+      // Some schemas use role, some might not; strip if needed.
+      await insertWithAutoStrip(admin, t, { shop_id: shopId, user_id: userId, role: "owner" }, "shop_id,user_id");
+      return { table: t };
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      lastErr = msg;
+      if (isMissingTable(msg)) continue;
+      throw new Error(msg);
+    }
+  }
+
+  throw new Error(`No membership table available (tried rb_shop_members, shop_members). Last error: ${lastErr}`);
+}
+
 export async function POST(req: Request) {
   try {
     const { user } = await requireUserFromBearer(req);
@@ -32,52 +110,43 @@ export async function POST(req: Request) {
 
     const admin = supabaseAdmin();
 
-    // 1) Upsert profile (if table exists)
+    // Optional profile upsert (ignore if table missing/columns mismatch)
     try {
-      await admin.from("rb_profiles").upsert({
+      await insertWithAutoStrip(admin, "rb_profiles", {
         id: user.id,
         first_name,
         last_name,
         phone: sOrNull(body.phone),
         email: user.email ?? null,
         updated_at: new Date().toISOString(),
-      });
+      }, "id");
     } catch {
-      // ok if rb_profiles doesn't exist yet
+      // ignore
     }
 
-    // 2) Create shop (rb_shops is your current schema)
-    const { data: shop, error: shopErr } = await admin
-      .from("rb_shops")
-      .insert({
-        name: company_name,
-        website: sOrNull(body.website),
-        address1: sOrNull(body.address1),
-        address2: sOrNull(body.address2),
-        city: sOrNull(body.city),
-        state: sOrNull(body.state),
-        zip: sOrNull(body.zip),
-        country: sOrNull(body.country),
-        machines_count: nInt(body.machines, 0),
-        employees_count: nInt(body.employees, 0),
-        departments: Array.isArray(body.departments) ? body.departments : [],
-        billing_status: "none",
-      })
-      .select("id,name")
-      .single();
+    // Shop payload (will auto-strip unknown columns)
+    const shopPayload: Record<string, any> = {
+      name: company_name,
+      website: sOrNull(body.website),
+      address1: sOrNull(body.address1),
+      address2: sOrNull(body.address2),
+      city: sOrNull(body.city),
+      state: sOrNull(body.state),
+      zip: sOrNull(body.zip),
+      country: sOrNull(body.country),
+      machines_count: nInt(body.machines, 0),
+      employees_count: nInt(body.employees, 0),
+      departments: Array.isArray(body.departments) ? body.departments : [],
+      billing_status: "none",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    if (shopErr) throw new Error(shopErr.message);
+    const { shop, table } = await createShop(admin, shopPayload);
 
-    // 3) Owner membership
-    const { error: memErr } = await admin.from("rb_shop_members").insert({
-      shop_id: shop.id,
-      user_id: user.id,
-      role: "owner",
-    });
+    await createMembership(admin, shop.id, user.id);
 
-    if (memErr) throw new Error(memErr.message);
-
-    return NextResponse.json({ ok: true, shop_id: shop.id, shop_name: shop.name });
+    return NextResponse.json({ ok: true, shop_id: shop.id, shop_name: shop.name, shop_table: table });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     const status = /not authenticated/i.test(msg) ? 401 : 500;
