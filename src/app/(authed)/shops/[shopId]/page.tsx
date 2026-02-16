@@ -1,6 +1,9 @@
+// REPLACE ENTIRE FILE: src/app/(authed)/shops/[shopId]/page.tsx
+
 import React from "react";
 import Link from "next/link";
 import GlassCard from "@/components/GlassCard";
+import EnrollTokenPanel from "@/components/EnrollTokenPanel";
 import { rbGetShop, rbGetUpdatePolicy, rbListShopDevices } from "@/lib/rb";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +45,7 @@ export default async function ShopPage({ params }: Props) {
   }
 
   const [policy, devices] = await Promise.all([rbGetUpdatePolicy(shop.id), rbListShopDevices(shop.id)]);
-  const activeDevices = devices.filter((d: any) => (String(d.status ?? "").toLowerCase() === "active")).length;
+  const activeDevices = devices.filter((d: any) => String(d.status ?? "").toLowerCase() === "active").length;
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
@@ -105,6 +108,9 @@ export default async function ShopPage({ params }: Props) {
         </div>
       </GlassCard>
 
+      {/* Desktop enrollment token generator (CLIENT component) */}
+      <EnrollTokenPanel shopId={shop.id} />
+
       <GlassCard title="Update Policy (read-only)">
         {!policy ? (
           <div style={{ opacity: 0.75 }}>
@@ -124,22 +130,14 @@ export default async function ShopPage({ params }: Props) {
 
       <GlassCard title="Getting Started (shop-scoped)">
         <div style={{ display: "grid", gap: 10, opacity: 0.9 }}>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>
-            Bring this shop online safely. Recommended order:
-          </div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>Bring this shop online safely. Recommended order:</div>
           <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
             <li>
               Add/register devices in <b>Devices</b>
             </li>
-            <li>
-              Issue a device token and validate it
-            </li>
-            <li>
-              Confirm check-in updates “Last seen” and “Version”
-            </li>
-            <li>
-              Review update policy
-            </li>
+            <li>Generate a desktop enroll token (above) and enroll this PC</li>
+            <li>Confirm check-in updates “Last seen” and “Version”</li>
+            <li>Review update policy</li>
           </ol>
         </div>
       </GlassCard>

@@ -1,76 +1,136 @@
+// REPLACE ENTIRE FILE: src/app/(authed)/shops/page.tsx
+
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import GlassCard from "@/components/GlassCard";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isPlatformAdminEmail } from "@/lib/platformAdmin";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopsPage() {
-  const supabase = await supabaseServer();
+type Shop = { id: string; name: string; created_at: string | null };
 
-  const { data, error } = await supabase
-    .from("rb_shops")
-    .select("id,name,created_at")
-    .order("created_at", { ascending: false });
-
-  const shops = data ?? [];
-
+// Shop list card
+function ShopCard({ shop }: { shop: Shop }) {
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0 }}>All Shops</h1>
-
-        <Link
-          href="/shops/new"
-          style={{
-            padding: "10px 14px",
-            borderRadius: 12,
-            textDecoration: "none",
-            border: "1px solid rgba(255,255,255,0.10)",
-            background: "rgba(255,255,255,0.03)",
-            color: "#e6e8ef",
-            fontWeight: 900,
-          }}
-        >
-          Create Shop
+    <div
+      style={{
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.03)",
+        borderRadius: 16,
+        padding: 16,
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div style={{ fontSize: 16, fontWeight: 900 }}>{shop.name}</div>
+      <div style={{ fontSize: 12, opacity: 0.7 }}>
+        {shop.created_at ? new Date(shop.created_at).toISOString() : "—"} • {shop.id}
+      </div>
+      <div>
+        <Link href={`/shops/${shop.id}`} style={{ color: "#b8b9ff", textDecoration: "none", fontWeight: 900 }}>
+          Enter Shop →
         </Link>
       </div>
+    </div>
+  );
+}
 
-      {error ? (
-        <GlassCard title="Error">
-          <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>{error.message}</div>
-        </GlassCard>
-      ) : null}
+export default async function ShopsPage() {
+  // Who is logged in?
+  const supabase = await supabaseServer();
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user ?? null;
 
-      <GlassCard title={`Shops (${shops.length})`}>
-        {shops.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No shops yet.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {shops.map((s: any) => (
-              <Link
-                key={s.id}
-                href={`/shops/${s.id}`}
-                style={{
-                  textDecoration: "none",
-                  color: "#e6e8ef",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 14,
-                  padding: 14,
-                  background: "rgba(255,255,255,0.02)",
-                  display: "grid",
-                  gap: 6,
-                }}
-              >
-                <div style={{ fontWeight: 900 }}>{s.name}</div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  {s.created_at ? new Date(s.created_at).toISOString() : "—"} • {s.id}
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 900 }}>Enter Shop →</div>
-              </Link>
+  if (!user) redirect("/login");
+
+  const email = user.email ?? null;
+  const isAdmin = isPlatformAdminEmail(email);
+
+  // PLATFORM ADMIN: show all shops (platform view)
+  if (isAdmin) {
+    const admin = supabaseAdmin();
+    const { data: shops, error } = await admin.from("rb_shops").select("id,name,created_at").order("created_at", { ascending: false });
+
+    if (error) {
+      return (
+        <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
+          <h1 style={{ fontSize: 28, margin: 0 }}>All Shops</h1>
+          <GlassCard title="Error">
+            <div style={{ opacity: 0.9 }}>{error.message}</div>
+          </GlassCard>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <h1 style={{ fontSize: 28, margin: 0 }}>All Shops</h1>
+          <Link
+            href="/shops/create"
+            style={{
+              padding: "10px 14px",
+              borderRadius: 12,
+              textDecoration: "none",
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(255,255,255,0.03)",
+              color: "#e6e8ef",
+              fontWeight: 900,
+            }}
+          >
+            Create Shop
+          </Link>
+        </div>
+
+        <GlassCard title={`Shops (${(shops ?? []).length})`}>
+          <div style={{ display: "grid", gap: 12 }}>
+            {(shops ?? []).map((s: any) => (
+              <ShopCard key={s.id} shop={s} />
             ))}
           </div>
-        )}
+        </GlassCard>
+      </div>
+    );
+  }
+
+  // NORMAL USER: show only shops they belong to
+  // RLS should allow this: shop_members rows for this user, then join to shops.
+  const { data: members, error: memErr } = await supabase
+    .from("shop_members")
+    .select("shop_id, role, shops:shops(id,name,created_at)")
+    .eq("user_id", user.id);
+
+  if (memErr) {
+    // If RLS blocks, better to send them to onboarding than leak platform UI.
+    redirect("/onboarding");
+  }
+
+  const shops = (members ?? [])
+    .map((m: any) => m.shops)
+    .filter(Boolean) as Shop[];
+
+  if (shops.length === 0) {
+    redirect("/onboarding");
+  }
+
+  // If exactly 1 shop, go straight in
+  if (shops.length === 1) {
+    redirect(`/shops/${shops[0].id}`);
+  }
+
+  // Multi-shop user (later feature). For now show list.
+  return (
+    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
+      <h1 style={{ fontSize: 28, margin: 0 }}>Your Shops</h1>
+      <GlassCard title={`Shops (${shops.length})`}>
+        <div style={{ display: "grid", gap: 12 }}>
+          {shops.map((s) => (
+            <ShopCard key={s.id} shop={s} />
+          ))}
+        </div>
       </GlassCard>
     </div>
   );

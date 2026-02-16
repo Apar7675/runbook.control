@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 import GlassCard from "@/components/GlassCard";
@@ -8,12 +9,16 @@ import GlassCard from "@/components/GlassCard";
 export const dynamic = "force-dynamic";
 
 function sanitizeNext(raw: string | null) {
-  const fallback = "/dashboard";
+  const fallback = "/shops";
   const next = (raw ?? "").trim();
 
   if (!next) return fallback;
   if (!next.startsWith("/")) return fallback;
   if (next.startsWith("/login")) return fallback;
+  if (next.startsWith("/signup")) return fallback;
+
+  // You previously used /dashboard as fallback, but that route doesn't exist in your project.
+  if (next === "/dashboard") return fallback;
 
   return next;
 }
@@ -62,9 +67,7 @@ function LoginInner() {
         data?.session ?? (await supabase.auth.getSession()).data.session;
 
       if (!session) {
-        setStatus(
-          "Signed in, but no session was established. Check Supabase auth settings."
-        );
+        setStatus("Signed in, but no session was established. Check Supabase auth settings.");
         return;
       }
 
@@ -90,9 +93,7 @@ function LoginInner() {
 
       const redirectTo =
         typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-              next
-            )}`
+          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
           : undefined;
 
       const { error } = await supabase.auth.signInWithOtp({
@@ -149,7 +150,7 @@ function LoginInner() {
                 fontWeight: 900,
               }}
             >
-              {busy ? "Signing in…" : "Sign in"}
+              {busy ? "Signing in..." : "Sign in"}
             </button>
 
             <button
@@ -165,20 +166,20 @@ function LoginInner() {
           </div>
 
           {status && (
-            <div
-              style={{
-                fontSize: 12,
-                opacity: 0.85,
-                whiteSpace: "pre-wrap",
-              }}
-            >
+            <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>
               {status}
             </div>
           )}
 
           <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Redirect after login:{" "}
-            <span style={{ fontWeight: 900 }}>{next}</span>
+            Redirect after login: <span style={{ fontWeight: 900 }}>{next}</span>
+          </div>
+
+          <div style={{ fontSize: 12, opacity: 0.75 }}>
+            New here?{" "}
+            <Link href={`/signup?next=${encodeURIComponent(next)}`} style={{ fontWeight: 900 }}>
+              Create an account
+            </Link>
           </div>
         </div>
       </GlassCard>
@@ -188,7 +189,7 @@ function LoginInner() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 24, opacity: 0.75 }}>Loading…</div>}>
+    <Suspense fallback={<div style={{ padding: 24, opacity: 0.75 }}>Loading...</div>}>
       <LoginInner />
     </Suspense>
   );

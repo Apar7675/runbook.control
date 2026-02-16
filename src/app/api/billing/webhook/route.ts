@@ -1,16 +1,11 @@
-// REPLACE ENTIRE FILE: src/app/api/billing/webhook/route.ts
+﻿// REPLACE ENTIRE FILE: src/app/api/billing/webhook/route.ts
 //
-// HARDENING (this pass):
-// - UUID tripwire for shopId extracted from Stripe session/metadata.
-// - Idempotency guard using Stripe event.id (prevents double-processing).
-//   Uses an "audit log" style table if present; otherwise falls back to in-memory no-op.
-//   (You can wire this to your real audit table once you paste it.)
-// - Uses admin client only (service role) for all DB writes (correct for webhooks).
-// - Keeps your “period end from latest invoice line period.end” logic.
-//
-// NOTE: For best idempotency, create a table like:
-//   public.rb_webhook_events (id text primary key, created_at timestamptz default now())
-// If it doesn't exist, this code will still work, but without durable idempotency.
+// FIXES (this pass):
+// - Correctly sets billing_status to Stripe subscription.status (trialing/active/past_due/etc).
+//   Previously it defaulted to "active" on checkout completion which is wrong for trials.
+// - Period end now prefers subscription.current_period_end (always present), with invoice line fallback.
+// - Keeps UUID tripwire, metadata stamping, and durable idempotency via rb_webhook_events if present.
+// - Uses admin client (service role) for all DB writes.
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -53,25 +48,21 @@ async function updateShopBilling(
 
 /**
  * Durable idempotency if you have rb_webhook_events table.
- * If not present, returns false and processing continues (still OK in dev).
+ * If not present, processing still continues (OK in dev).
  */
 async function rbTryMarkWebhookEventProcessed(eventId: string): Promise<boolean> {
   const admin = supabaseAdmin();
 
-  // Try insert into rb_webhook_events(id). If table doesn't exist, ignore.
   try {
     const { error } = await admin.from("rb_webhook_events").insert({ id: eventId });
     if (!error) return true;
 
-    // Unique violation => already processed
-    const msg = String(error.message || "");
-    if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("unique")) return false;
+    const msg = String(error.message || "").toLowerCase();
+    if (msg.includes("duplicate") || msg.includes("unique")) return false;
 
-    // Other errors -> treat as non-durable, continue
     console.warn("rb_webhook_events insert error (non-fatal):", error.message);
     return true;
   } catch (e: any) {
-    // Table missing or RPC error, proceed without durable idempotency
     console.warn("rb_webhook_events not available (non-fatal):", e?.message ?? e);
     return true;
   }
@@ -94,6 +85,17 @@ function extractShopIdFromSubscription(sub: any): string | null {
   return raw;
 }
 
+function periodEndFromExpandedSub(sub: any): string | undefined {
+  // Prefer current_period_end (always present even during trial)
+  const fromCpe = isoFromSeconds(sub?.current_period_end ?? null);
+  if (fromCpe) return fromCpe;
+
+  // Fallback: invoice line period end (may be missing during trial)
+  const line = sub?.latest_invoice?.lines?.data?.[0];
+  const invEnd = isoFromSeconds(line?.period?.end ?? null);
+  return invEnd;
+}
+
 export async function POST(req: Request) {
   try {
     const stripe = getStripe();
@@ -112,31 +114,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 400 });
     }
 
-    // Idempotency: if already seen, no-op OK.
     const marked = await rbTryMarkWebhookEventProcessed(String(event.id));
     if (!marked) return NextResponse.json({ ok: true, deduped: true });
 
     const type = String(event.type || "");
 
-    // Checkout complete: persist ids + status. Also try to resolve period end via latest invoice line period.end.
     if (type === "checkout.session.completed") {
       const session: any = event.data.object;
       const shopId = extractShopIdFromSession(session);
       if (!shopId) return NextResponse.json({ ok: true });
 
       const subId = session.subscription ? String(session.subscription) : null;
+      const custId = session.customer ? String(session.customer) : null;
 
-      let billing_status: string | null = "active";
+      // Default for safety (but we will try to retrieve the subscription and use its status)
+      let billing_status: string | null = "trialing";
       let nextPeriodEnd: string | undefined;
 
       if (subId) {
         try {
           const sub: any = await stripe.subscriptions.retrieve(subId, { expand: ["latest_invoice.lines"] });
-          billing_status = sub.status ?? billing_status;
 
-          const line = sub?.latest_invoice?.lines?.data?.[0];
-          const periodEndSec = line?.period?.end;
-          nextPeriodEnd = isoFromSeconds(periodEndSec);
+          billing_status = sub.status ?? billing_status;
+          nextPeriodEnd = periodEndFromExpandedSub(sub);
 
           // Ensure metadata stays stamped for future webhook events
           await stripe.subscriptions.update(sub.id, { metadata: { shop_id: shopId, app: "runbook.control" } });
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
       }
 
       await updateShopBilling(shopId, {
-        stripe_customer_id: session.customer ?? null,
+        stripe_customer_id: custId,
         stripe_subscription_id: subId,
         billing_status,
         ...(nextPeriodEnd ? { billing_current_period_end: nextPeriodEnd } : {}),
@@ -155,7 +155,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Subscription events: update status and period end using latest invoice line period.end (authoritative).
     if (type === "customer.subscription.created" || type === "customer.subscription.updated") {
       const subEvent: any = event.data.object;
 
@@ -168,10 +167,7 @@ export async function POST(req: Request) {
       try {
         const sub: any = await stripe.subscriptions.retrieve(String(subEvent.id), { expand: ["latest_invoice.lines"] });
         billing_status = sub.status ?? billing_status;
-
-        const line = sub?.latest_invoice?.lines?.data?.[0];
-        const periodEndSec = line?.period?.end;
-        nextPeriodEnd = isoFromSeconds(periodEndSec);
+        nextPeriodEnd = periodEndFromExpandedSub(sub);
       } catch (e: any) {
         console.warn(`${type}: failed to retrieve expanded subscription`, e?.message ?? e);
       }
@@ -192,13 +188,10 @@ export async function POST(req: Request) {
       const shopId = extractShopIdFromSubscription(subEvent);
       if (!shopId) return NextResponse.json({ ok: true });
 
-      // If we can get a last invoice period end, store it; otherwise don't overwrite.
       let nextPeriodEnd: string | undefined;
       try {
         const sub: any = await stripe.subscriptions.retrieve(String(subEvent.id), { expand: ["latest_invoice.lines"] });
-        const line = sub?.latest_invoice?.lines?.data?.[0];
-        const periodEndSec = line?.period?.end;
-        nextPeriodEnd = isoFromSeconds(periodEndSec);
+        nextPeriodEnd = periodEndFromExpandedSub(sub);
       } catch {
         // ignore
       }

@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
@@ -36,8 +36,9 @@ function Pill({ children }: { children: React.ReactNode }) {
 
 async function isTrustedDevice(supabase: any, userId: string) {
   try {
-    const jar = await cookies();
-    const deviceId = jar.get("rb_device_id")?.value ?? "";
+    // Next typings can be Promise<ReadonlyRequestCookies> depending on runtime.
+    const jar: any = await (cookies() as any);
+    const deviceId = jar?.get?.("rb_device_id")?.value ?? "";
     if (!deviceId) return false;
 
     const { data: row } = await supabase
@@ -115,10 +116,15 @@ export default async function ShopLayout({ params, children }: Props) {
   const emergencyUnlock = getEmergencyUnlock();
   const unlockShopsCsv = getUnlockShopsCsv();
 
-  // Allow /billing to always render (even hard mode), so users can subscribe/cancel.
-  const h = await headers();
-  const nextUrl = h.get("next-url") ?? "";
-  const isBillingPath = nextUrl.includes(`/shops/${shopId}/billing`);
+  // Allow /billing to always render (even hard mode)
+  const h: any = await (headers() as any);
+  const path =
+    h?.get?.("x-url") ??
+    h?.get?.("x-original-url") ??
+    h?.get?.("next-url") ??
+    "";
+
+  const isBillingPath = String(path).includes(`/shops/${shopId}/billing`);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
