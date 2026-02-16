@@ -47,12 +47,7 @@ function tryExtractMissingColumn(msg: string): string | null {
   return m?.[1] ?? null;
 }
 
-async function insertWithAutoStrip(
-  admin: any,
-  table: string,
-  payload: Record<string, any>,
-  selectCols: string
-) {
+async function insertWithAutoStrip(admin: any, table: string, payload: Record<string, any>, selectCols: string) {
   // Try insert; if a column doesn't exist, remove it and retry (up to 12 keys).
   let working: Record<string, any> = { ...payload };
 
@@ -68,7 +63,6 @@ async function insertWithAutoStrip(
       continue;
     }
 
-    // Bubble the REAL error, not a fake “no table” wrapper.
     throw new Error(`[${table}] ${msg}`);
   }
 
@@ -89,20 +83,11 @@ async function serviceRolePreflight(admin: any, userId: string) {
 }
 
 async function createShop(admin: any, shopPayload: Record<string, any>) {
-  // Hard-require the canonical table.
-  // If this fails with “schema cache”, it’s permissions/key, not missing table.
-  const shop = await insertWithAutoStrip(admin, SHOP_TABLE, shopPayload, "id,name");
-  return shop;
+  return await insertWithAutoStrip(admin, SHOP_TABLE, shopPayload, "id,name");
 }
 
 async function createMembership(admin: any, shopId: string, userId: string) {
-  // Hard-require canonical membership table.
-  await insertWithAutoStrip(
-    admin,
-    MEMBER_TABLE,
-    { shop_id: shopId, user_id: userId, role: "owner" },
-    "shop_id,user_id"
-  );
+  await insertWithAutoStrip(admin, MEMBER_TABLE, { shop_id: shopId, user_id: userId, role: "owner" }, "shop_id,user_id");
 }
 
 export async function POST(req: Request) {
@@ -116,12 +101,13 @@ export async function POST(req: Request) {
 
     if (!first_name) return NextResponse.json({ ok: false, error: "first_name required" }, { status: 400 });
     if (!last_name) return NextResponse.json({ ok: false, error: "last_name required" }, { status: 400 });
-    if (!company_name || company_name.length < 2)
+    if (!company_name || company_name.length < 2) {
       return NextResponse.json({ ok: false, error: "company_name required" }, { status: 400 });
+    }
 
     const admin = supabaseAdmin();
 
-    // ✅ PROVE we’re really using service role (otherwise schema-cache errors are guaranteed).
+    // ✅ PROVE we’re really using service role
     await serviceRolePreflight(admin, user.id);
 
     // Optional profile upsert (ignore if table missing/columns mismatch)
@@ -171,28 +157,22 @@ export async function POST(req: Request) {
       membership_table: MEMBER_TABLE,
     });
   } catch (e: any) {
-  const msg = String(e?.message ?? e);
+    const msg = String(e?.message ?? e);
 
-  // 🔥 force the real error into Vercel logs
-  console.error("DESKTOP_BOOTSTRAP_ERROR:", msg);
+    console.error("DESKTOP_BOOTSTRAP_ERROR:", msg);
 
-  if (isPostgrestSchemaCacheError(msg)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          msg +
-          " | This usually means Control is NOT using the service-role key, or the role has no privileges on the table. " +
-          "Verify SUPABASE_SERVICE_ROLE_KEY in Vercel and that /lib/supabase/admin uses it.",
-      },
-      { status: 500 }
-    );
-  }
-
-  const status = /not authenticated/i.test(msg) ? 401 : 500;
-  return NextResponse.json({ ok: false, error: msg }, { status });
-}
-
+    if (isPostgrestSchemaCacheError(msg)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            msg +
+            " | This usually means Control is NOT using the service-role key, or the role has no privileges on the table. " +
+            "Verify SUPABASE_SERVICE_ROLE_KEY in Vercel and that /lib/supabase/admin uses it.",
+        },
+        { status: 500 }
+      );
+    }
 
     const status = /not authenticated/i.test(msg) ? 401 : 500;
     return NextResponse.json({ ok: false, error: msg }, { status });
