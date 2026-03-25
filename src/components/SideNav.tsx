@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import React from "react";
 
 type Mode = "platform" | "shop";
@@ -82,6 +82,7 @@ export default function SideNav(props: {
         <SectionTitle>PLATFORM</SectionTitle>
         <NavItem href="/shops" label="All Shops" />
         <NavItem href="/devices" label="Global Devices" />
+        <NavItem href="/desktop-link" label="Desktop Link" />
         <NavItem href="/status" label="Status" />
         <NavItem href="/settings" label="Settings" />
       </nav>
@@ -99,6 +100,7 @@ export default function SideNav(props: {
       <NavItem href="/dashboard" label="Platform Overview" />
       <NavItem href="/shops" label="All Shops" />
       <NavItem href="/devices" label="Global Devices" />
+      <NavItem href="/desktop-link" label="Desktop Link" />
       <NavItem href="/updates" label="Updates" />
       <NavItem href="/updates/packages" label="Update Packages" />
       <NavItem href="/support" label="Support Bundles" />

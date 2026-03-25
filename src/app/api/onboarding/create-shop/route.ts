@@ -1,53 +1,17 @@
-﻿import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+// REPLACE / CREATE FILE: src/app/api/onboarding/create-shop/route.ts
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
+import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function env(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env: ${name}`);
-  return v;
-}
-
-function isMissingTableError(msg: string) {
-  const m = (msg || "").toLowerCase();
-  return m.includes("does not exist") || m.includes("relation") || m.includes("schema cache") || m.includes("not find the table");
-}
-
-async function insertShop(admin: any, name: string) {
-  // Try rb_shops first (your newer schema), then fallback to shops (older schema)
-  const tryTables = ["rb_shops", "shops"];
-
-  for (const t of tryTables) {
-    const { data, error } = await admin.from(t).insert({ name }).select("id,name").single();
-    if (!error) return { table: t, shop: data };
-
-    if (isMissingTableError(error.message)) continue;
-    throw new Error(error.message);
-  }
-
-  throw new Error("No shops table found (tried rb_shops, shops).");
-}
-
-async function insertMembership(admin: any, shopId: string, userId: string) {
-  // Try rb_shop_members first, then fallback
-  const tryTables = ["rb_shop_members", "shop_members"];
-
-  for (const t of tryTables) {
-    const { error } = await admin.from(t).insert({ shop_id: shopId, user_id: userId, role: "owner" });
-    if (!error) return { table: t };
-
-    if (isMissingTableError(error.message)) continue;
-    throw new Error(error.message);
-  }
-
-  throw new Error("No shop_members table found (tried rb_shop_members, shop_members).");
-}
-
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") ?? "local";
+    rateLimitOrThrow({ key: `onboarding:create_shop:ip:${ip}`, limit: 20, windowMs: 60_000 });
+
     const body = await req.json().catch(() => ({}));
     const name = String((body as any)?.name ?? "").trim();
 
@@ -55,19 +19,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Shop name is too short." }, { status: 400 });
     }
 
-    // Get authed user from SSR supabase client (cookie session)
+    // Authenticated user (cookie-based SSR auth)
     const supabase = await supabaseServer();
-    const { data } = await supabase.auth.getUser();
-    const userId = data.user?.id ?? "";
-    if (!userId) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    }
 
-    // Service role admin client for DB writes (web/server-side only)
-    const admin = createClient(env("NEXT_PUBLIC_SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const userId = data.user.id;
 
-    const { shop } = await insertShop(admin, name);
-    await insertMembership(admin, shop.id, userId);
+    const admin = supabaseAdmin();
+
+    // 1) Create shop
+    const { data: shop, error: shopErr } = await admin
+      .from("shops")
+      .insert({ name })
+      .select("id,name")
+      .single();
+
+    if (shopErr) return NextResponse.json({ ok: false, error: shopErr.message }, { status: 500 });
+
+    // 2) Create membership (owner)
+    const { error: memErr } = await admin
+      .from("shop_members")
+      .insert({ shop_id: shop.id, user_id: userId, role: "owner" });
+
+    if (memErr) return NextResponse.json({ ok: false, error: memErr.message }, { status: 500 });
 
     return NextResponse.json({ ok: true, shop_id: shop.id, name: shop.name });
   } catch (e: any) {

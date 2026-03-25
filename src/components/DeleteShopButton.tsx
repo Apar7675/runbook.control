@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 
@@ -12,19 +12,15 @@ export default function DeleteShopButton({
   const [busy, setBusy] = React.useState(false);
 
   async function onDelete() {
-    const typed = window.prompt(
-      `Type the EXACT shop name to permanently delete:\n\n"${shopName}"\n\nThis deletes members/devices/policies/bundles/audit for this shop.`,
-      ""
-    );
-
-    if (typed !== shopName) return;
+    const ok = window.confirm(`Delete shop "${shopName}" now? This cannot be undone.`);
+    if (!ok) return;
 
     setBusy(true);
     try {
       const res = await fetch("/api/shops/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopId, confirmName: typed }),
+        body: JSON.stringify({ shopId, confirmName: shopName }),
       });
 
       const j = await res.json().catch(() => ({}));
@@ -48,13 +44,14 @@ export default function DeleteShopButton({
         padding: "8px 12px",
         borderRadius: 12,
         fontWeight: 900,
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,120,120,0.22)",
+        background: "rgba(120,24,24,0.35)",
+        color: "#ffd6d6",
         cursor: busy ? "not-allowed" : "pointer",
       }}
       title="Delete shop"
     >
-      {busy ? "Deleting…" : "Delete"}
+      {busy ? "Deleting..." : "Delete Shop"}
     </button>
   );
 }

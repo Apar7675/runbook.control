@@ -1,6 +1,4 @@
-﻿// REPLACE ENTIRE FILE: src/app/api/desktop/bootstrap/route.ts
-
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireUserFromBearer } from "@/lib/desktopAuth";
 
@@ -42,13 +40,11 @@ function isPostgrestSchemaCacheError(msg: string) {
 }
 
 function tryExtractMissingColumn(msg: string): string | null {
-  // Postgres style: column "foo" of relation "rb_shops" does not exist
   const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation/i);
   return m?.[1] ?? null;
 }
 
 async function insertWithAutoStrip(admin: any, table: string, payload: Record<string, any>, selectCols: string) {
-  // Try insert; if a column doesn't exist, remove it and retry (up to 12 keys).
   let working: Record<string, any> = { ...payload };
 
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -70,8 +66,6 @@ async function insertWithAutoStrip(admin: any, table: string, payload: Record<st
 }
 
 async function serviceRolePreflight(admin: any, userId: string) {
-  // If supabaseAdmin() is accidentally using the ANON key,
-  // this will fail. If it passes, we KNOW we are service-role.
   const { data, error } = await admin.auth.admin.getUserById(userId);
   if (error || !data?.user?.id) {
     throw new Error(
@@ -83,7 +77,7 @@ async function serviceRolePreflight(admin: any, userId: string) {
 }
 
 async function createShop(admin: any, shopPayload: Record<string, any>) {
-  return await insertWithAutoStrip(admin, SHOP_TABLE, shopPayload, "id,name");
+  return await insertWithAutoStrip(admin, SHOP_TABLE, shopPayload, "id,name,billing_status");
 }
 
 async function createMembership(admin: any, shopId: string, userId: string) {
@@ -106,11 +100,8 @@ export async function POST(req: Request) {
     }
 
     const admin = supabaseAdmin();
-
-    // ✅ PROVE we’re really using service role
     await serviceRolePreflight(admin, user.id);
 
-    // Optional profile upsert (ignore if table missing/columns mismatch)
     try {
       await insertWithAutoStrip(
         admin,
@@ -126,7 +117,6 @@ export async function POST(req: Request) {
         "id"
       );
     } catch {
-      // ignore
     }
 
     const shopPayload: Record<string, any> = {
@@ -141,7 +131,7 @@ export async function POST(req: Request) {
       machines_count: nInt(body.machines, 0),
       employees_count: nInt(body.employees, 0),
       departments: Array.isArray(body.departments) ? body.departments : [],
-      billing_status: "none",
+      billing_status: "active",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -153,6 +143,7 @@ export async function POST(req: Request) {
       ok: true,
       shop_id: shop.id,
       shop_name: shop.name,
+      billing_status: shop.billing_status ?? "active",
       shop_table: SHOP_TABLE,
       membership_table: MEMBER_TABLE,
     });

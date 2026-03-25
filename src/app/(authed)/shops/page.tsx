@@ -1,9 +1,8 @@
-// REPLACE ENTIRE FILE: src/app/(authed)/shops/page.tsx
-
-import React from "react";
+﻿import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import GlassCard from "@/components/GlassCard";
+import DeleteShopButton from "@/components/DeleteShopButton";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isPlatformAdminEmail } from "@/lib/platformAdmin";
@@ -12,8 +11,7 @@ export const dynamic = "force-dynamic";
 
 type Shop = { id: string; name: string; created_at: string | null };
 
-// Shop list card
-function ShopCard({ shop }: { shop: Shop }) {
+function ShopCard({ shop, canDelete = false }: { shop: Shop; canDelete?: boolean }) {
   return (
     <div
       style={{
@@ -22,16 +20,23 @@ function ShopCard({ shop }: { shop: Shop }) {
         borderRadius: 16,
         padding: 16,
         display: "grid",
-        gap: 8,
+        gap: 10,
       }}
     >
-      <div style={{ fontSize: 16, fontWeight: 900 }}>{shop.name}</div>
-      <div style={{ fontSize: 12, opacity: 0.7 }}>
-        {shop.created_at ? new Date(shop.created_at).toISOString() : "—"} • {shop.id}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ fontSize: 16, fontWeight: 900 }}>{shop.name}</div>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>
+            {shop.created_at ? new Date(shop.created_at).toISOString() : "-"} • {shop.id}
+          </div>
+        </div>
+
+        {canDelete ? <DeleteShopButton shopId={shop.id} shopName={shop.name} /> : null}
       </div>
+
       <div>
         <Link href={`/shops/${shop.id}`} style={{ color: "#b8b9ff", textDecoration: "none", fontWeight: 900 }}>
-          Enter Shop →
+          Enter Shop -&gt;
         </Link>
       </div>
     </div>
@@ -39,7 +44,6 @@ function ShopCard({ shop }: { shop: Shop }) {
 }
 
 export default async function ShopsPage() {
-  // Who is logged in?
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   const user = data?.user ?? null;
@@ -49,7 +53,6 @@ export default async function ShopsPage() {
   const email = user.email ?? null;
   const isAdmin = isPlatformAdminEmail(email);
 
-  // PLATFORM ADMIN: show all shops (platform view)
   if (isAdmin) {
     const admin = supabaseAdmin();
     const { data: shops, error } = await admin.from("rb_shops").select("id,name,created_at").order("created_at", { ascending: false });
@@ -88,7 +91,7 @@ export default async function ShopsPage() {
         <GlassCard title={`Shops (${(shops ?? []).length})`}>
           <div style={{ display: "grid", gap: 12 }}>
             {(shops ?? []).map((s: any) => (
-              <ShopCard key={s.id} shop={s} />
+              <ShopCard key={s.id} shop={s} canDelete />
             ))}
           </div>
         </GlassCard>
@@ -96,15 +99,12 @@ export default async function ShopsPage() {
     );
   }
 
-  // NORMAL USER: show only shops they belong to
-  // RLS should allow this: shop_members rows for this user, then join to shops.
   const { data: members, error: memErr } = await supabase
     .from("shop_members")
     .select("shop_id, role, shops:shops(id,name,created_at)")
     .eq("user_id", user.id);
 
   if (memErr) {
-    // If RLS blocks, better to send them to onboarding than leak platform UI.
     redirect("/onboarding");
   }
 
@@ -116,12 +116,10 @@ export default async function ShopsPage() {
     redirect("/onboarding");
   }
 
-  // If exactly 1 shop, go straight in
   if (shops.length === 1) {
     redirect(`/shops/${shops[0].id}`);
   }
 
-  // Multi-shop user (later feature). For now show list.
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
       <h1 style={{ fontSize: 28, margin: 0 }}>Your Shops</h1>
