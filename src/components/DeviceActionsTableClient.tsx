@@ -2,6 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import { formatDateTime } from "@/lib/ui/dates";
+import { useIsMounted } from "@/lib/ui/useIsMounted";
 
 export default function DeviceActionsTableClient({
   devices,
@@ -10,6 +12,7 @@ export default function DeviceActionsTableClient({
   devices: any[];
   tokenByDevice: [string, any][];
 }) {
+  const mounted = useIsMounted();
   const map = React.useMemo(() => new Map(tokenByDevice), [tokenByDevice]);
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
@@ -143,7 +146,7 @@ export default function DeviceActionsTableClient({
                 </div>
                 <div style={{ fontSize: 12, opacity: 0.7 }}>
                   Activation: {t?.used_at ? "USED" : t ? "READY" : "—"}
-                  {t?.expires_at ? ` (expires ${new Date(t.expires_at).toLocaleString()})` : ""}
+                  {t?.expires_at ? ` (expires ${mounted ? formatDateTime(t.expires_at) : "Loading..."})` : ""}
                 </div>
               </div>
 

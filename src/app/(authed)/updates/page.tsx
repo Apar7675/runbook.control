@@ -1,135 +1,90 @@
 import React from "react";
-import GlassCard from "@/components/GlassCard";
-import { rbListMyShops } from "@/lib/rb";
-import { supabaseServer } from "@/lib/supabase/server";
-import { auditLog } from "@/lib/audit";
+import { ActionLink, EmptyState, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
+import { getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
 
-async function savePolicy(formData: FormData) {
-  "use server";
+export const dynamic = "force-dynamic";
 
-  const shopId = String(formData.get("shopId") ?? "").trim();
-  const channel = String(formData.get("channel") ?? "stable").trim();
-  const min_version_raw = String(formData.get("min_version") ?? "").trim();
-  const pinned_version_raw = String(formData.get("pinned_version") ?? "").trim();
-
-  const min_version = min_version_raw ? min_version_raw : null;
-  const pinned_version = pinned_version_raw ? pinned_version_raw : null;
-
-  if (!shopId) return;
-
-  const supabase = await supabaseServer();
-
-  // BEFORE
-  const { data: before, error: e0 } = await supabase
-    .from("rb_update_policy")
-    .select("*")
-    .eq("shop_id", shopId)
-    .maybeSingle();
-
-  if (e0) throw new Error(e0.message);
-
-  // Upsert by unique(shop_id)
-  const { data: after, error } = await supabase
-    .from("rb_update_policy")
-    .upsert(
-      {
-        shop_id: shopId,
-        channel,
-        min_version,
-        pinned_version,
-      },
-      { onConflict: "shop_id" }
-    )
-    .select("*")
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  await auditLog({
-    shop_id: shopId,
-    action: "policy.changed",
-    entity_type: "policy",
-    entity_id: after.id,
-    details: {
-      before: before
-        ? { channel: before.channel, min_version: before.min_version, pinned_version: before.pinned_version }
-        : null,
-      after: { channel: after.channel, min_version: after.min_version, pinned_version: after.pinned_version },
-    },
-  });
+function formatPolicySummary(snapshot: Awaited<ReturnType<typeof getShopSnapshot>>) {
+  const hasOffline = snapshot.health.offline_devices > 0;
+  if (hasOffline) return "Some devices are offline, so update readiness needs review before rollout.";
+  if (snapshot.counts.devices_total === 0) return "No devices are registered yet, so no rollout policy is needed yet.";
+  return "Devices are connected well enough to review rollout policy and update readiness.";
 }
 
-export default async function UpdatesPage() {
-  const shops = await rbListMyShops();
-  const supabase = await supabaseServer();
+export default async function UpdatesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const requestedShopId = typeof params.shop === "string" ? params.shop : "";
+  const context = await getViewerContext();
+  const primaryShop = selectPrimaryShop(context.shops, requestedShopId);
 
-  const { data: policies, error } = await supabase
-    .from("rb_update_policy")
-    .select("*")
-    .order("created_at", { ascending: false });
+  if (!primaryShop) {
+    return (
+      <div style={{ display: "grid", gap: 20 }}>
+        <PageHeader eyebrow="Updates" title="Updates" description="Review rollout policy once a shop and devices exist." />
+        <EmptyState
+          title="No shop available"
+          description="Set up a shop and register devices before managing rollout policy."
+          action={<ActionLink href="/shops" tone="primary">Open Shop Setup</ActionLink>}
+        />
+      </div>
+    );
+  }
 
-  if (error) throw new Error(error.message);
-
-  const byShop = new Map<string, any>();
-  (policies ?? []).forEach((p: any) => byShop.set(p.shop_id, p));
+  const snapshot = await getShopSnapshot(primaryShop);
+  const readiness = snapshot.health.offline_devices > 0 ? "Warning" : snapshot.counts.devices_total === 0 ? "Pending" : "Healthy";
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Updates</h1>
+    <div style={{ display: "grid", gap: 22 }}>
+      <PageHeader
+        eyebrow="Updates"
+        title={`Updates for ${snapshot.name}`}
+        description="Present rollout policy as an operational choice, not a table-driven backend setting."
+        actions={
+          <>
+            <ActionLink href={`/shops/${snapshot.id}/policy`} tone="primary">Change Rollout Policy</ActionLink>
+            <ActionLink href="/devices">Review Device Status</ActionLink>
+          </>
+        }
+      />
 
-      <GlassCard title="Set Policy (per shop)">
-        <form action={savePolicy} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <select name="shopId" style={{ padding: 10, borderRadius: 12, minWidth: 260 }}>
-            <option value="">Select shop…</option>
-            {shops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          <select name="channel" style={{ padding: 10, borderRadius: 12, minWidth: 160 }}>
-            <option value="stable">stable</option>
-            <option value="beta">beta</option>
-          </select>
-
-          <input name="min_version" placeholder="min version (optional)" style={{ padding: 10, borderRadius: 12 }} />
-          <input name="pinned_version" placeholder="pinned version (optional)" style={{ padding: 10, borderRadius: 12 }} />
-
-          <button type="submit" style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 800 }}>
-            Save
-          </button>
-        </form>
-      </GlassCard>
-
-      <GlassCard title="Current Policies">
-        {shops.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No shops yet.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {shops.map((s) => {
-              const p = byShop.get(s.id);
-              return (
-                <div
-                  key={s.id}
-                  style={{
-                    padding: 12,
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <div style={{ fontWeight: 900 }}>{s.name}</div>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    Channel: <b>{p?.channel ?? "stable"}</b> • Min: {p?.min_version ?? "—"} • Pinned:{" "}
-                    {p?.pinned_version ?? "—"}
-                  </div>
-                </div>
-              );
-            })}
+      <SectionBlock title="Update Readiness" description="Help the admin know if rollout review is safe to do right now.">
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <StatusBadge label={readiness} tone={toneFromStatus(readiness)} />
           </div>
-        )}
-      </GlassCard>
+          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>{formatPolicySummary(snapshot)}</div>
+        </div>
+      </SectionBlock>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+        <SectionBlock title="Connected Devices" description="Devices that could receive updates.">
+          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.devices_total}</div>
+          <div style={{ color: "rgba(230,232,239,0.82)" }}>{snapshot.counts.devices_active} active right now.</div>
+        </SectionBlock>
+        <SectionBlock title="Offline Devices" description="Devices that need review before rollout confidence is high.">
+          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.health.offline_devices}</div>
+          <div style={{ color: "rgba(230,232,239,0.82)" }}>{snapshot.health.stale_devices} additional devices are stale.</div>
+        </SectionBlock>
+      </div>
+
+      <SectionBlock
+        title="Next Step"
+        description="The detailed editor still lives in the existing shop policy page so current behavior stays intact."
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
+            Use the shop policy page to set rollout channel and version gates. This summary page keeps the explanation simple and directs the admin into the right workflow.
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ActionLink href={`/shops/${snapshot.id}/policy`} tone="primary">Open Update Policy</ActionLink>
+            <ActionLink href="/devices">Review Devices</ActionLink>
+          </div>
+        </div>
+      </SectionBlock>
     </div>
   );
 }

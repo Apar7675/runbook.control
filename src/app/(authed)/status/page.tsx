@@ -2,13 +2,14 @@ import React from "react";
 import GlassCard from "@/components/GlassCard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requirePlatformAdminAal2 } from "@/lib/authz";
+import { formatDateTime } from "@/lib/ui/dates";
 
 export const dynamic = "force-dynamic";
 
 function iso(ts?: string | null) {
   if (!ts) return "—";
   try {
-    return new Date(ts).toISOString();
+    return formatDateTime(ts);
   } catch {
     return ts;
   }

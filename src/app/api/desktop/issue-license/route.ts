@@ -1,7 +1,8 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { requireUserFromBearer } from "@/lib/desktopAuth";
+import { requireSessionUser } from "@/lib/desktopAuth";
+import { getShopEntitlement } from "@/lib/billing/entitlement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,9 +26,23 @@ function sign(payload: any, secret: string) {
   return `${data}.${b64url(sig)}`;
 }
 
+async function requireActiveDevice(admin: ReturnType<typeof supabaseAdmin>, shopId: string, deviceId: string) {
+  const { data: device, error } = await admin
+    .from("rb_devices")
+    .select("id,shop_id,status")
+    .eq("id", deviceId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!device?.id) return { ok: false, error: "Device not registered for this shop." };
+  if (String(device.shop_id ?? "").trim() !== shopId) return { ok: false, error: "Device not registered for this shop." };
+  if (String(device.status ?? "").trim().toLowerCase() !== "active") return { ok: false, error: "Device inactive." };
+  return { ok: true as const };
+}
+
 export async function POST(req: Request) {
   try {
-    const { user } = await requireUserFromBearer(req);
+    const { user } = await requireSessionUser(req);
     const body = await req.json().catch(() => ({}));
     const shop_id = String(body.shop_id ?? "").trim();
     const device_id = String(body.device_id ?? "").trim();
@@ -37,7 +52,6 @@ export async function POST(req: Request) {
 
     const admin = supabaseAdmin();
 
-    // Confirm membership
     const { data: mem } = await admin
       .from("rb_shop_members")
       .select("role")
@@ -47,16 +61,18 @@ export async function POST(req: Request) {
 
     if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
 
-    // Confirm billing allowed
-    const { data: shop } = await admin
-      .from("rb_shops")
-      .select("billing_status,billing_current_period_end")
-      .eq("id", shop_id)
-      .maybeSingle();
+    const deviceCheck = await requireActiveDevice(admin, shop_id, device_id);
+    if (!deviceCheck.ok) {
+      return NextResponse.json({ ok: false, error: deviceCheck.error }, { status: 403 });
+    }
 
-    const st = String(shop?.billing_status ?? "none").toLowerCase();
-    const allowed = st === "trialing" || st === "active";
-    if (!allowed) return NextResponse.json({ ok: false, error: "Billing not active" }, { status: 402 });
+    const entitlement = await getShopEntitlement(shop_id);
+    if (!entitlement.allowed || entitlement.restricted) {
+      return NextResponse.json(
+        { ok: false, error: entitlement.reason, entitlement },
+        { status: 402 }
+      );
+    }
 
     const secret = env("RUNBOOK_LICENSE_SIGNING_SECRET");
 
@@ -66,16 +82,19 @@ export async function POST(req: Request) {
         sub: user.id,
         shop_id,
         device_id,
-        status: st,
+        status: entitlement.status,
+        restricted: entitlement.restricted,
+        grace_active: entitlement.grace_active,
         iat: Math.floor(Date.now() / 1000),
       },
       secret
     );
 
-    return NextResponse.json({ ok: true, token });
+    return NextResponse.json({ ok: true, token, entitlement });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     const status = /not authenticated/i.test(msg) ? 401 : 400;
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
+

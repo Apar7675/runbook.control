@@ -1,31 +1,6 @@
-// REPLACE ENTIRE FILE: src/lib/authz.ts
-//
-// Centralized server-side authorization helpers for RunBook Control.
-// Use in API routes to avoid duplicated logic.
-//
-// Adds BILLING ENFORCEMENT (server-side) for WRITE routes via:
-//   requireBillingWriteAllowed(shopId)
-//   requireShopWriteAllowedAal2(shopId)  // (shop access/admin + billing gate)
-//
-// Billing gate modes (env):
-//   RUNBOOK_BILLING_GATE_MODE = "hard" | "soft" | "hybrid" (default "hybrid")
-//
-// Semantics used here:
-// - soft   => never blocks writes (logs still possible later)
-// - hard   => blocks writes unless billing is OK (or platform admin)
-// - hybrid => blocks writes unless billing is OK (or platform admin)
-//            (reads should remain allowed; only call this helper from write routes)
-//
-// Billing is considered OK when ANY is true:
-// - billing_status is "active" or "trialing"
-// - billing_current_period_end is in the future (grace window)
-//
-// Notes:
-// - If rb_shops billing columns are missing, hard/hybrid will FAIL CLOSED with a clear error.
-// - Platform admins always bypass billing enforcement.
-
-import { supabaseServer } from "@/lib/supabase/server";
+﻿import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getShopEntitlement } from "@/lib/billing/entitlement";
 
 export type AAL = "aal1" | "aal2" | "aal3";
 export type BillingGateMode = "hard" | "soft" | "hybrid";
@@ -39,18 +14,6 @@ function getBillingGateMode(): BillingGateMode {
   const raw = String(process.env.RUNBOOK_BILLING_GATE_MODE ?? "hybrid").trim().toLowerCase();
   if (raw === "hard" || raw === "soft" || raw === "hybrid") return raw;
   return "hybrid";
-}
-
-function isIsoInFuture(iso: string | null | undefined): boolean {
-  if (!iso) return false;
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return false;
-  return t > Date.now();
-}
-
-function isBillingStatusOk(status: string | null | undefined): boolean {
-  const s = String(status ?? "").toLowerCase();
-  return s === "active" || s === "trialing";
 }
 
 export async function getUserOrThrow() {
@@ -122,49 +85,23 @@ export async function requireShopAccessOrAdminAal2(shopId: string) {
   return { user, shopId, isAdmin: false };
 }
 
-/**
- * Enforce billing for WRITE routes.
- * Call this only after you've validated shop access/admin and have a UUID shopId.
- */
 export async function requireBillingWriteAllowed(shopId: string) {
   assertUuid("shopId", shopId);
 
   const mode = getBillingGateMode();
   if (mode === "soft") return { ok: true as const, mode, reason: "mode=soft" };
 
-  // Platform admins bypass billing gate
   const { user } = await requireAal2();
   if (await isPlatformAdmin(user.id)) return { ok: true as const, mode, reason: "platform_admin" };
 
-  const admin = supabaseAdmin();
+  const entitlement = await getShopEntitlement(shopId);
+  if (entitlement.allowed && !entitlement.restricted) {
+    return { ok: true as const, mode, reason: entitlement.reason, entitlement };
+  }
 
-  // Must exist + read billing state
-  const { data: shop, error } = await admin
-    .from("rb_shops")
-    .select("id,billing_status,billing_current_period_end")
-    .eq("id", shopId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!shop?.id) throw new Error("Shop not found");
-
-  const statusOk = isBillingStatusOk(shop.billing_status);
-  const graceOk = isIsoInFuture(shop.billing_current_period_end);
-
-  const billingOk = statusOk || graceOk;
-
-  if (billingOk) return { ok: true as const, mode, reason: statusOk ? "status_ok" : "grace_ok" };
-
-  // hard + hybrid block writes when not OK
-  throw new Error("Billing required: shop is not active/trialing and is outside grace period.");
+  throw new Error(`Billing required: ${entitlement.reason}`);
 }
 
-/**
- * Convenience wrapper for shop-scoped WRITE routes:
- * - requires AAL2
- * - requires (shop member OR platform admin)
- * - enforces billing gate (except platform admin bypass)
- */
 export async function requireShopWriteAllowedAal2(shopId: string) {
   const ctx = await requireShopAccessOrAdminAal2(shopId);
   await requireBillingWriteAllowed(shopId);

@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { getStripe } from "@/lib/stripe/server";
 import { assertUuid, requireShopAccessOrAdminAal2 } from "@/lib/authz";
-import { requireUserFromBearer } from "@/lib/desktopAuth";
+import { requireSessionUser } from "@/lib/desktopAuth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,7 +29,7 @@ async function authenticate(req: Request, shopId: string) {
 
   // Desktop flow (Bearer token)
   if (authHeader?.startsWith("Bearer ")) {
-    const { user } = await requireUserFromBearer(req);
+    const { user } = await requireSessionUser(req);
     if (!user?.id) throw new Error("Invalid bearer token");
     return;
   }
@@ -105,3 +105,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
+

@@ -1,7 +1,7 @@
 import React from "react";
-import Link from "next/link";
-import GlassCard from "@/components/GlassCard";
+import { ActionLink, DataList, EmptyState, PageHeader, SectionBlock } from "@/components/control/ui";
 import { rbGetShop, rbGetUpdatePolicy } from "@/lib/rb";
+import { formatDateTime } from "@/lib/ui/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -9,34 +9,15 @@ type Props = {
   params: Promise<{ shopId: string }>;
 };
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12 }}>
-      <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>
-      <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.9, wordBreak: "break-word" }}>{value}</div>
-    </div>
-  );
-}
-
 export default async function ShopPolicyPage({ params }: Props) {
   const { shopId } = await params;
-
   const shop = await rbGetShop(shopId);
+
   if (!shop) {
     return (
-      <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Update Policy</h1>
-        <GlassCard title="Not found / no access">
-          <div style={{ opacity: 0.8 }}>This shop does not exist, or you don’t have access.</div>
-          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>
-            shop_id: <span style={{ fontWeight: 900 }}>{shopId}</span>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Link href="/shops" style={{ color: "#b8b9ff", textDecoration: "none", fontWeight: 900 }}>
-              ← Back to All Shops
-            </Link>
-          </div>
-        </GlassCard>
+      <div style={{ display: "grid", gap: 20 }}>
+        <PageHeader eyebrow="Updates" title="Update Policy" description="The requested shop was not found or is no longer available." />
+        <EmptyState title="Shop not available" description="Return to the shop list and select another workspace." action={<ActionLink href="/shops" tone="primary">Back to Shops</ActionLink>} />
       </div>
     );
   }
@@ -44,31 +25,28 @@ export default async function ShopPolicyPage({ params }: Props) {
   const policy = await rbGetUpdatePolicy(shop.id);
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <div style={{ display: "grid", gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Update Policy</h1>
-        <div style={{ fontSize: 12, opacity: 0.75 }}>
-          This policy controls update channel and version gates for this shop.
-        </div>
-      </div>
+    <div style={{ display: "grid", gap: 22 }}>
+      <PageHeader
+        eyebrow="Updates"
+        title={`Update Policy for ${shop.name}`}
+        description="Summarize rollout rules in plain English first, then show the technical fields only as supporting detail."
+        actions={<ActionLink href="/updates" tone="primary">Back to Updates</ActionLink>}
+      />
 
-      <GlassCard title="Current Policy">
+      <SectionBlock title="Current Policy" description="This page remains read-only until the consolidated policy editor is added.">
         {!policy ? (
-          <div style={{ opacity: 0.75 }}>
-            No policy found for this shop yet.
-            <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>
-              (This page is read-only right now; next step is adding an editor.)
-            </div>
-          </div>
+          <EmptyState title="No rollout policy yet" description="This shop is still using the default update behavior. Add a policy when you need a rollout channel or version gate." />
         ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            <Row label="Channel" value={policy.channel ?? "—"} />
-            <Row label="Minimum version" value={policy.min_version ?? "—"} />
-            <Row label="Pinned version" value={policy.pinned_version ?? "—"} />
-            <Row label="Updated/created" value={policy.created_at ? new Date(policy.created_at).toISOString() : "—"} />
-          </div>
+          <DataList
+            items={[
+              { label: "Channel", value: policy.channel || "stable" },
+              { label: "Minimum Version", value: policy.min_version || "Not set" },
+              { label: "Pinned Version", value: policy.pinned_version || "Not set" },
+              { label: "Last Updated", value: policy.created_at ? formatDateTime(policy.created_at) : "Unknown" },
+            ]}
+          />
         )}
-      </GlassCard>
+      </SectionBlock>
     </div>
   );
 }

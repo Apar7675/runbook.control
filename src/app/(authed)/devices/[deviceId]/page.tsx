@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import GlassCard from "@/components/GlassCard";
 import { safeFetch } from "@/lib/http/safeFetch";
+import { formatDateTime } from "@/lib/ui/dates";
 
 type Device = {
   id: string;
@@ -37,7 +38,7 @@ type ListResp = { ok: true; devices: Device[]; tokens: Token[] } | { ok?: false;
 function isoOrDash(ts?: string | null) {
   if (!ts) return "—";
   try {
-    return new Date(ts).toISOString();
+    return formatDateTime(ts);
   } catch {
     return ts;
   }
@@ -440,7 +441,7 @@ export default function DeviceDetailPage() {
         <GlassCard title="Token (revealed once)">
           <div style={{ display: "grid", gap: 8 }}>
             <div style={{ fontSize: 12, opacity: 0.9, fontWeight: 900 }}>
-              Copy now • {reveal.issuedAtIso}
+              Copy now • {formatDateTime(reveal.issuedAtIso)}
             </div>
             <textarea
               readOnly

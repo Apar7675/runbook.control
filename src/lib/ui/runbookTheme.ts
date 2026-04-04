@@ -1,0 +1,87 @@
+export const runbookTheme = {
+  colors: {
+    shellBg: "#040811",
+    surfaceDark: "#E60A1220",
+    text: "#EAF0F8",
+    muted: "#B0BDD0",
+    muted2: "#7B8BA3",
+    accent: "#5E84C6",
+    glow: "#7399D6",
+    success: "#56C78C",
+    warning: "#E2AE58",
+    danger: "#DE7676",
+    info: "#7EABD9",
+  },
+  gradients: {
+    shell: "linear-gradient(180deg, rgba(18,26,40,0.93), rgba(9,14,22,0.96))",
+    panel: "linear-gradient(180deg, rgba(13,21,33,0.80), rgba(10,18,32,0.80))",
+    buttonPrimary: "linear-gradient(180deg, rgba(94,132,198,0.98), rgba(73,105,149,0.98))",
+    buttonGhost: "linear-gradient(180deg, rgba(29,42,63,0.96), rgba(21,32,51,0.96))",
+    focusBar: "linear-gradient(180deg, #7EA8FF, #6D82FF 50%, #8B63F2)",
+  },
+  border: {
+    panel: "1px solid rgba(72,100,142,0.42)",
+    panelSoft: "1px solid rgba(255,255,255,0.10)",
+    ghostButton: "1px solid #35527B",
+    primaryButton: "1px solid rgba(167,197,255,0.36)",
+    success: "1px solid rgba(86,199,140,0.34)",
+    warning: "1px solid rgba(226,174,88,0.34)",
+    danger: "1px solid rgba(222,118,118,0.34)",
+  },
+  radius: {
+    panel: 18,
+    section: 16,
+    field: 9,
+    pill: 10,
+    button: 12,
+  },
+  shadow: {
+    floating: "0 8px 20px rgba(0,0,0,0.18)",
+    focusSoft: "0 0 10px rgba(110,157,218,0.09)",
+    button: "0 8px 16px rgba(0,0,0,0.16)",
+    primary: "0 10px 18px rgba(44,72,128,0.26)",
+  },
+  spacing: {
+    shellX: 14,
+    shellTop: 8,
+    shellBottom: 10,
+    card: 10,
+    stack: 12,
+    section: 16,
+    row: 8,
+  },
+  type: {
+    dialogTitle: {
+      fontSize: 19,
+      fontWeight: 600,
+      lineHeight: 1.15,
+      letterSpacing: -0.2,
+    },
+    dialogSubtitle: {
+      fontSize: 11,
+      lineHeight: 1.45,
+    },
+    sectionTitle: {
+      fontSize: 14,
+      fontWeight: 600,
+      lineHeight: 1.2,
+    },
+    sectionSub: {
+      fontSize: 10.5,
+      lineHeight: 1.45,
+    },
+    body: {
+      fontSize: 12,
+      lineHeight: 1.5,
+    },
+    label: {
+      fontSize: 10.5,
+      fontWeight: 600,
+      lineHeight: 1.35,
+    },
+  },
+  motion: {
+    smooth: "160ms ease",
+    hover: "180ms ease",
+  },
+} as const;

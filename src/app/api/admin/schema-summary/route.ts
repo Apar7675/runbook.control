@@ -20,10 +20,10 @@ export async function GET(req: Request) {
     const { user } = await requirePlatformAdminAal2();
     const admin = supabaseAdmin();
 
-    const [shops, employees, members, devices, tokens, timeEvents, timeOff, messages] = await Promise.all([
+    const [shops, members, employees, devices, tokens, timeEvents, timeOff, messages] = await Promise.all([
       getCount(admin, "rb_shops"),
+      getCount(admin, "rb_shop_members"),
       getCount(admin, "employees"),
-      getCount(admin, "shop_members"),
       getCount(admin, "rb_devices"),
       getCount(admin, "rb_device_activation_tokens"),
       getCount(admin, "time_events"),
@@ -43,8 +43,8 @@ export async function GET(req: Request) {
       },
       tables: {
         rb_shops: shops,
+        rb_shop_members: members,
         employees,
-        shop_members: members,
         rb_devices: devices,
         rb_device_activation_tokens: tokens,
         time_events: timeEvents,

@@ -38,8 +38,8 @@ export async function GET(req: Request) {
         .select("id", { count: "exact", head: true })
         .eq("shop_id", shopId),
       admin
-        .from("shop_members")
-        .select("id,user_id,role,status,display_name", { count: "exact" })
+        .from("rb_shop_members")
+        .select("id,user_id,role", { count: "exact" })
         .eq("shop_id", shopId)
         .order("created_at", { ascending: false })
         .limit(50),
@@ -93,7 +93,7 @@ export async function GET(req: Request) {
         message_count: messageCount,
       },
       active_employees: activeEmployeesRes.data ?? [],
-      shop_members: membersRes.data ?? [],
+      rb_shop_members: membersRes.data ?? [],
       devices: devicesRes.data ?? [],
       recent_time_off_requests: requestsRes.data ?? [],
     });

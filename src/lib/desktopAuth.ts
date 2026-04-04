@@ -6,7 +6,7 @@ function env(name: string) {
   return v;
 }
 
-export async function requireUserFromBearer(req: Request) {
+export async function requireSessionUser(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
   const m = auth.match(/^Bearer\s+(.+)$/i);
   if (!m) throw new Error("Not authenticated");

@@ -1,135 +1,108 @@
-﻿import React from "react";
-import Link from "next/link";
+import React from "react";
 import { redirect } from "next/navigation";
-import GlassCard from "@/components/GlassCard";
 import DeleteShopButton from "@/components/DeleteShopButton";
-import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { isPlatformAdminEmail } from "@/lib/platformAdmin";
+import {
+  ActionLink,
+  DataList,
+  EmptyState,
+  PageHeader,
+  SectionBlock,
+  StatusBadge,
+  toneFromStatus,
+} from "@/components/control/ui";
+import { getShopSnapshot, getViewerContext } from "@/lib/control/summary";
 
 export const dynamic = "force-dynamic";
 
-type Shop = { id: string; name: string; created_at: string | null };
-
-function ShopCard({ shop, canDelete = false }: { shop: Shop; canDelete?: boolean }) {
-  return (
-    <div
-      style={{
-        border: "1px solid rgba(255,255,255,0.10)",
-        background: "rgba(255,255,255,0.03)",
-        borderRadius: 16,
-        padding: 16,
-        display: "grid",
-        gap: 10,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 16, fontWeight: 900 }}>{shop.name}</div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            {shop.created_at ? new Date(shop.created_at).toISOString() : "-"} • {shop.id}
-          </div>
-        </div>
-
-        {canDelete ? <DeleteShopButton shopId={shop.id} shopName={shop.name} /> : null}
-      </div>
-
-      <div>
-        <Link href={`/shops/${shop.id}`} style={{ color: "#b8b9ff", textDecoration: "none", fontWeight: 900 }}>
-          Enter Shop -&gt;
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 export default async function ShopsPage() {
-  const supabase = await supabaseServer();
-  const { data } = await supabase.auth.getUser();
-  const user = data?.user ?? null;
+  const context = await getViewerContext();
 
-  if (!user) redirect("/login");
+  if (!context.isPlatformAdmin && context.shops.length === 1) {
+    redirect(`/shops/${context.shops[0].id}`);
+  }
 
-  const email = user.email ?? null;
-  const isAdmin = isPlatformAdminEmail(email);
-
-  if (isAdmin) {
-    const admin = supabaseAdmin();
-    const { data: shops, error } = await admin.from("rb_shops").select("id,name,created_at").order("created_at", { ascending: false });
-
-    if (error) {
-      return (
-        <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-          <h1 style={{ fontSize: 28, margin: 0 }}>All Shops</h1>
-          <GlassCard title="Error">
-            <div style={{ opacity: 0.9 }}>{error.message}</div>
-          </GlassCard>
-        </div>
-      );
-    }
-
+  if (context.shops.length === 0) {
     return (
-      <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 28, margin: 0 }}>All Shops</h1>
-          <Link
-            href="/shops/create"
-            style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              textDecoration: "none",
-              border: "1px solid rgba(255,255,255,0.10)",
-              background: "rgba(255,255,255,0.03)",
-              color: "#e6e8ef",
-              fontWeight: 900,
-            }}
-          >
-            Create Shop
-          </Link>
-        </div>
-
-        <GlassCard title={`Shops (${(shops ?? []).length})`}>
-          <div style={{ display: "grid", gap: 12 }}>
-            {(shops ?? []).map((s: any) => (
-              <ShopCard key={s.id} shop={s} canDelete />
-            ))}
-          </div>
-        </GlassCard>
+      <div style={{ display: "grid", gap: 20 }}>
+        <PageHeader
+          eyebrow="Shop"
+          title="Shop Setup"
+          description="Create or connect a shop before you start managing people, devices, billing, and app access."
+          actions={<ActionLink href="/create-shop" tone="primary">Create Shop</ActionLink>}
+        />
+        <EmptyState
+          title="No shops available yet"
+          description="A novice admin should never land on a blank record list with no guidance. Start by creating the first shop profile."
+          action={<ActionLink href="/create-shop" tone="primary">Create Shop</ActionLink>}
+        />
       </div>
     );
   }
 
-  const { data: members, error: memErr } = await supabase
-    .from("shop_members")
-    .select("shop_id, role, shops:shops(id,name,created_at)")
-    .eq("user_id", user.id);
-
-  if (memErr) {
-    redirect("/onboarding");
-  }
-
-  const shops = (members ?? [])
-    .map((m: any) => m.shops)
-    .filter(Boolean) as Shop[];
-
-  if (shops.length === 0) {
-    redirect("/onboarding");
-  }
-
-  if (shops.length === 1) {
-    redirect(`/shops/${shops[0].id}`);
-  }
+  const snapshots = await Promise.all(context.shops.map((shop) => getShopSnapshot(shop)));
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Your Shops</h1>
-      <GlassCard title={`Shops (${shops.length})`}>
-        <div style={{ display: "grid", gap: 12 }}>
-          {shops.map((s) => (
-            <ShopCard key={s.id} shop={s} />
-          ))}
+    <div style={{ display: "grid", gap: 22 }}>
+      <PageHeader
+        eyebrow="Shop"
+        title={context.isPlatformAdmin ? "Shop Command Center" : "Your Shops"}
+        description="Review shop profile, current access, device health, and membership at a glance. Technical implementation details stay behind the scenes."
+        actions={context.isPlatformAdmin ? <ActionLink href="/create-shop" tone="primary">Create Shop</ActionLink> : undefined}
+      />
+
+      <SectionBlock
+        title="Shop Overview"
+        description="Each shop card leads with operational status first, then links into deeper admin workflows."
+      >
+        <div style={{ display: "grid", gap: 16 }}>
+          {snapshots.map((shop) => {
+            const deviceStatus =
+              shop.health.offline_devices > 0 ? "Action Needed" : shop.health.stale_devices > 0 ? "Warning" : "Healthy";
+            return (
+              <div
+                key={shop.id}
+                style={{
+                  display: "grid",
+                  gap: 16,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 18,
+                  background: "rgba(255,255,255,0.03)",
+                  padding: 18,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900 }}>{shop.name}</div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <StatusBadge label={shop.access.display_status} tone={toneFromStatus(shop.access.display_status)} />
+                      <StatusBadge label={deviceStatus} tone={toneFromStatus(deviceStatus)} />
+                      <StatusBadge label={shop.member_role} tone="neutral" />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <ActionLink href={`/shops/${shop.id}`} tone="primary">Open Shop</ActionLink>
+                    <ActionLink href={`/shops/${shop.id}/billing`}>Billing & Access</ActionLink>
+                    {context.isPlatformAdmin ? <DeleteShopButton shopId={shop.id} shopName={shop.name} /> : null}
+                  </div>
+                </div>
+
+                <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>{shop.access.summary}</div>
+
+                <DataList
+                  items={[
+                    { label: "People", value: `${shop.counts.employees_active} active of ${shop.counts.employees_total}` },
+                    { label: "Devices", value: `${shop.counts.devices_active} active of ${shop.counts.devices_total}` },
+                    { label: "Desktop", value: `${shop.counts.desktops_active} active desktop devices` },
+                    { label: "Workstation", value: `${shop.counts.workstations_active} active workstation devices` },
+                    { label: "Mobile Ready", value: `${shop.counts.employees_mobile_ready} employees` },
+                    { label: "Workstation Ready", value: `${shop.counts.employees_workstation_ready} employees` },
+                  ]}
+                />
+              </div>
+            );
+          })}
         </div>
-      </GlassCard>
+      </SectionBlock>
     </div>
   );
 }

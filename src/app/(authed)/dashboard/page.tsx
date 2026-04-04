@@ -1,161 +1,467 @@
 import React from "react";
-import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  ActionLink,
+  Icon,
+  EmptyState,
+  MetricCard,
+  PageHeader,
+  SectionBlock,
+  StatusBadge,
+  toneFromStatus,
+} from "@/components/control/ui";
+import { getPlatformSnapshot, getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
+import { formatDateTime } from "@/lib/ui/dates";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 18,
-        background: "rgba(255,255,255,0.03)",
-        padding: 16,
-      }}
-    >
-      <div style={{ fontSize: 12, opacity: 0.7, letterSpacing: 0.4, fontWeight: 900 }}>
-        {title.toUpperCase()}
-      </div>
-      <div style={{ marginTop: 10 }}>{children}</div>
-    </div>
-  );
-}
-
-type AuditRow = {
-  id: string;
-  created_at: string;
-  actor_email: string | null;
-  action: string;
-  shop_id: string | null;
-  shop_name?: string | null;
-  target_type: string | null;
-  target_id: string | null;
-};
-
-function iso(ts?: string | null) {
-  if (!ts) return "—";
+function formatDate(value?: string | null) {
+  if (!value) return "Not set";
   try {
-    return new Date(ts).toISOString();
+    return formatDateTime(value);
   } catch {
-    return ts;
+    return value;
   }
 }
 
+function priorityTone(priority: "high" | "medium" | "low") {
+  return priority === "high" ? "critical" : priority === "medium" ? "warning" : "neutral";
+}
+
 export default async function DashboardPage() {
-  const supabase = await supabaseServer();
+  const context = await getViewerContext();
+  const primaryShop = selectPrimaryShop(context.shops);
+  const shopSnapshot = primaryShop ? await getShopSnapshot(primaryShop) : null;
+  const platformSnapshot = context.isPlatformAdmin ? await getPlatformSnapshot(context) : null;
 
-  const { data: userRes } = await supabase.auth.getUser();
-  const user = userRes.user ?? null;
-  const email = user?.email ?? "—";
+  if (!primaryShop || !shopSnapshot) {
+    return (
+      <div style={{ display: "grid", gap: 20 }}>
+        <PageHeader
+          eyebrow="Dashboard"
+          title="RunBook Control"
+          description="This command center becomes useful once a shop is connected. Start by creating or joining a shop."
+          actions={<ActionLink href="/shops" tone="primary">Open Shop Setup</ActionLink>}
+        />
+        <EmptyState
+          title="No shop connected yet"
+          description="Create a shop first, then add people, register devices, and confirm billing access."
+          action={<ActionLink href="/shops" tone="primary">Go to Shop</ActionLink>}
+        />
+      </div>
+    );
+  }
 
-  const admin = supabaseAdmin();
+  const billingLabel =
+    shopSnapshot.access.state === "active" || shopSnapshot.access.state === "trialing"
+      ? "Billing Healthy"
+      : shopSnapshot.access.state === "grace"
+      ? "Billing Needs Review"
+      : "Billing Restricted";
 
-  const [shopsCountRes, devicesCountRes, tokensCountRes, auditRes] = await Promise.all([
-    admin.from("rb_shops").select("id", { count: "exact", head: true }),
-    admin.from("rb_devices").select("id", { count: "exact", head: true }),
-    admin.from("rb_device_tokens").select("id", { count: "exact", head: true }),
-    admin
-      .from("rb_audit_log")
-      .select("id,created_at,actor_email,action,shop_id,target_type,target_id,rb_shops(name)")
-      .order("created_at", { ascending: false })
-      .limit(15),
-  ]);
+  const appLabel =
+    shopSnapshot.access.workstation_mode !== "full"
+      ? "Workstation Degraded"
+      : shopSnapshot.access.mobile_mode !== "full"
+      ? "Mobile Restricted"
+      : shopSnapshot.access.desktop_mode !== "full"
+      ? "Desktop Reduced"
+      : "All Connected";
 
-  const shopsCount = shopsCountRes.count ?? 0;
-  const devicesCount = devicesCountRes.count ?? 0;
-  const tokensCount = tokensCountRes.count ?? 0;
+  const devicesLabel =
+    shopSnapshot.health.offline_devices > 0
+      ? "Devices Need Review"
+      : shopSnapshot.health.stale_devices > 0
+      ? "Devices Need Attention"
+      : "Devices Healthy";
 
-  const auditRows: AuditRow[] = (auditRes.data ?? []).map((r: any) => ({
-    id: r.id,
-    created_at: r.created_at,
-    actor_email: r.actor_email ?? null,
-    action: r.action,
-    shop_id: r.shop_id ?? null,
-    shop_name: r?.rb_shops?.name ?? null,
-    target_type: r.target_type ?? null,
-    target_id: r.target_id ?? null,
-  }));
+  const employeeAccessGap = Math.max(0, shopSnapshot.counts.employees_active - shopSnapshot.counts.employees_workstation_ready);
+  const peopleLabel =
+    shopSnapshot.counts.employees_total === 0
+      ? "People Setup Pending"
+      : employeeAccessGap > 0
+      ? "People Need Access Review"
+      : "People Ready";
+
+  const actionItems = [
+    shopSnapshot.health.offline_devices > 0
+      ? {
+          title: `${shopSnapshot.health.offline_devices} Device${shopSnapshot.health.offline_devices === 1 ? "" : "s"} Offline`,
+          reason: "These devices have stopped checking in and need review now.",
+          href: "/devices",
+          cta: "Review Devices",
+          priority: "high" as const,
+        }
+      : null,
+    shopSnapshot.health.stale_devices > 0
+      ? {
+          title: `${shopSnapshot.health.stale_devices} Device${shopSnapshot.health.stale_devices === 1 ? "" : "s"} Need Review`,
+          reason: "These devices are going stale and should be checked before they go offline.",
+          href: "/devices",
+          cta: "Check Device Health",
+          priority: "medium" as const,
+        }
+      : null,
+    employeeAccessGap > 0
+      ? {
+          title: `${employeeAccessGap} Employee${employeeAccessGap === 1 ? "" : "s"} Need${employeeAccessGap === 1 ? "s" : ""} Access Review`,
+          reason: "Some active employees still need workstation access review before setup is complete.",
+          href: "/people",
+          cta: "Fix Employee Access",
+          priority: "medium" as const,
+        }
+      : null,
+    shopSnapshot.access.workstation_mode !== "full"
+      ? {
+          title: "Workstation Access Needs Attention",
+          reason: "Workstation sign-in is not fully ready and should be reviewed before going live.",
+          href: "/apps",
+          cta: "Review App Access",
+          priority: "high" as const,
+        }
+      : null,
+    shopSnapshot.access.state === "grace" || shopSnapshot.access.state === "restricted" || shopSnapshot.access.state === "expired"
+      ? {
+          title: "Billing Needs Review",
+          reason: "Billing is affecting app access and should be reviewed before troubleshooting anything else.",
+          href: "/billing-access",
+          cta: "Open Billing",
+          priority: "high" as const,
+        }
+      : shopSnapshot.access.state === "trialing" && shopSnapshot.trial_ends_at
+      ? {
+          title: "Trial Ending Soon",
+          reason: `Current trial access ends ${formatDate(shopSnapshot.trial_ends_at)}.`,
+          href: "/billing-access",
+          cta: "Review Billing",
+          priority: "medium" as const,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    title: string;
+    reason: string;
+    href: string;
+    cta: string;
+    priority: "high" | "medium" | "low";
+  }>;
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1200 }}>
-      <h1 style={{ margin: 0 }}>Platform Overview</h1>
+    <div style={{ display: "grid", gap: 26 }}>
+      <PageHeader
+        eyebrow="Dashboard"
+        title={context.isPlatformAdmin ? "RunBook Command Center" : `${shopSnapshot.name} Command Center`}
+        description={`Understand what needs action first, what apps are healthy, and where to go next.${context.isPlatformAdmin ? ` You currently manage ${platformSnapshot?.manageableShopCount ?? 0} shops.` : ""}`}
+        actions={
+          <>
+            <ActionLink href="/people" tone="primary" icon="people">Add Employee</ActionLink>
+            <ActionLink href="/devices" icon="devices">Register Device</ActionLink>
+          </>
+        }
+      />
 
-      <Card title="Session">
-        <div style={{ fontSize: 13, opacity: 0.85 }}>
-          Signed in as <span style={{ fontWeight: 900 }}>{email}</span> ·{" "}
-          <span style={{ fontWeight: 900 }}>Platform Control</span>
-        </div>
-      </Card>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
+        <MetricCard
+          title="Billing"
+          value={billingLabel}
+          summary={
+            billingLabel === "Billing Healthy"
+              ? "No billing action is needed right now."
+              : "Billing is currently affecting access and needs review."
+          }
+          href="/billing-access"
+          badge={<StatusBadge label={billingLabel} tone={toneFromStatus(billingLabel)} />}
+          tone={billingLabel === "Billing Healthy" ? "healthy" : "critical"}
+        />
+        <MetricCard
+          title="Apps"
+          value={appLabel}
+          summary={appLabel === "All Connected" ? "All core app paths are operating normally." : "At least one app flow needs review."}
+          href="/apps"
+          badge={<StatusBadge label={appLabel} tone={toneFromStatus(appLabel)} />}
+          tone={appLabel === "All Connected" ? "subtle" : "critical"}
+        />
+        <MetricCard
+          title="Devices"
+          value={devicesLabel}
+          summary={
+            shopSnapshot.health.offline_devices > 0
+              ? `${shopSnapshot.health.offline_devices} offline right now.`
+              : shopSnapshot.health.stale_devices > 0
+              ? `${shopSnapshot.health.stale_devices} stale and should be reviewed soon.`
+              : `${shopSnapshot.counts.devices_active} active of ${shopSnapshot.counts.devices_total} total.`
+          }
+          href="/devices"
+          badge={<StatusBadge label={devicesLabel} tone={toneFromStatus(devicesLabel)} />}
+          tone={shopSnapshot.health.offline_devices > 0 ? "critical" : shopSnapshot.health.stale_devices > 0 ? "warning" : "healthy"}
+        />
+        <MetricCard
+          title="People"
+          value={peopleLabel}
+          summary={
+            shopSnapshot.counts.employees_total === 0
+              ? "No employees have been added yet."
+              : employeeAccessGap > 0
+              ? `${employeeAccessGap} employee${employeeAccessGap === 1 ? "" : "s"} need${employeeAccessGap === 1 ? "s" : ""} workstation review.`
+              : `${shopSnapshot.counts.employees_active} active and ready.`
+          }
+          href="/people"
+          badge={<StatusBadge label={peopleLabel} tone={toneFromStatus(peopleLabel)} />}
+          tone={employeeAccessGap > 0 ? "warning" : shopSnapshot.counts.employees_total === 0 ? "subtle" : "healthy"}
+        />
+      </div>
 
-      <Card title="Counts">
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-          <div style={{ minWidth: 180 }}>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>Shops</div>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>{shopsCount}</div>
-          </div>
-          <div style={{ minWidth: 180 }}>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>Devices</div>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>{devicesCount}</div>
-          </div>
-          <div style={{ minWidth: 180 }}>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>Device tokens</div>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>{tokensCount}</div>
-          </div>
-        </div>
-      </Card>
-
-      <Card title="Recent platform activity">
-        {auditRes.error ? (
-          <div style={{ fontSize: 12, opacity: 0.8, whiteSpace: "pre-wrap" }}>
-            Unable to load recent activity.
-          </div>
-        ) : auditRows.length === 0 ? (
-          <div style={{ fontSize: 12, opacity: 0.8 }}>No audit events yet.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {auditRows.map((r) => (
+      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 18 }}>
+        <SectionBlock
+          title="Action Required"
+          description="This is the operational heartbeat of the page."
+          tone={actionItems.length > 0 ? "critical" : "healthy"}
+        >
+          <div style={{ display: "grid", gap: 12 }}>
+            {actionItems.length === 0 ? (
               <div
-                key={r.id}
                 style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 14,
-                  padding: 12,
-                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(86, 220, 154, 0.14)",
+                  borderRadius: 18,
+                  background: "linear-gradient(180deg, rgba(84,196,138,0.08), rgba(255,255,255,0.02))",
+                  padding: "18px 18px 17px",
                   display: "grid",
-                  gap: 4,
+                  gap: 10,
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 900 }}>
-                    {r.action}
-                    {r.shop_id ? (
-                      <span style={{ fontWeight: 600, opacity: 0.75 }}>
-                        {" "}
-                        • {r.shop_name ?? r.shop_id}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div style={{ fontSize: 12, opacity: 0.75 }}>{iso(r.created_at)}</div>
-                </div>
-
-                <div style={{ fontSize: 12, opacity: 0.8 }}>
-                  actor: <span style={{ fontWeight: 900 }}>{r.actor_email ?? "—"}</span>
-                </div>
-
-                <div style={{ fontSize: 12, opacity: 0.75 }}>
-                  target:{" "}
-                  <span style={{ fontWeight: 900 }}>
-                    {r.target_type ?? "—"} {r.target_id ?? ""}
-                  </span>
-                  <span style={{ opacity: 0.65 }}> • event {r.id}</span>
+                <StatusBadge label="Healthy" tone="healthy" />
+                <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: -0.3 }}>No urgent action is needed right now</div>
+                <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.58 }}>
+                  Billing, apps, devices, and people all look ready. You can move on to routine review.
                 </div>
               </div>
-            ))}
+            ) : (
+              actionItems.map((item) => (
+                <a
+                  key={item.title}
+                  href={item.href}
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    borderRadius: 18,
+                    padding: "0 18px 0 0",
+                    display: "grid",
+                    gridTemplateColumns: "6px 1fr",
+                    transition: "transform 150ms ease, box-shadow 170ms ease, border-color 170ms ease, background 170ms ease",
+                    border: item.priority === "high" ? "1px solid rgba(255, 120, 120, 0.24)" : "1px solid rgba(255, 196, 107, 0.18)",
+                    background:
+                      item.priority === "high"
+                        ? "linear-gradient(180deg, rgba(255, 120, 120, 0.16), rgba(255, 255, 255, 0.03))"
+                        : "linear-gradient(180deg, rgba(255, 196, 107, 0.11), rgba(255, 255, 255, 0.03))",
+                    boxShadow: item.priority === "high" ? "0 18px 42px rgba(74, 10, 14, 0.18)" : "0 12px 28px rgba(72, 42, 8, 0.12)",
+                  }}
+                >
+                  <div
+                    style={{
+                      borderRadius: "18px 0 0 18px",
+                      background: item.priority === "high" ? "linear-gradient(180deg, rgba(255,120,120,0.94), rgba(255,97,97,0.54))" : "linear-gradient(180deg, rgba(255,196,107,0.94), rgba(255,178,76,0.48))",
+                      boxShadow: item.priority === "high" ? "0 0 24px rgba(255,120,120,0.18)" : "0 0 20px rgba(255,196,107,0.12)",
+                    }}
+                  />
+                  <div style={{ display: "grid", gap: 12, padding: "17px 0 17px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <StatusBadge label={item.priority === "high" ? "Action Needed" : "Warning"} tone={priorityTone(item.priority)} />
+                        <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: -0.24 }}>{item.title}</div>
+                      </div>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 900, color: "#ecf1ff" }}>
+                        <span>{item.cta}</span>
+                        <Icon name="arrow" size={15} tone={item.priority === "high" ? "critical" : "warning"} />
+                      </div>
+                    </div>
+                    <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.58 }}>{item.reason}</div>
+                  </div>
+                </a>
+              ))
+            )}
           </div>
-        )}
-      </Card>
+        </SectionBlock>
+
+        <SectionBlock
+          title="Connected Apps"
+          description="Answer the real question: is the system working?"
+          tone="subtle"
+        >
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontWeight: 900, fontSize: 15 }}>Desktop</div>
+              <div style={{ opacity: 0.82, lineHeight: 1.5 }}>
+                {shopSnapshot.access.desktop_mode === "full"
+                  ? "Desktop is connected and ready."
+                  : "Desktop is connected, but access is reduced right now."}
+              </div>
+            </div>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontWeight: 900, fontSize: 15 }}>Workstation</div>
+              <div style={{ opacity: 0.82, lineHeight: 1.5 }}>
+                {shopSnapshot.access.workstation_mode === "full"
+                  ? "Workstation is ready for employee sign-in."
+                  : "Workstation is not ready and needs review."}
+              </div>
+            </div>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontWeight: 900, fontSize: 15 }}>Mobile</div>
+              <div style={{ opacity: 0.82, lineHeight: 1.5 }}>
+                {shopSnapshot.access.mobile_mode === "full"
+                  ? "Mobile is available to eligible employees."
+                  : shopSnapshot.access.mobile_mode === "queue_only"
+                  ? "Mobile is running in a restricted queue-only state."
+                  : "Mobile access is blocked right now."}
+              </div>
+            </div>
+            <div style={{ marginTop: 2 }}>
+              <ActionLink href="/apps" icon="apps">Open App Status</ActionLink>
+            </div>
+          </div>
+        </SectionBlock>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.1fr", gap: 18 }}>
+        <SectionBlock
+          title="Access Summary"
+          description="Translate system state into meaning."
+          tone="subtle"
+        >
+          <div style={{ display: "grid", gap: 10, color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
+            <div>Desktop: {shopSnapshot.access.desktop_mode === "full" ? "Ready" : "Reduced Access"}</div>
+            <div>Workstation: {shopSnapshot.access.workstation_mode === "full" ? "Ready" : "Needs Attention"}</div>
+            <div>Mobile: {shopSnapshot.access.mobile_mode === "full" ? "Ready" : shopSnapshot.access.mobile_mode === "queue_only" ? "Restricted" : "Blocked"}</div>
+          </div>
+        </SectionBlock>
+
+        <SectionBlock
+          title="Billing Summary"
+          description="Keep only the billing facts that matter right now."
+          tone="subtle"
+        >
+          <div style={{ display: "grid", gap: 10, color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
+            <div>Status: {billingLabel}</div>
+            <div>Next billing date: {formatDate(shopSnapshot.billing_current_period_end)}</div>
+            {shopSnapshot.trial_ends_at ? <div>Trial ends: {formatDate(shopSnapshot.trial_ends_at)}</div> : null}
+          </div>
+        </SectionBlock>
+
+        <SectionBlock
+          title="Operational Next Steps"
+          description="Keep the next steps direct and clickable."
+          tone="default"
+        >
+          <div style={{ display: "grid", gap: 10 }}>
+            <a
+              href="/devices"
+              style={{
+                textDecoration: "none",
+                color: "inherit",
+                display: "grid",
+                gap: 4,
+                padding: "12px 12px 11px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                transition: "transform 140ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 900, fontSize: 14 }}>
+                  <Icon name="devices" size={15} tone="neutral" />
+                  <span>Review Devices</span>
+                </div>
+                <Icon name="arrow" size={14} tone="neutral" />
+              </div>
+              <div style={{ color: "rgba(230,232,239,0.78)", lineHeight: 1.45 }}>
+                {shopSnapshot.health.offline_devices > 0
+                  ? `${shopSnapshot.health.offline_devices} devices are offline.`
+                  : shopSnapshot.health.stale_devices > 0
+                  ? `${shopSnapshot.health.stale_devices} devices are stale.`
+                  : "All devices are checking in normally."}
+              </div>
+            </a>
+            <a
+              href="/people"
+              style={{
+                textDecoration: "none",
+                color: "inherit",
+                display: "grid",
+                gap: 4,
+                padding: "12px 12px 11px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                transition: "transform 140ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 900, fontSize: 14 }}>
+                  <Icon name="people" size={15} tone="neutral" />
+                  <span>Open People</span>
+                </div>
+                <Icon name="arrow" size={14} tone="neutral" />
+              </div>
+              <div style={{ color: "rgba(230,232,239,0.78)", lineHeight: 1.45 }}>
+                {employeeAccessGap > 0
+                  ? `${employeeAccessGap} employee${employeeAccessGap === 1 ? "" : "s"} need${employeeAccessGap === 1 ? "s" : ""} workstation access review.`
+                  : "People access is currently in good shape."}
+              </div>
+            </a>
+            <a
+              href="/billing-access"
+              style={{
+                textDecoration: "none",
+                color: "inherit",
+                display: "grid",
+                gap: 4,
+                padding: "12px 12px 11px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                transition: "transform 140ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 900, fontSize: 14 }}>
+                  <Icon name="billing" size={15} tone="neutral" />
+                  <span>Open Billing & Access</span>
+                </div>
+                <Icon name="arrow" size={14} tone="neutral" />
+              </div>
+              <div style={{ color: "rgba(230,232,239,0.78)", lineHeight: 1.45 }}>
+                Confirm billing details before going live or before troubleshooting blocked access.
+              </div>
+            </a>
+          </div>
+        </SectionBlock>
+      </div>
+
+      {context.isPlatformAdmin && platformSnapshot ? (
+        <SectionBlock
+          title="Platform Snapshot"
+          description="Secondary platform metrics for advanced admins."
+          tone="subtle"
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, opacity: 0.84 }}>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontSize: 11, opacity: 0.62, textTransform: "uppercase", fontWeight: 900, letterSpacing: 0.78 }}>Managed Shops</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>{platformSnapshot.manageableShopCount}</div>
+            </div>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontSize: 11, opacity: 0.62, textTransform: "uppercase", fontWeight: 900, letterSpacing: 0.78 }}>All Shops</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>{platformSnapshot.shopCount}</div>
+            </div>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontSize: 11, opacity: 0.62, textTransform: "uppercase", fontWeight: 900, letterSpacing: 0.78 }}>Employees</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>{platformSnapshot.employeeCount}</div>
+            </div>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontSize: 11, opacity: 0.62, textTransform: "uppercase", fontWeight: 900, letterSpacing: 0.78 }}>Activity</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>{platformSnapshot.auditCount}</div>
+            </div>
+          </div>
+        </SectionBlock>
+      ) : null}
     </div>
   );
 }

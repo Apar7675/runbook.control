@@ -1,12 +1,12 @@
-﻿// REPLACE ENTIRE FILE: src/app/api/desktop/create-checkout/route.ts
+// REPLACE ENTIRE FILE: src/app/api/desktop/create-checkout/route.ts
 //
-// Desktop checkout endpoint (Bearer auth).
-// - Auth: Authorization: Bearer <access_token>
+// Desktop checkout endpoint (managed session auth).
+// - Auth: Authorization: Bearer <desktop session access token>
 // - Enforces membership (rb_shop_members)
 // - Forwards to /api/billing/create-checkout (which builds the Stripe session)
 
 import { NextResponse } from "next/server";
-import { requireUserFromBearer } from "@/lib/desktopAuth";
+import { requireSessionUser } from "@/lib/desktopAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { assertUuid } from "@/lib/authz";
 
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { user, accessToken } = await requireUserFromBearer(req);
+    const { user, accessToken } = await requireSessionUser(req);
 
     const body = await req.json().catch(() => ({}));
     const shop_id = String((body as any)?.shop_id ?? "").trim();
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
     const admin = supabaseAdmin();
 
-    // ✅ Must be a member of this shop
+    // ? Must be a member of this shop
     const { data: member, error: memErr } = await admin
       .from("rb_shop_members")
       .select("id, role")
@@ -55,3 +55,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
+

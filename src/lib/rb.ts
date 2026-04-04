@@ -10,6 +10,7 @@
 
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isPlatformAdminEmail } from "@/lib/platformAdmin";
 
 export type RBShop = { id: string; name: string; created_at: string };
 export type RBMember = { id: string; shop_id: string; user_id: string; role: string; created_at: string };
@@ -77,13 +78,44 @@ export async function rbListMyShops(): Promise<RBShop[]> {
 
 /**
  * IMPORTANT:
- * Use maybeSingle so 0 rows doesn't crash the whole app.
- * Returns null if shop is not visible (RLS) or doesn't exist.
+ * Shop detail pages need the same visibility rules as the shops index:
+ * - platform admins can load any shop
+ * - non-admins need an rb_shop_members row
+ * We intentionally do the access check first, then fetch via admin client so
+ * page behavior does not depend on rb_shops RLS being configured perfectly.
  */
 export async function rbGetShop(shopId: string): Promise<RBShop | null> {
   rbAssertUuid("shopId", shopId);
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.from("rb_shops").select("*").eq("id", shopId).maybeSingle();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError) throw new Error(authError.message);
+  const userId = authData.user?.id ?? "";
+  rbAssertUuid("userId", userId);
+  const isEmailAdmin = isPlatformAdminEmail(authData.user?.email ?? null);
+
+  const admin = supabaseAdmin();
+
+  const { data: adminRow, error: adminErr } = await admin
+    .from("rb_control_admins")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (adminErr) throw new Error(adminErr.message);
+
+  if (!adminRow?.user_id && !isEmailAdmin) {
+    const { data: memberRow, error: memberErr } = await admin
+      .from("rb_shop_members")
+      .select("id")
+      .eq("shop_id", shopId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (memberErr) throw new Error(memberErr.message);
+    if (!memberRow?.id) return null;
+  }
+
+  const { data, error } = await admin.from("rb_shops").select("*").eq("id", shopId).maybeSingle();
   if (error) throw new Error(error.message);
   return (data ?? null) as RBShop | null;
 }

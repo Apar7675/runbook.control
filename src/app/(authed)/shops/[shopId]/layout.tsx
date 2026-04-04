@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
@@ -8,36 +8,14 @@ import SideNav from "@/components/SideNav";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { rbGetShop } from "@/lib/rb";
 import { BillingGate, BillingGateMode } from "@/components/billing/BillingGate";
+import { theme } from "@/lib/ui/theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "5px 10px",
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.16)",
-        background: "rgba(139,140,255,0.16)",
-        color: "#b8b9ff",
-        fontWeight: 900,
-        fontSize: 12,
-        letterSpacing: 0.4,
-        textTransform: "uppercase",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 async function isTrustedDevice(supabase: any, userId: string) {
   try {
-    // Next typings can be Promise<ReadonlyRequestCookies> depending on runtime.
-    const jar: any = await (cookies() as any);
+    const jar: any = await cookies();
     const deviceId = jar?.get?.("rb_device_id")?.value ?? "";
     if (!deviceId) return false;
 
@@ -56,24 +34,20 @@ async function isTrustedDevice(supabase: any, userId: string) {
 }
 
 function getGateMode(): BillingGateMode {
-  const m = (process.env.RUNBOOK_BILLING_GATE_MODE ?? "").trim().toLowerCase();
-  if (m === "hard" || m === "soft" || m === "hybrid") return m;
+  const mode = (process.env.RUNBOOK_BILLING_GATE_MODE ?? "").trim().toLowerCase();
+  if (mode === "hard" || mode === "soft" || mode === "hybrid") return mode;
   return "hybrid";
 }
 
-function getGraceDays(): number {
-  const v = Number.parseInt(process.env.RUNBOOK_BILLING_GRACE_DAYS ?? "14", 10);
-  if (!Number.isFinite(v) || v < 0 || v > 120) return 14;
-  return v;
+function getGraceDays() {
+  const value = Number.parseInt(process.env.RUNBOOK_BILLING_GRACE_DAYS ?? "14", 10);
+  if (!Number.isFinite(value) || value < 0 || value > 120) return 14;
+  return value;
 }
 
-function getEmergencyUnlock(): boolean {
-  const s = (process.env.RUNBOOK_BILLING_EMERGENCY_UNLOCK ?? "false").trim().toLowerCase();
-  return s === "1" || s === "true" || s === "yes" || s === "on";
-}
-
-function getUnlockShopsCsv(): string {
-  return (process.env.RUNBOOK_BILLING_UNLOCK_SHOPS ?? "").trim();
+function getEmergencyUnlock() {
+  const raw = (process.env.RUNBOOK_BILLING_EMERGENCY_UNLOCK ?? "false").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
 type Props = {
@@ -83,7 +57,6 @@ type Props = {
 
 export default async function ShopLayout({ params, children }: Props) {
   const { shopId } = await params;
-
   const supabase = await supabaseServer();
 
   const { data: userRes } = await supabase.auth.getUser();
@@ -91,7 +64,6 @@ export default async function ShopLayout({ params, children }: Props) {
   if (!user) redirect("/login");
 
   const email = user.email ?? "";
-
   const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
 
@@ -100,7 +72,6 @@ export default async function ShopLayout({ params, children }: Props) {
     .select("user_id")
     .eq("user_id", user.id)
     .maybeSingle();
-
   const isPlatformAdmin = !!row;
 
   if (isPlatformAdmin && aal !== "aal2") {
@@ -114,59 +85,73 @@ export default async function ShopLayout({ params, children }: Props) {
   const gateMode = getGateMode();
   const graceDays = getGraceDays();
   const emergencyUnlock = getEmergencyUnlock();
-  const unlockShopsCsv = getUnlockShopsCsv();
+  const unlockShopsCsv = (process.env.RUNBOOK_BILLING_UNLOCK_SHOPS ?? "").trim();
 
-  // Allow /billing to always render (even hard mode)
-  const h: any = await (headers() as any);
-  const path =
-    h?.get?.("x-url") ??
-    h?.get?.("x-original-url") ??
-    h?.get?.("next-url") ??
-    "";
-
+  const requestHeaders: any = await headers();
+  const path = requestHeaders?.get?.("x-url") ?? requestHeaders?.get?.("x-original-url") ?? requestHeaders?.get?.("next-url") ?? "";
   const isBillingPath = String(path).includes(`/shops/${shopId}/billing`);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: theme.bg.appGlow, color: theme.text.primary }}>
       <DeviceIdBootstrap />
 
       <header
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 20px",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(5,7,15,0.65)",
-          backdropFilter: "blur(8px)",
+          background: "linear-gradient(180deg, rgba(8,11,18,0.94), rgba(8,11,18,0.86))",
+          backdropFilter: "blur(16px)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Link
-            href="/shops"
-            style={{
-              textDecoration: "none",
-              color: "#e6e8ef",
-              opacity: 0.85,
-              fontWeight: 900,
-              whiteSpace: "nowrap",
-            }}
-          >
-            ← Back to Platform
-          </Link>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 15, fontWeight: 900, opacity: 0.95 }}>{shopName}</span>
-            <Pill>Shop Workspace</Pill>
-            <span style={{ fontSize: 12, opacity: 0.65 }}>{email}</span>
+        <div
+          style={{
+            height: 3,
+            background: "linear-gradient(90deg, rgba(79,102,255,0.9), rgba(68,177,255,0.72), rgba(167,188,255,0.24))",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: 18,
+            flexWrap: "wrap",
+            padding: "16px 22px",
+          }}
+        >
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <Link href="/shops" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+                Back to Shop List
+              </Link>
+              <span
+                style={{
+                  display: "inline-flex",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(146, 163, 255, 0.22)",
+                  background: "rgba(92, 108, 255, 0.15)",
+                  color: "#d6ddff",
+                  fontWeight: 900,
+                  fontSize: 11,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                Shop Workspace
+              </span>
+            </div>
+            <div style={{ fontWeight: 900, fontSize: 28, lineHeight: 1.06 }}>{shopName}</div>
+            <div style={{ color: theme.text.secondary, fontSize: 13 }}>
+              {email} - Manage the health, access, and setup of this shop without exposing platform internals.
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Link href="/status" style={{ textDecoration: "none", color: "#e6e8ef", opacity: 0.85 }}>
-            Status
-          </Link>
-          <SignOutButton />
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <Link href="/status" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+              Status
+            </Link>
+            <SignOutButton />
+          </div>
         </div>
       </header>
 
@@ -174,26 +159,27 @@ export default async function ShopLayout({ params, children }: Props) {
         style={{
           flex: 1,
           display: "grid",
-          gridTemplateColumns: "260px 1fr",
-          gap: 18,
-          padding: 18,
+          gridTemplateColumns: "320px minmax(0, 1fr)",
+          gap: 22,
+          padding: 22,
         }}
       >
         <aside
           style={{
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 16,
-            background: "rgba(255,255,255,0.03)",
-            padding: 14,
+            border: theme.border.soft,
+            borderRadius: 22,
+            background: theme.bg.panel,
+            padding: 18,
             height: "fit-content",
             position: "sticky",
-            top: 18,
+            top: 24,
+            boxShadow: theme.shadow.panel,
           }}
         >
           <SideNav isPlatformAdmin={isPlatformAdmin} mode="shop" shopId={shopId} shopName={shopName} />
         </aside>
 
-        <main style={{ minWidth: 0 }}>
+        <main style={{ minWidth: 0, display: "grid", gap: 22 }}>
           {isBillingPath ? (
             children
           ) : (

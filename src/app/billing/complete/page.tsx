@@ -1,30 +1,33 @@
-// CREATE NEW FILE: src/app/billing/complete/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 type SyncResp =
-  | { ok: true; shop?: { id: string; name?: string | null; billing_status?: string | null } }
+  | { ok: true; shop?: { id: string; name?: string | null; billing_status?: string | null }; entitlement?: { status: string; allowed: boolean; restricted: boolean; reason: string; grace_active: boolean } }
   | { ok: false; error?: string };
 
 export default function BillingCompletePage() {
-  const params = useMemo(
-    () => new URLSearchParams(typeof window !== "undefined" ? window.location.search : ""),
-    []
-  );
-
-  const shop_id = params.get("shop_id") ?? "";
-  const session_id = params.get("session_id") ?? "";
+  const [paramsReady, setParamsReady] = useState(false);
+  const [shopId, setShopId] = useState("");
+  const [sessionId, setSessionId] = useState("");
 
   const [state, setState] = useState<"working" | "ok" | "err">("working");
-  const [msg, setMsg] = useState<string>("Finalizing your trial…");
+  const [msg, setMsg] = useState<string>("Finalizing your trial...");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setShopId(params.get("shop_id") ?? "");
+    setSessionId(params.get("session_id") ?? "");
+    setParamsReady(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       try {
-        if (!shop_id || !session_id) {
+        if (!paramsReady) return;
+        if (!shopId || !sessionId) {
           setState("err");
           setMsg("Missing shop_id or session_id in URL.");
           return;
@@ -33,7 +36,7 @@ export default function BillingCompletePage() {
         const res = await fetch("/api/billing/sync-from-checkout-return", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ shop_id, session_id }),
+          body: JSON.stringify({ shop_id: shopId, session_id: sessionId }),
         });
 
         const json = (await res.json().catch(() => ({}))) as SyncResp;
@@ -46,9 +49,9 @@ export default function BillingCompletePage() {
           return;
         }
 
-        const bs = (json as any)?.shop?.billing_status ? String((json as any).shop.billing_status) : "active";
+        const lifecycle = (json as any)?.shop?.billing_status ? String((json as any).shop.billing_status) : "unknown";
         setState("ok");
-        setMsg(`✅ Trial started (${bs}). You can close this tab and return to RunBook Desktop.`);
+        setMsg(`Checkout synced. Lifecycle=${lifecycle}. You can close this tab and return to RunBook Desktop.`);
       } catch (e: any) {
         if (cancelled) return;
         setState("err");
@@ -60,7 +63,7 @@ export default function BillingCompletePage() {
     return () => {
       cancelled = true;
     };
-  }, [shop_id, session_id]);
+  }, [paramsReady, shopId, sessionId]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#07081a", color: "rgba(255,255,255,0.92)", padding: 24 }}>
@@ -77,47 +80,12 @@ export default function BillingCompletePage() {
             border: "1px solid rgba(255,255,255,0.10)",
           }}
         >
-          {state === "working" && <div style={{ fontWeight: 900 }}>Working…</div>}
+          {state === "working" && <div style={{ fontWeight: 900 }}>Working...</div>}
           {state === "ok" && <div style={{ fontWeight: 900 }}>Complete</div>}
           {state === "err" && <div style={{ fontWeight: 900 }}>Needs attention</div>}
           <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
             Desktop checkout does not automatically sign your browser into Control. This page finalizes activation.
           </div>
-        </div>
-
-        <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button
-            onClick={() => window.close()}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "white",
-              fontWeight: 900,
-              fontSize: 12,
-              cursor: "pointer",
-            }}
-          >
-            Close this tab
-          </button>
-
-          <a
-            href="/login"
-            style={{
-              display: "inline-block",
-              padding: "10px 14px",
-              borderRadius: 12,
-              background: "rgba(120,90,255,0.35)",
-              border: "1px solid rgba(170,160,255,0.35)",
-              color: "white",
-              textDecoration: "none",
-              fontWeight: 900,
-              fontSize: 12,
-            }}
-          >
-            Open Control (login)
-          </a>
         </div>
       </div>
     </div>
