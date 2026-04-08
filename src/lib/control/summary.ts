@@ -180,6 +180,22 @@ async function countWhere(
   return count ?? 0;
 }
 
+type EmployeeAccessRow = {
+  is_active: boolean | null;
+  mobile_access_enabled: boolean | null;
+  workstation_access_enabled: boolean | null;
+};
+
+async function loadEmployeeAccessRows(admin: ReturnType<typeof supabaseAdmin>, shopId: string) {
+  const { data, error } = await admin
+    .from("employees")
+    .select("is_active,mobile_access_enabled,workstation_access_enabled")
+    .eq("shop_id", shopId);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmployeeAccessRow[];
+}
+
 function classifyDeviceAge(lastSeenAt: string | null) {
   if (!lastSeenAt) return "offline";
   const ms = Date.parse(lastSeenAt);
@@ -193,20 +209,29 @@ function classifyDeviceAge(lastSeenAt: string | null) {
 
 export async function getShopSnapshot(shop: ViewerShop): Promise<ShopSnapshot> {
   const admin = supabaseAdmin();
-  const access = describeShopAccess(await getShopEntitlement(shop.id));
-  const billing = (await loadShopBilling(admin, shop.id)) ?? {};
+  const [entitlement, billing, deviceResult, employeeRows, recentAuditEvents] = await Promise.all([
+    getShopEntitlement(shop.id),
+    loadShopBilling(admin, shop.id),
+    admin
+      .from("rb_devices")
+      .select("id,status,device_type,last_seen_at")
+      .eq("shop_id", shop.id)
+      .order("created_at", { ascending: false }),
+    loadEmployeeAccessRows(admin, shop.id),
+    countWhere(admin, "rb_audit_log", [{ column: "shop_id", value: shop.id }]),
+  ]);
 
-  const { data: devices, error: deviceError } = await admin
-    .from("rb_devices")
-    .select("id,status,device_type,last_seen_at")
-    .eq("shop_id", shop.id)
-    .order("created_at", { ascending: false });
+  const access = describeShopAccess(entitlement);
+  const { data: devices, error: deviceError } = deviceResult;
   if (deviceError) throw new Error(deviceError.message);
 
-  const { data: deviceTokens } = await admin
-    .from("rb_device_tokens")
-    .select("device_id,last_seen_at,revoked_at")
-    .in("device_id", (devices ?? []).map((device: any) => device.id));
+  const deviceIds = (devices ?? []).map((device: any) => device.id).filter(Boolean);
+  const { data: deviceTokens } = deviceIds.length
+    ? await admin
+        .from("rb_device_tokens")
+        .select("device_id,last_seen_at,revoked_at")
+        .in("device_id", deviceIds)
+    : { data: [] };
 
   const tokenLastSeen = new Map<string, string>();
   for (const token of deviceTokens ?? []) {
@@ -234,27 +259,10 @@ export async function getShopSnapshot(shop: ViewerShop): Promise<ShopSnapshot> {
     if (classification === "offline") offlineDevices += 1;
   }
 
-  const [
-    employeesTotal,
-    employeesActive,
-    employeesMobileReady,
-    employeesWorkstationReady,
-    recentAuditEvents,
-  ] = await Promise.all([
-    countWhere(admin, "employees", [{ column: "shop_id", value: shop.id }]),
-    countWhere(admin, "employees", [{ column: "shop_id", value: shop.id }, { column: "is_active", value: true }]),
-    countWhere(admin, "employees", [
-      { column: "shop_id", value: shop.id },
-      { column: "is_active", value: true },
-      { column: "mobile_access_enabled", value: true },
-    ]),
-    countWhere(admin, "employees", [
-      { column: "shop_id", value: shop.id },
-      { column: "is_active", value: true },
-      { column: "workstation_access_enabled", value: true },
-    ]),
-    countWhere(admin, "rb_audit_log", [{ column: "shop_id", value: shop.id }]),
-  ]);
+  const employeesTotal = employeeRows.length;
+  const employeesActive = employeeRows.filter((row) => row.is_active === true).length;
+  const employeesMobileReady = employeeRows.filter((row) => row.is_active === true && row.mobile_access_enabled === true).length;
+  const employeesWorkstationReady = employeeRows.filter((row) => row.is_active === true && row.workstation_access_enabled === true).length;
 
   const deviceRows = (devices ?? []) as any[];
   const desktops = deviceRows.filter((device) => asText(device.device_type).toLowerCase() === "desktop");

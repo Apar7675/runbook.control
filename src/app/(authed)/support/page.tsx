@@ -1,54 +1,33 @@
 import React from "react";
-import GlassCard from "@/components/GlassCard";
-import Link from "next/link";
+import { ActionLink, NoteList, PageHeader, SectionBlock } from "@/components/control/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function SupportPage() {
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Support Bundles</h1>
+    <div className="rb-page">
+      <PageHeader
+        eyebrow="Support"
+        title="Support Bundles"
+        description="Diagnostic exports should feel like part of the same premium control center, not a placeholder utility page."
+        actions={<ActionLink href="/shops" tone="primary">Back to Shops</ActionLink>}
+      />
 
-      <GlassCard title="What is a Support Bundle?">
-        <div style={{ opacity: 0.85, lineHeight: 1.45 }}>
-          A Support Bundle is a diagnostic export a shop can generate when something goes wrong. It should contain
-          safe-to-share logs and metadata so you can troubleshoot fast.
+      <SectionBlock title="Bundle Purpose" description="Support bundles exist to accelerate troubleshooting without exposing unsafe or noisy raw system detail.">
+        <div className="rb-pageCopy">
+          A support bundle is a diagnostic export a shop can generate when something goes wrong. It should include safe-to-share logs and metadata so operators can troubleshoot quickly without requesting manual screenshots or ad hoc file copies.
         </div>
-        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-          Note: This page exists to fix the 404 and provide a home for support features. We’ll wire in the actual bundle
-          list/upload/download next.
-        </div>
-      </GlassCard>
+      </SectionBlock>
 
-      <GlassCard title="Next">
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ opacity: 0.85 }}>
-            Recommended next steps:
-            <ul style={{ marginTop: 6, opacity: 0.85 }}>
-              <li>List bundles per shop (rb_support_bundles)</li>
-              <li>Download bundle file from Storage</li>
-              <li>Generate bundle from device / shop (future)</li>
-            </ul>
-          </div>
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link
-              href="/shops"
-              style={{
-                textDecoration: "none",
-                padding: "10px 14px",
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.05)",
-                fontWeight: 900,
-                color: "inherit",
-              }}
-            >
-              Back to Shops
-            </Link>
-          </div>
-        </div>
-      </GlassCard>
+      <SectionBlock title="What Comes Next" description="The page now matches the shared RunBook language, and the next pass can focus on feature depth instead of basic presentation repair.">
+        <NoteList
+          items={[
+            "List support bundles per shop from `rb_support_bundles`.",
+            "Download bundle files from storage with the same control-surface chrome used elsewhere.",
+            "Add future bundle generation flows from device or shop context without introducing a one-off UI style.",
+          ]}
+        />
+      </SectionBlock>
     </div>
   );
 }

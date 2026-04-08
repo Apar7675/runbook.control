@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import React, { Suspense, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 import GlassCard from "@/components/GlassCard";
@@ -176,10 +175,7 @@ function LoginInner() {
           </div>
 
           <div style={{ fontSize: 12, opacity: 0.75 }}>
-            New here?{" "}
-            <Link href={`/signup?next=${encodeURIComponent(next)}`} style={{ fontWeight: 900 }}>
-              Create an account
-            </Link>
+            The Control admin portal is restricted to platform admins. Normal RunBook user accounts are created in RunBook Desktop onboarding.
           </div>
         </div>
       </GlassCard>

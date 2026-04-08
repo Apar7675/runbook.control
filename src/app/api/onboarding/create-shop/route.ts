@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { hashIdentityValue } from "@/lib/onboarding/identity";
-import { findTrialReuseRisk, getOnboardingState, upsertOnboardingState } from "@/lib/onboarding/state";
+import { getOnboardingState, upsertOnboardingState } from "@/lib/onboarding/state";
 import { resolveOnboardingPath } from "@/lib/onboarding/flow";
+import {
+  deriveTrialOutcome,
+  evaluateTrialEligibility,
+  recordTrialUsage,
+  type TrialOutcome,
+} from "@/lib/onboarding/trialEligibility";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -60,7 +66,9 @@ async function insertWithAutoStrip(admin: any, table: string, payload: Record<st
 async function loadExistingShop(admin: any, shopId: string) {
   const { data, error } = await admin
     .from(SHOP_TABLE)
-    .select("id,name,billing_status,trial_started_at,trial_ends_at,trial_restricted,trial_restriction_reason")
+    .select(
+      "id,name,billing_status,trial_started_at,trial_ends_at,trial_restricted,trial_restriction_reason,trial_consumed_at,trial_eligibility_reason"
+    )
     .eq("id", shopId)
     .maybeSingle();
 
@@ -74,6 +82,22 @@ async function loadExistingShop(admin: any, shopId: string) {
 function buildAdminEmployeeCode(userId: string) {
   const token = String(userId ?? "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
   return `ADM${token || "USER"}`;
+}
+
+function buildTrialMessage(outcome: TrialOutcome, signal?: string | null) {
+  if (outcome === "billing_required") {
+    return "Shop created. Billing is required because this account, device, or verified contact information has prior trial or billing history.";
+  }
+
+  if (outcome === "restricted_trial") {
+    return `Shop created. A new clean trial was not granted because prior usage was detected${signal ? ` for ${signal.replace(/_/g, " ")}` : ""}.`;
+  }
+
+  return "Shop created. Your trial is ready.";
+}
+
+function persistedBillingStatusForTrialOutcome(outcome: TrialOutcome): "trialing" | "expired" {
+  return outcome === "clean_trial" ? "trialing" : "expired";
 }
 
 async function ensureAdminEmployee(
@@ -136,32 +160,6 @@ async function ensureAdminEmployee(
   return employee?.id ?? null;
 }
 
-async function findExistingUserShop(admin: any, userId: string) {
-  const { data, error } = await admin
-    .from(MEMBER_TABLE)
-    .select("shop_id,rb_shops:rb_shops(id,name,billing_status,trial_started_at,trial_ends_at,trial_restricted,trial_restriction_reason)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`[${MEMBER_TABLE}] ${formatSbError(error)}`);
-  }
-
-  if (!data?.shop_id) return null;
-
-  return {
-    id: String((data as any).rb_shops?.id ?? data.shop_id),
-    name: (data as any).rb_shops?.name ?? null,
-    billing_status: (data as any).rb_shops?.billing_status ?? null,
-    trial_started_at: (data as any).rb_shops?.trial_started_at ?? null,
-    trial_ends_at: (data as any).rb_shops?.trial_ends_at ?? null,
-    trial_restricted: Boolean((data as any).rb_shops?.trial_restricted),
-    trial_restriction_reason: (data as any).rb_shops?.trial_restriction_reason ?? null,
-  };
-}
-
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -218,43 +216,6 @@ export async function POST(req: Request) {
     }
 
     const admin = supabaseAdmin();
-    if (!state.shop_id) {
-      const existingUserShop = await findExistingUserShop(admin, user.id);
-      if (existingUserShop?.id) {
-        await ensureAdminEmployee(admin, {
-          shopId: existingUserShop.id,
-          userId: user.id,
-          fullName: state.full_name,
-          email: state.email,
-          phone: state.phone,
-          companyName: existingUserShop.name ?? shopName,
-          sourceDeviceId: state.device_id ?? null,
-        });
-        await upsertOnboardingState(user.id, {
-          shop_id: existingUserShop.id,
-          shop_name: existingUserShop.name ?? shopName,
-        });
-        if (process.env.NODE_ENV === "development") {
-          console.log("[Onboarding]", {
-            action: "create_shop:existing_membership",
-            state,
-            result: existingUserShop,
-          });
-        }
-        return NextResponse.json({
-          ok: true,
-          existing: true,
-          shop_id: existingUserShop.id,
-          name: existingUserShop.name ?? shopName,
-          billing_status: existingUserShop.billing_status,
-          trial_started_at: existingUserShop.trial_started_at,
-          trial_ends_at: existingUserShop.trial_ends_at,
-          trial_restricted: Boolean(existingUserShop.trial_restricted),
-          trial_restriction_reason: existingUserShop.trial_restriction_reason ?? null,
-          message: "Your shop already exists. Resume onboarding from where you left off.",
-        });
-      }
-    }
 
     if (state.shop_id) {
       const existingShop = await loadExistingShop(admin, state.shop_id);
@@ -267,6 +228,11 @@ export async function POST(req: Request) {
           phone: state.phone,
           companyName: existingShop.name ?? shopName,
           sourceDeviceId: state.device_id ?? null,
+        });
+        const trialOutcome = deriveTrialOutcome({
+          billingStatus: existingShop.billing_status,
+          trialRestricted: existingShop.trial_restricted,
+          trialEligibilityReason: existingShop.trial_eligibility_reason ?? existingShop.trial_restriction_reason,
         });
         if (process.env.NODE_ENV === "development") {
           console.log("[Onboarding]", {
@@ -285,8 +251,13 @@ export async function POST(req: Request) {
           trial_ends_at: existingShop.trial_ends_at,
           trial_restricted: Boolean(existingShop.trial_restricted),
           trial_restriction_reason: existingShop.trial_restriction_reason ?? null,
+          trial_eligibility_reason: existingShop.trial_eligibility_reason ?? existingShop.trial_restriction_reason ?? null,
+          billing_required: trialOutcome === "billing_required",
+          trial_outcome: trialOutcome,
+          trial_consumed_at: existingShop.trial_consumed_at ?? null,
+          trial_signals_used: [],
           message:
-            resolvedPath === "/dashboard"
+            resolvedPath === "/onboarding/complete"
               ? "This shop is already set up."
               : "Your shop is already created. Resume onboarding from where you left off.",
         });
@@ -301,15 +272,12 @@ export async function POST(req: Request) {
     const trialPhoneHash = hashIdentityValue(state.phone);
     const trialDeviceId = state.device_id ?? sOrNull(req.headers.get("x-runbook-device-id")) ?? null;
 
-    const reuseRisk = await findTrialReuseRisk({
+    const eligibility = await evaluateTrialEligibility({
+      userId: user.id,
       deviceId: trialDeviceId,
       emailHash: trialEmailHash,
       phoneHash: trialPhoneHash,
     });
-
-    const restricted = Boolean(reuseRisk);
-    const billingStatus = restricted ? "restricted" : "trialing";
-    const restrictionReason = reuseRisk ? `trial_reuse_${reuseRisk.field}` : null;
 
     const shop = await insertWithAutoStrip(
       admin,
@@ -317,9 +285,9 @@ export async function POST(req: Request) {
       {
         name: shopName,
         website: sOrNull((body as any)?.website),
-        billing_status: billingStatus,
-        trial_started_at: now.toISOString(),
-        trial_ends_at: trialEnds.toISOString(),
+        billing_status: persistedBillingStatusForTrialOutcome(eligibility.outcome),
+        trial_started_at: eligibility.outcome === "clean_trial" ? now.toISOString() : null,
+        trial_ends_at: eligibility.outcome === "clean_trial" ? trialEnds.toISOString() : null,
         billing_current_period_end: null,
         grace_ends_at: null,
         stripe_customer_id: null,
@@ -329,12 +297,14 @@ export async function POST(req: Request) {
         trial_device_id: trialDeviceId,
         trial_email_hash: trialEmailHash,
         trial_phone_hash: trialPhoneHash,
-        trial_restricted: restricted,
-        trial_restriction_reason: restrictionReason,
+        trial_restricted: eligibility.restrictedTrial,
+        trial_restriction_reason: eligibility.restrictedTrial ? eligibility.eligibilityReason : null,
+        trial_consumed_at: now.toISOString(),
+        trial_eligibility_reason: eligibility.eligibilityReason,
         created_at: now.toISOString(),
         updated_at: now.toISOString(),
       },
-      "id,name,billing_status,trial_started_at,trial_ends_at,trial_restricted,trial_restriction_reason"
+      "id,name,billing_status,trial_started_at,trial_ends_at,trial_restricted,trial_restriction_reason,trial_consumed_at,trial_eligibility_reason"
     );
 
     await insertWithAutoStrip(
@@ -358,6 +328,17 @@ export async function POST(req: Request) {
       sourceDeviceId: trialDeviceId,
     });
 
+    await recordTrialUsage({
+      shopId: shop.id,
+      shopName: shop.name ?? shopName,
+      userId: user.id,
+      deviceId: trialDeviceId,
+      emailHash: trialEmailHash,
+      phoneHash: trialPhoneHash,
+      outcome: eligibility.outcome,
+      eligibilityReason: eligibility.eligibilityReason,
+    });
+
     await upsertOnboardingState(user.id, {
       shop_id: shop.id,
       shop_name: shop.name ?? shopName,
@@ -368,7 +349,7 @@ export async function POST(req: Request) {
       console.log("[Onboarding]", {
         action: "create_shop:created",
         state,
-        result: { shop_id: shop.id, restricted, reuseRisk },
+        result: { shop_id: shop.id, eligibility },
       });
     }
 
@@ -376,15 +357,17 @@ export async function POST(req: Request) {
       ok: true,
       shop_id: shop.id,
       name: shop.name,
-      billing_status: shop.billing_status ?? billingStatus,
-      trial_started_at: shop.trial_started_at ?? now.toISOString(),
-      trial_ends_at: shop.trial_ends_at ?? trialEnds.toISOString(),
-      trial_restricted: Boolean(shop.trial_restricted ?? restricted),
-      trial_restriction_reason: shop.trial_restriction_reason ?? restrictionReason,
-      reuse_risk: reuseRisk,
-      message: restricted
-        ? `Trial access is restricted because this ${reuseRisk?.field === "device_id" ? "device" : reuseRisk?.field ?? "identity"} was already used for a previous trial.`
-        : "Shop created. Your trial is ready.",
+      billing_status: shop.billing_status ?? persistedBillingStatusForTrialOutcome(eligibility.outcome),
+      trial_started_at: shop.trial_started_at ?? (eligibility.outcome === "clean_trial" ? now.toISOString() : null),
+      trial_ends_at: shop.trial_ends_at ?? (eligibility.outcome === "clean_trial" ? trialEnds.toISOString() : null),
+      trial_restricted: Boolean(shop.trial_restricted ?? eligibility.restrictedTrial),
+      trial_restriction_reason: shop.trial_restriction_reason ?? (eligibility.restrictedTrial ? eligibility.eligibilityReason : null),
+      trial_eligibility_reason: shop.trial_eligibility_reason ?? eligibility.eligibilityReason,
+      trial_consumed_at: shop.trial_consumed_at ?? now.toISOString(),
+      billing_required: eligibility.billingRequired,
+      trial_outcome: eligibility.outcome,
+      trial_signals_used: eligibility.signals,
+      message: buildTrialMessage(eligibility.outcome, eligibility.primarySignal),
       shop_table: SHOP_TABLE,
       membership_table: MEMBER_TABLE,
     });

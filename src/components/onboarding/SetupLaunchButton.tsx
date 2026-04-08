@@ -16,7 +16,7 @@ export default function SetupLaunchButton({
 
   async function launch() {
     if (disabled) {
-      setStatus("Finish the required setup checks before launching into the dashboard.");
+      setStatus("Finish the required setup checks before continuing.");
       return;
     }
 
@@ -34,7 +34,7 @@ export default function SetupLaunchButton({
         return;
       }
 
-      router.push(data?.redirect_to ?? "/dashboard");
+      router.push(data?.redirect_to ?? "/onboarding/complete");
     } finally {
       setBusy(false);
     }
@@ -48,7 +48,7 @@ export default function SetupLaunchButton({
         tone="primary"
         style={{ width: "fit-content", minWidth: 208, justifySelf: "end" }}
       >
-        {busy ? "Launching..." : "Launch Into Dashboard"}
+        {busy ? "Finishing..." : "Continue"}
       </RunbookButton>
       {status ? (
         <div style={{ color: runbookTheme.colors.muted, ...runbookTheme.type.body }}>

@@ -8,18 +8,28 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const supabase = await supabaseServer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-
     const body = await req.json().catch(() => ({}));
     const phone = normalizePhone((body as any)?.phone);
     const code = String((body as any)?.code ?? "").trim();
 
     if (!phone) return NextResponse.json({ ok: false, error: "Phone number required." }, { status: 400 });
     if (!code || code.length !== 6) return NextResponse.json({ ok: false, error: "Enter the 6-digit SMS code." }, { status: 400 });
+
+    const isDevBypass = process.env.NODE_ENV === "development" && code === "222222";
+    if (isDevBypass) {
+      console.log("[DEV] verification bypass used");
+      return NextResponse.json({
+        ok: true,
+        phone_verified: true,
+        message: "Phone verified. You can continue once your email is verified too.",
+      });
+    }
+
+    const supabase = await supabaseServer();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
 
     const state = await getOnboardingState(user.id);
     if (!state || normalizePhone(state.phone) !== phone) {

@@ -1,23 +1,6 @@
 import React from "react";
-import { theme } from "@/lib/ui/theme";
 
-type Tone = "default" | "subtle" | "healthy" | "warning" | "critical";
-
-function surfaceForTone(tone: Tone) {
-  if (tone === "healthy") {
-    return { background: theme.bg.panelHealthy, border: theme.border.healthy, boxShadow: theme.shadow.healthy };
-  }
-  if (tone === "warning") {
-    return { background: theme.bg.panelWarning, border: theme.border.warning, boxShadow: theme.shadow.warning };
-  }
-  if (tone === "critical") {
-    return { background: theme.bg.panelCritical, border: theme.border.critical, boxShadow: theme.shadow.critical };
-  }
-  if (tone === "subtle") {
-    return { background: theme.bg.panelSoft, border: theme.border.muted, boxShadow: "none" };
-  }
-  return { background: theme.bg.panel, border: theme.border.soft, boxShadow: theme.shadow.panel };
-}
+type Tone = "default" | "subtle" | "healthy" | "warning" | "critical" | "danger";
 
 export default function GlassCard({
   title,
@@ -32,43 +15,33 @@ export default function GlassCard({
   tone?: Tone;
   children: React.ReactNode;
 }) {
-  const surface = surfaceForTone(tone);
+  const toneClass =
+    tone === "subtle"
+      ? "rb-panel rb-panel--subtle"
+      : tone === "healthy"
+      ? "rb-panel rb-panel--healthy"
+      : tone === "warning"
+      ? "rb-panel rb-panel--warning"
+      : tone === "critical"
+      ? "rb-panel rb-panel--critical"
+      : tone === "danger"
+      ? "rb-panel rb-panel--danger"
+      : "rb-panel";
 
   return (
-    <div
-      style={{
-        padding: 20,
-        borderRadius: theme.radius.xl,
-        border: surface.border,
-        background: surface.background,
-        backdropFilter: "blur(14px)",
-        boxShadow: surface.boxShadow,
-        color: theme.text.primary,
-      }}
-    >
-      {(title || subtitle || actions) && (
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 18, alignItems: "flex-start", marginBottom: 16 }}>
-          <div style={{ display: "grid", gap: 8 }}>
-            {title ? (
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 900,
-                  letterSpacing: 0.8,
-                  color: tone === "critical" ? "#ffd3d3" : tone === "warning" ? "#ffe2b2" : theme.text.accentSoft,
-                  textTransform: "uppercase",
-                }}
-              >
-                {title}
-              </div>
-            ) : null}
-            {subtitle ? <div style={{ color: theme.text.secondary, fontSize: 13, lineHeight: 1.5 }}>{subtitle}</div> : null}
+    <section className={toneClass}>
+      <div className="rb-panel__inner">
+        {(title || subtitle || actions) && (
+          <div className="rb-panel__header">
+            <div className="rb-panel__headerMain">
+              {title ? <div className="rb-panel__eyebrow">{title}</div> : null}
+              {subtitle ? <div className="rb-panel__copy">{subtitle}</div> : null}
+            </div>
+            {actions ? <div className="rb-inlineRow">{actions}</div> : null}
           </div>
-          {actions ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div> : null}
-        </div>
-      )}
-
-      {children}
-    </div>
+        )}
+        {children}
+      </div>
+    </section>
   );
 }

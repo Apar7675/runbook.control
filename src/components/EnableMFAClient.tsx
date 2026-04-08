@@ -34,56 +34,49 @@ export default function EnableMFAClient({ required }: Props) {
   }, [supabase]);
 
   async function startEnroll() {
-    setStatus("Starting MFA enrollment…");
+    setStatus("Starting MFA enrollment...");
 
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
     if (error) return setStatus(error.message);
 
-    // show QR by opening a simple modal-less flow
-    // easiest: just open a new tab to settings with qr in memory is hard
-    // so instead: alert with QR data URL if needed
-    // better UX is possible later; for now we keep it simple:
-    setStatus("Enrollment started. Open this page in a new tab and complete scan + verify in the QR flow (coming next).");
+    setStatus("Enrollment started. Complete scan and verification in the MFA flow next.");
     console.log("TOTP QR:", data.totp.qr_code);
   }
 
   return (
-    <div style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+    <div className="rb-stack" style={{ maxWidth: 560 }}>
       {required ? (
-        <div
-          style={{
-            padding: 12,
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: "rgba(139,140,255,0.10)",
-            fontWeight: 900,
-          }}
-        >
+        <div className="rb-inlineNotice" style={{ fontWeight: 900 }}>
           MFA is required for Platform Admins.
         </div>
       ) : null}
 
-      <div style={{ fontWeight: 900, fontSize: 16 }}>Two-Factor Authentication (Authenticator App)</div>
+      <div className="rb-sectionSurface">
+        <div className="rb-stack" style={{ gap: 12 }}>
+          <div style={{ fontWeight: 900, fontSize: 16 }}>Two-Factor Authentication (Authenticator App)</div>
 
-      {hasTotp === null ? (
-        <div style={{ opacity: 0.8 }}>Loading…</div>
-      ) : hasTotp ? (
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ opacity: 0.85 }}>Status: <b>Enabled</b></div>
-          <button
-            onClick={() => (window.location.href = "/mfa")}
-            style={{ padding: 10, borderRadius: 12, fontWeight: 900 }}
-          >
-            Verify now
-          </button>
+          {hasTotp === null ? (
+            <div className="rb-fine">Loading...</div>
+          ) : hasTotp ? (
+            <div className="rb-stack" style={{ gap: 10 }}>
+              <div className="rb-pageCopy">Status: <strong>Enabled</strong></div>
+              <div className="rb-inlineRow">
+                <button onClick={() => (window.location.href = "/mfa")} className="rb-button rb-button--primary">
+                  Verify now
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rb-inlineRow">
+              <button onClick={startEnroll} className="rb-button rb-button--primary">
+                Enable Authenticator App
+              </button>
+            </div>
+          )}
+
+          {status ? <div className="rb-pageCopy">{status}</div> : null}
         </div>
-      ) : (
-        <button onClick={startEnroll} style={{ padding: 10, borderRadius: 12, fontWeight: 900 }}>
-          Enable Authenticator App
-        </button>
-      )}
-
-      {status ? <div style={{ opacity: 0.85 }}>{status}</div> : null}
+      </div>
     </div>
   );
 }

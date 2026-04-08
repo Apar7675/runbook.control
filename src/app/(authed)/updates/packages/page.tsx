@@ -1,53 +1,53 @@
 import React from "react";
-import GlassCard from "@/components/GlassCard";
-import { supabaseServer } from "@/lib/supabase/server";
-import PackageUploaderClient from "@/components/PackageUploaderClient";
+import { ActionLink, DataList, EmptyState, PageHeader, SectionBlock, StatusBadge } from "@/components/control/ui";
+import { listReleases } from "@/lib/updates/releases";
+
+export const dynamic = "force-dynamic";
 
 export default async function UpdatePackagesPage() {
-  const supabase = await supabaseServer();
-
-  const { data: pkgs, error } = await supabase
-    .from("rb_update_packages")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
+  const releases = await listReleases();
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Update Packages</h1>
+    <div className="rb-page">
+      <PageHeader
+        eyebrow="Updates"
+        title="Release Archive"
+        description="Review previously uploaded Desktop and Workstation release packages without changing the current release from this page."
+        actions={<ActionLink href="/updates" tone="primary">Back to Release Command Center</ActionLink>}
+      />
 
-      <GlassCard title="Upload Package">
-        <PackageUploaderClient />
-      </GlassCard>
-
-      <GlassCard title="Existing Packages">
-        {pkgs.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No packages uploaded yet.</div>
+      <SectionBlock title="Uploaded Releases" description="These are the release packages Control currently recognizes as part of its managed update history.">
+        {releases.length === 0 ? (
+          <EmptyState title="No releases uploaded yet" description="Go back to the Updates page to upload and publish the first Desktop or Workstation release." />
         ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {pkgs.map((p: any) => (
-              <div
-                key={p.id}
-                style={{
-                  padding: 12,
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background: "rgba(255,255,255,0.03)",
-                }}
-              >
-                <div style={{ fontWeight: 900 }}>
-                  {p.channel} — {p.version}
+          <div className="rb-dataGrid">
+            {releases.map((release) => (
+              <div key={release.id} className={release.is_current ? "rb-releaseCard rb-releaseCard--current" : "rb-releaseCard"}>
+                <div className="rb-releaseCard__top">
+                  <div>
+                    <div className="rb-releaseCard__title">{release.app_id} {release.channel} {release.version}</div>
+                    <div className="rb-pageCopy">{release.file_name ?? release.file_path}</div>
+                  </div>
+                  <div className="rb-inlineRow">
+                    {release.is_current ? <StatusBadge label="Current" tone="healthy" /> : null}
+                    <StatusBadge label={release.required_update ? "Required" : "Optional"} tone={release.required_update ? "critical" : "neutral"} />
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  Path: <code>{p.file_path}</code>
-                </div>
-                {p.notes ? <div style={{ marginTop: 6, opacity: 0.85 }}>{p.notes}</div> : null}
+
+                <DataList
+                  items={[
+                    { label: "Minimum Supported", value: release.min_supported_version || "Not set" },
+                    { label: "Published", value: release.published_at || "Draft / uploaded only" },
+                    { label: "Created", value: release.created_at },
+                  ]}
+                />
+
+                {release.notes ? <div className="rb-pageCopy">{release.notes}</div> : null}
               </div>
             ))}
           </div>
         )}
-      </GlassCard>
+      </SectionBlock>
     </div>
   );
 }

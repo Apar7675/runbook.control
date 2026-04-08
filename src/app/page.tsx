@@ -44,7 +44,7 @@ export default function HomePage() {
 
       <div style={{ marginTop: 32, display: "flex", gap: 20 }}>
         <Link
-          href="/signup"
+          href="/login"
           style={{
             padding: "14px 24px",
             borderRadius: 14,
@@ -55,7 +55,7 @@ export default function HomePage() {
             boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
           }}
         >
-          Start 30-Day Free Trial
+          Login to Control
         </Link>
 
         <Link
@@ -69,7 +69,7 @@ export default function HomePage() {
             textDecoration: "none",
           }}
         >
-          Login
+          Admin Access
         </Link>
       </div>
     </div>

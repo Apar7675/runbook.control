@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  ActionLink,
-  EmptyState,
-  PageHeader,
-  SectionBlock,
-  StatusBadge,
-  toneFromStatus,
-} from "@/components/control/ui";
+import { ActionLink, EmptyState, KeyValueGrid, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
 import { getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
 
 export const dynamic = "force-dynamic";
@@ -36,13 +29,9 @@ export default async function AppsPage({
 
   if (!primaryShop || !snapshot) {
     return (
-      <div style={{ display: "grid", gap: 20 }}>
+      <div className="rb-page">
         <PageHeader eyebrow="Apps" title="App Access" description="Apps inherit their access state from shop setup, device health, and billing." />
-        <EmptyState
-          title="No app connections to review yet"
-          description="Set up a shop first, then register devices and provision employees."
-          action={<ActionLink href="/shops" tone="primary">Open Shop Setup</ActionLink>}
-        />
+        <EmptyState title="No app connections to review yet" description="Set up a shop first, then register devices and provision employees." action={<ActionLink href="/shops" tone="primary">Open Shop Setup</ActionLink>} />
       </div>
     );
   }
@@ -53,83 +42,48 @@ export default async function AppsPage({
   const controlStatus = "Healthy";
 
   return (
-    <div style={{ display: "grid", gap: 22 }}>
+    <div className="rb-page">
       <PageHeader
         eyebrow="Apps"
         title={`App Access for ${snapshot.name}`}
         description="Control should make app health obvious: what is connected, what is restricted, and what needs attention next."
-        actions={
-          <>
-            <ActionLink href="/devices" tone="primary">Review Devices</ActionLink>
-            <ActionLink href="/billing-access">Review Billing Impact</ActionLink>
-          </>
-        }
+        actions={<><ActionLink href="/devices" tone="primary">Review Devices</ActionLink><ActionLink href="/billing-access">Review Billing Impact</ActionLink></>}
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Desktop" description="Bootstrap, registration, and employee directory health.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={desktopStatus} tone={toneFromStatus(desktopStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.desktops_active > 0
-                ? `${snapshot.counts.desktops_active} desktop devices are active for this shop.`
-                : "No desktop devices are registered yet."}
-            </div>
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.access.desktop_mode === "full"
-                ? "Desktop has full access."
-                : "Desktop is still available, but access is reduced until billing is restored."}
-            </div>
-          </div>
+      <div className="rb-autoGrid">
+        <SectionBlock title="Desktop" description="Bootstrap, registration, and employee directory health." tone={desktopStatus === "Connected" ? "healthy" : desktopStatus === "Degraded" ? "warning" : "critical"}>
+          <div className="rb-chipRow"><StatusBadge label={desktopStatus} tone={toneFromStatus(desktopStatus)} /></div>
+          <div className="rb-pageCopy">{snapshot.counts.desktops_active > 0 ? `${snapshot.counts.desktops_active} desktop devices are active for this shop.` : "No desktop devices are registered yet."}</div>
+          <div className="rb-pageCopy">{snapshot.access.desktop_mode === "full" ? "Desktop has full access." : "Desktop is still available, but access is reduced until billing is restored."}</div>
         </SectionBlock>
 
-        <SectionBlock title="Workstation" description="Passcode access and time clock readiness.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={workstationStatus} tone={toneFromStatus(workstationStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.workstations_active > 0
-                ? `${snapshot.counts.workstations_active} workstation devices are active.`
-                : "No workstation devices are active yet."}
-            </div>
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.employees_workstation_ready} employees are ready for workstation sign-in.
-            </div>
-          </div>
+        <SectionBlock title="Workstation" description="Passcode access and time clock readiness." tone={workstationStatus === "Connected" ? "healthy" : "critical"}>
+          <div className="rb-chipRow"><StatusBadge label={workstationStatus} tone={toneFromStatus(workstationStatus)} /></div>
+          <div className="rb-pageCopy">{snapshot.counts.workstations_active > 0 ? `${snapshot.counts.workstations_active} workstation devices are active.` : "No workstation devices are active yet."}</div>
+          <div className="rb-pageCopy">{snapshot.counts.employees_workstation_ready} employees are ready for workstation sign-in.</div>
         </SectionBlock>
 
-        <SectionBlock title="Mobile" description="Employee eligibility and billing restrictions.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={mobileStatus} tone={toneFromStatus(mobileStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.employees_mobile_ready} employees are currently eligible for Mobile.
-            </div>
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.access.mobile_mode === "full"
-                ? "Mobile is fully available."
-                : snapshot.access.mobile_mode === "queue_only"
-                ? "Mobile can keep queued punches, but normal access is restricted."
-                : "Mobile is blocked until access is restored."}
-            </div>
-          </div>
+        <SectionBlock title="Mobile" description="Employee eligibility and billing restrictions." tone={mobileStatus === "Connected" ? "healthy" : mobileStatus === "Restricted" ? "warning" : "critical"}>
+          <div className="rb-chipRow"><StatusBadge label={mobileStatus} tone={toneFromStatus(mobileStatus)} /></div>
+          <div className="rb-pageCopy">{snapshot.counts.employees_mobile_ready} employees are currently eligible for Mobile.</div>
+          <div className="rb-pageCopy">{snapshot.access.mobile_mode === "full" ? "Mobile is fully available." : snapshot.access.mobile_mode === "queue_only" ? "Mobile can keep queued punches, but normal access is restricted." : "Mobile is blocked until access is restored."}</div>
         </SectionBlock>
 
-        <SectionBlock title="Control" description="Admin web access and status visibility.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={controlStatus} tone={toneFromStatus(controlStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              Control remains available for settings, diagnostics, billing review, and admin guidance.
-            </div>
-          </div>
+        <SectionBlock title="Control" description="Admin web access and status visibility." tone="subtle">
+          <div className="rb-chipRow"><StatusBadge label={controlStatus} tone={toneFromStatus(controlStatus)} /></div>
+          <div className="rb-pageCopy">Control remains available for settings, diagnostics, billing review, and admin guidance.</div>
         </SectionBlock>
       </div>
 
-      <SectionBlock title="What This Means" description="Translate entitlement outcomes into clear operational language.">
-        <div style={{ display: "grid", gap: 12, color: "rgba(230,232,239,0.82)", lineHeight: 1.55 }}>
-          <div>Desktop: {snapshot.access.desktop_mode === "full" ? "Full Access" : "Reduced Access"}</div>
-          <div>Workstation: {snapshot.access.workstation_mode === "full" ? "Sign-in Available" : "Blocked"}</div>
-          <div>Mobile: {snapshot.access.mobile_mode === "full" ? "Full Access" : snapshot.access.mobile_mode === "queue_only" ? "Queue-Only" : "Blocked"}</div>
-          <div>Reason: {snapshot.access.summary}</div>
-        </div>
+      <SectionBlock title="Operational Readout" description="Translate entitlement outcomes into clear operational language.">
+        <KeyValueGrid
+          items={[
+            { label: "Desktop", value: snapshot.access.desktop_mode === "full" ? "Full Access" : "Reduced" },
+            { label: "Workstation", value: snapshot.access.workstation_mode === "full" ? "Ready" : "Blocked" },
+            { label: "Mobile", value: snapshot.access.mobile_mode === "full" ? "Full" : snapshot.access.mobile_mode === "queue_only" ? "Queue Only" : "Blocked" },
+          ]}
+        />
+        <div className="rb-pageCopy">{snapshot.access.summary}</div>
       </SectionBlock>
     </div>
   );

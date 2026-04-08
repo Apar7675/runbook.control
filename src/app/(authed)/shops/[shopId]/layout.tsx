@@ -8,7 +8,6 @@ import SideNav from "@/components/SideNav";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { rbGetShop } from "@/lib/rb";
 import { BillingGate, BillingGateMode } from "@/components/billing/BillingGate";
-import { theme } from "@/lib/ui/theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -92,62 +91,31 @@ export default async function ShopLayout({ params, children }: Props) {
   const isBillingPath = String(path).includes(`/shops/${shopId}/billing`);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: theme.bg.appGlow, color: theme.text.primary }}>
+    <div className="rb-appRoot">
       <DeviceIdBootstrap />
 
-      <header
-        style={{
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "linear-gradient(180deg, rgba(8,11,18,0.94), rgba(8,11,18,0.86))",
-          backdropFilter: "blur(16px)",
-        }}
-      >
-        <div
-          style={{
-            height: 3,
-            background: "linear-gradient(90deg, rgba(79,102,255,0.9), rgba(68,177,255,0.72), rgba(167,188,255,0.24))",
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            gap: 18,
-            flexWrap: "wrap",
-            padding: "16px 22px",
-          }}
-        >
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <Link href="/shops" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+      <header className="rb-topbar">
+        <div className="rb-topbarAccent" />
+        <div className="rb-topbarInner">
+          <div className="rb-brandBlock">
+            <div className="rb-brandEyebrow">Shop Workspace</div>
+            <div className="rb-inlineRow">
+              <Link href="/shops" className="rb-buttonLink rb-buttonLink--ghost">
                 Back to Shop List
               </Link>
-              <span
-                style={{
-                  display: "inline-flex",
-                  padding: "6px 10px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(146, 163, 255, 0.22)",
-                  background: "rgba(92, 108, 255, 0.15)",
-                  color: "#d6ddff",
-                  fontWeight: 900,
-                  fontSize: 11,
-                  letterSpacing: 0.6,
-                  textTransform: "uppercase",
-                }}
-              >
-                Shop Workspace
-              </span>
+              <span className="rb-rolePill">RunBook Shop</span>
             </div>
-            <div style={{ fontWeight: 900, fontSize: 28, lineHeight: 1.06 }}>{shopName}</div>
-            <div style={{ color: theme.text.secondary, fontSize: 13 }}>
-              {email} - Manage the health, access, and setup of this shop without exposing platform internals.
+            <div className="rb-brandTitle">{shopName}</div>
+            <div className="rb-brandSubtitle">
+              Shop-level workspace for health, access, devices, and release posture without exposing platform-only internals.
+            </div>
+            <div className="rb-shellMeta">
+              <span className="rb-fine">{email}</span>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <Link href="/status" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+          <div className="rb-shellMeta" style={{ justifyContent: "flex-end" }}>
+            <Link href="/status" className="rb-buttonLink rb-buttonLink--ghost">
               Status
             </Link>
             <SignOutButton />
@@ -155,31 +123,12 @@ export default async function ShopLayout({ params, children }: Props) {
         </div>
       </header>
 
-      <div
-        style={{
-          flex: 1,
-          display: "grid",
-          gridTemplateColumns: "320px minmax(0, 1fr)",
-          gap: 22,
-          padding: 22,
-        }}
-      >
-        <aside
-          style={{
-            border: theme.border.soft,
-            borderRadius: 22,
-            background: theme.bg.panel,
-            padding: 18,
-            height: "fit-content",
-            position: "sticky",
-            top: 24,
-            boxShadow: theme.shadow.panel,
-          }}
-        >
+      <div className="rb-shellGrid">
+        <aside className="rb-sidebar">
           <SideNav isPlatformAdmin={isPlatformAdmin} mode="shop" shopId={shopId} shopName={shopName} />
         </aside>
 
-        <main style={{ minWidth: 0, display: "grid", gap: 22 }}>
+        <main className="rb-main">
           {isBillingPath ? (
             children
           ) : (

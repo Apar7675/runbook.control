@@ -12,6 +12,8 @@ export type AuditAction =
   | "device.token_deactivated"
   | "device.reactivation_forced"
   | "update.package_uploaded"
+  | "update.package_published"
+  | "update.release_made_current"
   | "policy.changed"
   | "support_bundle.uploaded";
 

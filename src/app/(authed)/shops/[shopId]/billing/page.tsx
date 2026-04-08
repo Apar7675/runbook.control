@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import GlassCard from "@/components/GlassCard";
+import { ActionLink, DataList, NoteList, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
 import { formatDateTime } from "@/lib/ui/dates";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,6 @@ function displayValue(value: string | null | undefined) {
 export default function ShopBillingPage() {
   const params = useParams();
   const shopId = (params as any)?.shopId as string | undefined;
-
   const sp = useSearchParams();
   const statusParam = sp.get("status") ?? "";
   const sessionId = sp.get("session_id") ?? "";
@@ -203,9 +202,7 @@ export default function ShopBillingPage() {
   }, [shopId]);
 
   useEffect(() => {
-    if (statusParam !== "success") return;
-    if (!shopId) return;
-
+    if (statusParam !== "success" || !shopId) return;
     let tries = 0;
     const maxTries = 8;
     const t = setInterval(() => {
@@ -213,7 +210,6 @@ export default function ShopBillingPage() {
       refreshStatus(shopId);
       if (tries >= maxTries) clearInterval(t);
     }, 5000);
-
     return () => clearInterval(t);
   }, [statusParam, shopId]);
 
@@ -224,86 +220,57 @@ export default function ShopBillingPage() {
   const alreadyInTrial = entitlement?.status === "trialing" || entitlement?.status === "active";
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <div style={{ display: "grid", gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Billing</h1>
-        <div style={{ fontSize: 12, opacity: 0.75 }}>
-          {TRIAL_LABEL} then <b>{PRICE_LABEL}</b>. Card required up-front. Cancel anytime before trial ends to avoid charges. <span style={{ opacity: 0.8 }}>ShopId: <b>{displayValue(shopId)}</b></span>
-        </div>
-      </div>
+    <div className="rb-page">
+      <PageHeader eyebrow="Billing" title="Billing" description={`${TRIAL_LABEL} then ${PRICE_LABEL}. Card required up-front. Cancel anytime before trial ends to avoid charges.`} actions={<><ActionLink href={`/shops/${shopId}`}>Back to Shop</ActionLink><ActionLink href={`/shops/${shopId}/devices`}>Devices</ActionLink></>} />
 
-      {banner ? (
-        <GlassCard title="Status">
-          <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>{banner}</div>
-        </GlassCard>
-      ) : null}
+      {banner ? <SectionBlock title="Status" description="Checkout and billing events surface here first." tone="subtle"><div className="rb-pageCopy">{banner}</div></SectionBlock> : null}
+      {msg ? <SectionBlock title="Message" description="Billing status and checkout feedback." tone="warning"><div className="rb-pageCopy">{msg}</div></SectionBlock> : null}
 
-      {msg ? (
-        <GlassCard title="Message">
-          <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>{msg}</div>
-        </GlassCard>
-      ) : null}
-
-      <GlassCard title="Billing State">
+      <SectionBlock title="Billing State" description="Lifecycle status, entitlement, and Stripe linkage in one consistent readout.">
         {!shop || !entitlement ? (
-          <div style={{ opacity: 0.75 }}>{loading ? "Loading..." : "No billing data yet."}</div>
+          <div className="rb-fine">{loading ? "Loading..." : "No billing data yet."}</div>
         ) : (
-          <div style={{ display: "grid", gap: 8, fontSize: 12, opacity: 0.85 }}>
-            <div>Lifecycle: <b>{entitlement.status}</b></div>
-            <div>Allowed: <b>{String(entitlement.allowed)}</b></div>
-            <div>Restricted: <b>{String(entitlement.restricted)}</b></div>
-            <div>Reason: <b>{entitlement.reason}</b></div>
-            <div>Grace active: <b>{String(entitlement.grace_active)}</b></div>
-            <div>Trial ends: <b>{trialEndsLabel}</b></div>
-            <div>Billing period end: <b>{periodEndLabel}</b></div>
-            <div>Grace ends: <b>{graceEndsLabel}</b></div>
-            <div>Entitlement override: <b>{displayValue(shop.entitlement_override ?? "none")}</b></div>
-            <div>Stripe customer: <b>{displayValue(shop.stripe_customer_id)}</b></div>
-            <div>Stripe subscription: <b>{displayValue(shop.stripe_subscription_id)}</b></div>
-            <div>Subscription plan: <b>{displayValue(shop.subscription_plan)}</b></div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                onClick={() => refreshStatus()}
-                disabled={!shopId || loading}
-                style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
-              >
-                {loading ? "Refreshing..." : "Refresh billing status"}
-              </button>
-
-              <button
-                onClick={openPortal}
-                disabled={!shopId || portalBusy || !canManageBilling}
-                style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
-              >
-                {portalBusy ? "Opening..." : "Manage billing in Stripe"}
-              </button>
+          <div className="rb-stack">
+            <div className="rb-chipRow">
+              <StatusBadge label={entitlement.status} tone={toneFromStatus(entitlement.status)} />
+              <StatusBadge label={entitlement.restricted ? "Restricted" : "Allowed"} tone={entitlement.restricted ? "critical" : "healthy"} />
+              <StatusBadge label={shop.billing_status ?? "unknown"} tone={toneFromStatus(shop.billing_status ?? "")} />
+            </div>
+            <div className="rb-statStrip">
+              <div className="rb-statCell"><div className="rb-statCell__label">Trial Ends</div><div className="rb-statCell__value" style={{ fontSize: 18 }}>{trialEndsLabel}</div></div>
+              <div className="rb-statCell"><div className="rb-statCell__label">Period End</div><div className="rb-statCell__value" style={{ fontSize: 18 }}>{periodEndLabel}</div></div>
+              <div className="rb-statCell"><div className="rb-statCell__label">Grace Ends</div><div className="rb-statCell__value" style={{ fontSize: 18 }}>{graceEndsLabel}</div></div>
+            </div>
+            <DataList
+              items={[
+                { label: "Allowed", value: String(entitlement.allowed) },
+                { label: "Restricted", value: String(entitlement.restricted) },
+                { label: "Reason", value: entitlement.reason },
+                { label: "Grace Active", value: String(entitlement.grace_active) },
+                { label: "Entitlement Override", value: displayValue(shop.entitlement_override ?? "none") },
+                { label: "Stripe Customer", value: displayValue(shop.stripe_customer_id) },
+                { label: "Stripe Subscription", value: displayValue(shop.stripe_subscription_id) },
+                { label: "Subscription Plan", value: displayValue(shop.subscription_plan) },
+              ]}
+            />
+            <div className="rb-inlineRow">
+              <button onClick={() => refreshStatus()} disabled={!shopId || loading} className="rb-button">{loading ? "Refreshing..." : "Refresh billing status"}</button>
+              <button onClick={openPortal} disabled={!shopId || portalBusy || !canManageBilling} className="rb-button">{portalBusy ? "Opening..." : "Manage billing in Stripe"}</button>
             </div>
           </div>
         )}
-      </GlassCard>
+      </SectionBlock>
 
-      <GlassCard title="Subscription">
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>
-            You get <b>{TRIAL_LABEL}</b>. After the trial, Stripe charges <b>{PRICE_LABEL}</b> automatically unless you cancel.
-          </div>
-
+      <SectionBlock title="Subscription" description="Trial and conversion actions remain direct and easy to scan.">
+        <div className="rb-stack">
+          <div className="rb-pageCopy">You get <strong>{TRIAL_LABEL}</strong>. After the trial, Stripe charges <strong>{PRICE_LABEL}</strong> automatically unless you cancel.</div>
           {alreadyInTrial ? (
-            <div style={{ fontSize: 12, opacity: 0.8 }}>
-              This shop already has billing set up. Use the Stripe button above if you need to review or update it.
-            </div>
+            <NoteList items={["This shop already has billing set up.", "Use the Stripe button above if you need to review or update it."]} />
           ) : (
-            <button
-              onClick={startCheckout}
-              disabled={busy || !shopId}
-              style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
-            >
-              {busy ? "Starting..." : "Start Free Trial (Card Required)"}
-            </button>
+            <button onClick={startCheckout} disabled={busy || !shopId} className="rb-button rb-button--primary">{busy ? "Starting..." : "Start Free Trial (Card Required)"}</button>
           )}
         </div>
-      </GlassCard>
+      </SectionBlock>
     </div>
   );
 }

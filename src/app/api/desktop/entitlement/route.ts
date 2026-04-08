@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
+import { requireActiveDesktopShopLink } from "@/lib/desktop/shopDeviceTrust";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -115,20 +116,6 @@ async function loadShopTrialEndsWithAutoStrip(admin: ReturnType<typeof supabaseA
   throw new Error("Desktop entitlement shop lookup failed after stripping missing columns");
 }
 
-async function requireActiveDevice(admin: ReturnType<typeof supabaseAdmin>, shopId: string, deviceId: string) {
-  const { data: device, error } = await admin
-    .from("rb_devices")
-    .select("id,shop_id,status")
-    .eq("id", deviceId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!device?.id) return { ok: false, error: "Device not registered for this shop." };
-  if (String(device.shop_id ?? "").trim() !== shopId) return { ok: false, error: "Device not registered for this shop." };
-  if (String(device.status ?? "").trim().toLowerCase() !== "active") return { ok: false, error: "Device inactive." };
-  return { ok: true as const };
-}
-
 export async function POST(req: Request) {
   try {
     const { user } = await requireSessionUser(req);
@@ -149,7 +136,7 @@ export async function POST(req: Request) {
 
     if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
 
-    const deviceCheck = await requireActiveDevice(admin, shop_id, device_id);
+    const deviceCheck = await requireActiveDesktopShopLink(admin, shop_id, device_id);
     if (!deviceCheck.ok) {
       return NextResponse.json({ ok: false, error: deviceCheck.error }, { status: 403 });
     }

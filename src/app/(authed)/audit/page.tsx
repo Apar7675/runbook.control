@@ -81,71 +81,64 @@ export default async function AuditPage({
   }
 
   return (
-    <div style={{ display: "grid", gap: 22 }}>
-      <PageHeader
-        eyebrow="Audit / Activity"
-        title="Activity"
-        description="Present a unified activity feed that explains important admin actions and warnings without exposing mixed audit table history."
-        actions={<ActionLink href={buildUrl("/api/audit/export", filters)} tone="primary">Export Activity</ActionLink>}
-      />
+    <div className="rb-page">
+      <PageHeader eyebrow="Audit / Activity" title="Activity" description="Review important admin actions and warnings without falling back to raw mixed-history tables." actions={<ActionLink href={buildUrl("/api/audit/export", filters)} tone="primary">Export Activity</ActionLink>} />
 
-      <SectionBlock title="Filters" description="Keep the filter surface small and readable.">
-        <form style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
-          <input name="action" defaultValue={action} placeholder="Action contains" style={{ padding: "10px 12px", borderRadius: 12 }} />
-          <input name="actor_email" defaultValue={actorEmail} placeholder="Actor email" style={{ padding: "10px 12px", borderRadius: 12 }} />
-          <input name="shop_id" defaultValue={shopId} placeholder="Shop id" style={{ padding: "10px 12px", borderRadius: 12 }} />
-          <input name="limit" defaultValue={limit} placeholder="Limit" style={{ padding: "10px 12px", borderRadius: 12 }} />
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", gridColumn: "1 / -1" }}>
-            <button type="submit" style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}>Apply</button>
+      <SectionBlock title="Filters" description="Use the shared form language so filtering feels like part of the same system.">
+        <form className="rb-formGrid" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+          <div className="rb-field">
+            <label className="rb-fieldLabel">Action</label>
+            <input className="rb-input" name="action" defaultValue={action} placeholder="Action contains" />
+          </div>
+          <div className="rb-field">
+            <label className="rb-fieldLabel">Actor Email</label>
+            <input className="rb-input" name="actor_email" defaultValue={actorEmail} placeholder="Actor email" />
+          </div>
+          <div className="rb-field">
+            <label className="rb-fieldLabel">Shop Id</label>
+            <input className="rb-input" name="shop_id" defaultValue={shopId} placeholder="Shop id" />
+          </div>
+          <div className="rb-field">
+            <label className="rb-fieldLabel">Limit</label>
+            <input className="rb-input" name="limit" defaultValue={limit} placeholder="Limit" />
+          </div>
+          <div className="rb-inlineRow" style={{ gridColumn: "1 / -1" }}>
+            <button type="submit" className="rb-button rb-button--primary">Apply</button>
             <ActionLink href="/audit">Clear Filters</ActionLink>
           </div>
         </form>
       </SectionBlock>
 
       {!ok || !payload?.ok ? (
-        <EmptyState
-          title="Unable to load activity"
-          description={payload?.error ?? "The activity feed could not be loaded."}
-        />
+        <EmptyState title="Unable to load activity" description={payload?.error ?? "The activity feed could not be loaded."} />
       ) : rows.length === 0 ? (
-        <EmptyState
-          title="No activity found"
-          description="Nothing matched the current filters. Try a broader search or return later after more activity occurs."
-        />
+        <EmptyState title="No activity found" description="Nothing matched the current filters. Try a broader search or return later after more activity occurs." />
       ) : (
         Array.from(groups.entries()).map(([label, groupRows]) => (
           <SectionBlock key={label} title={label} description={`${groupRows.length} event${groupRows.length === 1 ? "" : "s"} in this section.`}>
-            <div style={{ display: "grid", gap: 12 }}>
+            <div className="rb-listRows">
               {groupRows.map((row) => {
                 const severity =
                   /failed|error|blocked|restricted/i.test(row.action) ? "Action Needed" : /delete|revoke|disable/i.test(row.action) ? "Warning" : "Healthy";
                 return (
-                  <div
-                    key={row.id}
-                    style={{
-                      display: "grid",
-                      gap: 8,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 18,
-                      background: "rgba(255,255,255,0.03)",
-                      padding: 16,
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <div key={row.id} className="rb-deviceRow">
+                    <div className="rb-rowBetween" style={{ alignItems: "center" }}>
+                      <div className="rb-chipRow">
                         <div style={{ fontWeight: 900, fontSize: 16 }}>{row.action}</div>
                         <StatusBadge label={severity} tone={toneFromStatus(severity)} />
                       </div>
-                      <div style={{ fontSize: 12, opacity: 0.72 }}>{formatDateTime(row.created_at)}</div>
+                      <div className="rb-fine">{formatDateTime(row.created_at)}</div>
                     </div>
-                    <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
+
+                    <div className="rb-pageCopy">
                       Actor: <strong>{row.actor_email ?? row.actor_user_id ?? "System"}</strong>
                       {" | "}
                       Target: <strong>{row.target_type ?? "event"} {row.target_id ?? ""}</strong>
                     </div>
+
                     {row.shop_id ? (
-                      <div style={{ fontSize: 12 }}>
-                        <Link href={`/shops/${row.shop_id}`} style={{ color: "#d6ddff", textDecoration: "none", fontWeight: 900 }}>
+                      <div className="rb-inlineRow">
+                        <Link href={`/shops/${row.shop_id}`} className="rb-buttonLink rb-buttonLink--ghost">
                           Open related shop
                         </Link>
                       </div>

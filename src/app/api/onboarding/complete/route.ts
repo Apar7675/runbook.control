@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { completeOnboardingForCurrentUser } from "@/lib/onboarding/flow";
-import { resolveOnboardingPath } from "@/lib/onboarding/flow";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +13,7 @@ export async function POST() {
 
     return NextResponse.json({
       ok: true,
-      redirect_to: await resolveOnboardingPath(result.state),
+      redirect_to: "/onboarding/complete",
       completed_at: result.state.completed_at,
     });
   } catch (e: any) {

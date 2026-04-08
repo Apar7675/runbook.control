@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ActionLink, EmptyState, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
+import { ActionLink, EmptyState, PageHeader, SectionBlock, StatCallout, StatusBadge, toneFromStatus } from "@/components/control/ui";
 import { safeFetch } from "@/lib/http/safeFetch";
 
 type Device = {
@@ -63,7 +62,6 @@ export default function DevicesPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
-
   const [createName, setCreateName] = useState("");
   const [createType, setCreateType] = useState<"desktop" | "mobile">("desktop");
   const [createShopId, setCreateShopId] = useState("");
@@ -91,7 +89,6 @@ export default function DevicesPage() {
 
     const devicePayload: any = devicesRes.data;
     const shopPayload: any = shopsRes.data;
-
     if (!devicePayload?.ok) {
       setStatus(devicePayload?.error ?? "Unable to load devices.");
       setLoading(false);
@@ -154,8 +151,7 @@ export default function DevicesPage() {
   }
 
   async function updateDevice(deviceId: string, action: "disable" | "enable" | "delete") {
-    const endpoint =
-      action === "delete" ? "/api/device/delete" : "/api/device/set-status";
+    const endpoint = action === "delete" ? "/api/device/delete" : "/api/device/set-status";
     const body = action === "delete" ? { device_id: deviceId } : { device_id: deviceId, status: action === "disable" ? "disabled" : "active" };
 
     const response = await safeFetch<OkResp>(endpoint, {
@@ -176,124 +172,56 @@ export default function DevicesPage() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 22 }}>
-      <PageHeader
-        eyebrow="Devices"
-        title="Device Center"
-        description="Keep device management calm and obvious: what is connected, what needs attention, and which action matters next."
-        actions={
-          <>
-            {returnTo ? <ActionLink href={returnTo}>Return to Setup</ActionLink> : null}
-            <ActionLink href="/apps" tone="primary">Review App Access</ActionLink>
-            <ActionLink href="/updates">Review Updates</ActionLink>
-          </>
-        }
-      />
+    <div className="rb-page">
+      <PageHeader eyebrow="Devices" title="Device Center" description="Keep device management calm and obvious: what is connected, what needs attention, and which action matters next." actions={<>{returnTo ? <ActionLink href={returnTo}>Return to Setup</ActionLink> : null}<ActionLink href="/apps" tone="primary">Review App Access</ActionLink><ActionLink href="/updates">Review Updates</ActionLink></>} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Active Devices" description="Devices currently allowed to operate.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.active}</div>
-        </SectionBlock>
-        <SectionBlock title="Desktop" description="Registered desktop devices.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.desktops}</div>
-        </SectionBlock>
-        <SectionBlock title="Workstation" description="Registered workstation devices.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.workstations}</div>
-        </SectionBlock>
-        <SectionBlock title="Attention Needed" description="Devices not checking in normally.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.offline}</div>
-        </SectionBlock>
+      <div className="rb-autoGrid">
+        <StatCallout label="Active Devices" value={summary.active} detail="Devices currently allowed to operate." />
+        <StatCallout label="Desktop" value={summary.desktops} detail="Registered desktop devices." tone={summary.desktops > 0 ? "subtle" : "warning"} />
+        <StatCallout label="Workstation" value={summary.workstations} detail="Registered workstation devices." tone={summary.workstations > 0 ? "subtle" : "warning"} />
+        <StatCallout label="Attention Needed" value={summary.offline} detail="Devices not checking in normally." tone={summary.offline > 0 ? "critical" : "healthy"} />
       </div>
 
-      <SectionBlock title="Register Device" description="Use one clear workflow instead of scattering setup actions across the page.">
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(180px, 0.8fr) minmax(220px, 1fr) auto", gap: 10, alignItems: "end" }}>
-          <div style={{ display: "grid", gap: 6 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Device name</label>
-            <input value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Front Office PC" style={{ padding: "10px 12px", borderRadius: 12 }} />
-          </div>
-          <div style={{ display: "grid", gap: 6 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Type</label>
-            <select value={createType} onChange={(event) => setCreateType(event.target.value as "desktop" | "mobile")} style={{ padding: "10px 12px", borderRadius: 12 }}>
-              <option value="desktop">Desktop</option>
-              <option value="mobile">Mobile Client</option>
-            </select>
-          </div>
-          <div style={{ display: "grid", gap: 6 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Shop</label>
-            <select value={createShopId} onChange={(event) => setCreateShopId(event.target.value)} style={{ padding: "10px 12px", borderRadius: 12 }}>
-              <option value="">Select shop</option>
-              {shops.map((shop) => (
-                <option key={shop.id} value={shop.id}>{shop.name}</option>
-              ))}
-            </select>
-          </div>
-          <button onClick={createDevice} disabled={creating} style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}>
-            {creating ? "Creating..." : "Register Device"}
-          </button>
+      <SectionBlock title="Register Device" description="One clear registration workflow instead of a scattered admin form.">
+        <div className="rb-formGrid">
+          <div className="rb-field"><label className="rb-fieldLabel">Device name</label><input className="rb-input" value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Front Office PC" /></div>
+          <div className="rb-field"><label className="rb-fieldLabel">Type</label><select className="rb-select" value={createType} onChange={(event) => setCreateType(event.target.value as "desktop" | "mobile")}><option value="desktop">Desktop</option><option value="mobile">Mobile Client</option></select></div>
+          <div className="rb-field"><label className="rb-fieldLabel">Shop</label><select className="rb-select" value={createShopId} onChange={(event) => setCreateShopId(event.target.value)}><option value="">Select shop</option>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select></div>
+          <button onClick={createDevice} disabled={creating} className="rb-button rb-button--primary">{creating ? "Creating..." : "Register Device"}</button>
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Device Health" description="Separate what the admin needs to know from the lower-level implementation details.">
+      <SectionBlock title="Device Health" description="Separate what the admin needs to know from lower-level implementation detail.">
         {loading ? (
-          <div style={{ opacity: 0.76 }}>Loading devices...</div>
+          <div className="rb-fine">Loading devices...</div>
         ) : devices.length === 0 ? (
-          <EmptyState
-            title="No devices yet"
-            description="Register the first device to start Desktop, Workstation, or update-client setup."
-            action={<ActionLink href="/apps" tone="primary">Review App Setup</ActionLink>}
-          />
+          <EmptyState title="No devices yet" description="Register the first device to start Desktop, Workstation, or update-client setup." action={<ActionLink href="/apps" tone="primary">Review App Setup</ActionLink>} />
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div className="rb-listRows">
             {devices.map((device) => {
               const health = healthLabel(device.last_seen_at);
               const activeTokens = (tokenMap.get(device.id) ?? []).filter((token) => !token.revoked_at).length;
               const isActive = String(device.status).toLowerCase() === "active";
               return (
-                <div
-                  key={device.id}
-                  style={{
-                    display: "grid",
-                    gap: 12,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 18,
-                    background: "rgba(255,255,255,0.03)",
-                    padding: 16,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
-                    <div style={{ display: "grid", gap: 8 }}>
+                <div key={device.id} className="rb-deviceRow">
+                  <div className="rb-rowBetween">
+                    <div className="rb-stack" style={{ gap: 8 }}>
                       <div style={{ fontSize: 18, fontWeight: 900 }}>{device.name}</div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <div className="rb-chipRow">
                         <StatusBadge label={health} tone={toneFromStatus(health)} />
                         <StatusBadge label={isActive ? "Active" : "Restricted"} tone={toneFromStatus(isActive ? "Healthy" : "Action Needed")} />
                         <StatusBadge label={device.device_type ?? "client"} tone="neutral" />
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <div className="rb-inlineRow">
                       <ActionLink href={`/devices/${device.id}`}>View Health</ActionLink>
-                      <button
-                        onClick={() => updateDevice(device.id, isActive ? "disable" : "enable")}
-                        style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}
-                      >
-                        {isActive ? "Deactivate" : "Reactivate"}
-                      </button>
-                      <button
-                        onClick={() => updateDevice(device.id, "delete")}
-                        style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}
-                      >
-                        Remove
-                      </button>
+                      <button onClick={() => updateDevice(device.id, isActive ? "disable" : "enable")} className="rb-button">{isActive ? "Deactivate" : "Reactivate"}</button>
+                      <button onClick={() => updateDevice(device.id, "delete")} className="rb-button rb-button--danger">Remove</button>
                     </div>
                   </div>
 
-                  <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-                    {relativeAge(device.last_seen_at)}. {activeTokens} active token{activeTokens === 1 ? "" : "s"}.
-                    {device.reported_version ? ` Reported version ${device.reported_version}.` : " No version reported yet."}
-                  </div>
-
-                  <div style={{ fontSize: 12, opacity: 0.72 }}>
-                    Shop: {device.shop_name ?? device.shop_id ?? "Unassigned"} | Device ID: {device.id}
-                  </div>
+                  <div className="rb-pageCopy">{relativeAge(device.last_seen_at)}. {activeTokens} active token{activeTokens === 1 ? "" : "s"}.{device.reported_version ? ` Reported version ${device.reported_version}.` : " No version reported yet."}</div>
+                  <div className="rb-fine">Shop: {device.shop_name ?? device.shop_id ?? "Unassigned"} | Device ID: {device.id}</div>
                 </div>
               );
             })}
@@ -301,7 +229,7 @@ export default function DevicesPage() {
         )}
       </SectionBlock>
 
-      {status ? <div style={{ fontSize: 13, opacity: 0.82 }}>{status}</div> : null}
+      {status ? <SectionBlock title="Status Message" description="Operational feedback from the device center." tone="subtle"><div className="rb-pageCopy">{status}</div></SectionBlock> : null}
     </div>
   );
 }

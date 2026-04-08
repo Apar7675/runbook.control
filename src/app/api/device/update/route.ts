@@ -17,6 +17,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { sha256Hex } from "@/lib/crypto";
 import crypto from "crypto";
+import { normalizeAppId } from "@/lib/updates/releases";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -93,6 +94,7 @@ export async function POST(req: Request) {
 
     const channel = String(pol?.channel ?? "stable");
     const pinned = pol?.pinned_version ? String(pol.pinned_version) : null;
+    const appId = normalizeAppId(String(device.device_type ?? "desktop"));
 
     // Choose package
     let pkg: any = null;
@@ -101,6 +103,7 @@ export async function POST(req: Request) {
       const r = await admin
         .from("rb_update_packages")
         .select("id,channel,version,notes,sha256,file_path,created_at")
+        .eq("app_id", appId)
         .eq("channel", channel)
         .eq("version", pinned)
         .maybeSingle();
@@ -112,11 +115,27 @@ export async function POST(req: Request) {
       const r = await admin
         .from("rb_update_packages")
         .select("id,channel,version,notes,sha256,file_path,created_at")
+        .eq("app_id", appId)
         .eq("channel", channel)
+        .eq("is_current", true)
+        .not("published_at", "is", null)
         .order("created_at", { ascending: false })
         .limit(1);
       if (r.error) return NextResponse.json({ ok: false, error: r.error.message }, { status: 500 });
       pkg = (r.data ?? [])[0] ?? null;
+    }
+
+    if (!pkg) {
+      const fallback = await admin
+        .from("rb_update_packages")
+        .select("id,channel,version,notes,sha256,file_path,created_at")
+        .eq("app_id", appId)
+        .eq("channel", channel)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (fallback.error) return NextResponse.json({ ok: false, error: fallback.error.message }, { status: 500 });
+      pkg = (fallback.data ?? [])[0] ?? null;
     }
 
     if (!pkg) return NextResponse.json({ ok: true, update: null }, { status: 200 });
@@ -144,6 +163,7 @@ export async function POST(req: Request) {
           device_type: device.device_type ?? null,
           currentVersion,
           channel,
+          app_id: appId,
           chosenVersion: pkg.version ?? null,
           pinned: pinned ?? null,
         },
