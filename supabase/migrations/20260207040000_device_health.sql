@@ -2,11 +2,9 @@
 -- Safe additive migration.
 
 create extension if not exists pgcrypto;
-
 alter table public.rb_devices
   add column if not exists last_checkin_at timestamptz,
   add column if not exists reported_version text;
-
 -- Device check-in RPC:
 -- - Device sends plaintext deviceKey + version
 -- - DB hashes deviceKey and matches rb_devices.device_key_hash
@@ -51,7 +49,6 @@ begin
   where id = v_device_id;
 end;
 $$;
-
 revoke all on function public.rb_device_checkin(text, text) from public;
 grant execute on function public.rb_device_checkin(text, text) to anon;
 grant execute on function public.rb_device_checkin(text, text) to authenticated;

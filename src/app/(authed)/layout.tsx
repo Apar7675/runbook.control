@@ -131,40 +131,44 @@ export default async function AuthedLayout({
           top: 0,
           zIndex: 20,
           borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "linear-gradient(180deg, rgba(8,11,18,0.94), rgba(8,11,18,0.86))",
+          background: "linear-gradient(180deg, rgba(10,16,24,0.96), rgba(8,12,19,0.90))",
           backdropFilter: "blur(16px)",
+          boxShadow: "0 18px 40px rgba(0,0,0,0.22)",
         }}
       >
         <div
           style={{
             height: 3,
-            background: "linear-gradient(90deg, rgba(79,102,255,0.9), rgba(68,177,255,0.72), rgba(167,188,255,0.24))",
+            background: "linear-gradient(90deg, rgba(126,171,217,0.92), rgba(94,132,198,0.76), rgba(226,174,88,0.30))",
           }}
         />
         <div
           style={{
+            maxWidth: 1580,
+            width: "100%",
+            margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: 18,
+            gap: 14,
             flexWrap: "wrap",
-            padding: "16px 22px",
+            padding: "12px 18px",
           }}
         >
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 6 }}>
             <Link href="/dashboard" style={{ textDecoration: "none", color: theme.text.primary }}>
-              <div style={{ fontWeight: 900, fontSize: 22, letterSpacing: 0.2 }}>RunBook Control</div>
+              <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: -0.18 }}>RunBook Control</div>
             </Link>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ color: theme.text.secondary, fontSize: 13 }}>{email}</span>
+              <span style={{ color: theme.text.muted, fontSize: 13 }}>{email}</span>
               <span
                 style={{
                   display: "inline-flex",
                   padding: "6px 10px",
                   borderRadius: 999,
-                  border: "1px solid rgba(146, 163, 255, 0.22)",
-                  background: "rgba(92, 108, 255, 0.15)",
-                  color: "#d6ddff",
+                  border: theme.border.accentSoft,
+                  background: "rgba(126, 171, 217, 0.12)",
+                  color: theme.text.accentSoft,
                   fontWeight: 900,
                   fontSize: 11,
                   letterSpacing: 0.6,
@@ -195,27 +199,30 @@ export default async function AuthedLayout({
         style={{
           flex: 1,
           display: "grid",
-          gridTemplateColumns: "320px minmax(0, 1fr)",
-          gap: 22,
-          padding: 22,
+          gridTemplateColumns: "280px minmax(0, 1fr)",
+          gap: 16,
+          padding: 16,
+          maxWidth: 1480,
+          width: "100%",
+          margin: "0 auto",
         }}
       >
         <aside
           style={{
-            border: theme.border.soft,
-            borderRadius: 22,
-            background: theme.bg.panel,
-            padding: 18,
+            border: theme.border.accentSoft,
+            borderRadius: 18,
+            background: theme.bg.nav,
+            padding: 14,
             height: "fit-content",
             position: "sticky",
-            top: 96,
-            boxShadow: theme.shadow.panel,
+            top: 82,
+            boxShadow: theme.shadow.glowSoft,
           }}
         >
           <SideNav isPlatformAdmin={isPlatformAdmin} mode="platform" />
         </aside>
 
-        <main style={{ minWidth: 0, display: "grid", gap: 22 }}>{children}</main>
+        <main style={{ minWidth: 0, display: "grid", gap: 16, alignContent: "start" }}>{children}</main>
       </div>
     </div>
   );

@@ -1,7 +1,5 @@
 drop extension if exists "pg_net";
-
-
-  create table "public"."attachments" (
+create table "public"."attachments" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "traveler_id" uuid,
@@ -12,10 +10,7 @@ drop extension if exists "pg_net";
     "caption" text,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."balloon_sets" (
+create table "public"."balloon_sets" (
     "id" text not null,
     "component_id" text not null,
     "drawing_file_id" text,
@@ -23,10 +18,7 @@ drop extension if exists "pg_net";
     "balloon_json_file_id" text,
     "created_utc" text not null
       );
-
-
-
-  create table "public"."chat_blocks" (
+create table "public"."chat_blocks" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "blocker_user_id" uuid not null,
@@ -35,12 +27,8 @@ drop extension if exists "pg_net";
     "created_by" uuid not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."chat_blocks" enable row level security;
-
-
-  create table "public"."chat_messages" (
+create table "public"."chat_messages" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "thread_id" uuid not null,
@@ -48,35 +36,23 @@ alter table "public"."chat_blocks" enable row level security;
     "body" text not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."chat_messages" enable row level security;
-
-
-  create table "public"."chat_thread_members" (
+create table "public"."chat_thread_members" (
     "thread_id" uuid not null,
     "user_id" uuid not null,
     "added_by" uuid not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."chat_thread_members" enable row level security;
-
-
-  create table "public"."chat_threads" (
+create table "public"."chat_threads" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "title" text,
     "created_by" uuid not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."chat_threads" enable row level security;
-
-
-  create table "public"."component_aliases" (
+create table "public"."component_aliases" (
     "id" text not null,
     "component_id" text not null,
     "alias" text not null,
@@ -84,10 +60,7 @@ alter table "public"."chat_threads" enable row level security;
     "source" text not null,
     "created_utc" text not null
       );
-
-
-
-  create table "public"."component_files" (
+create table "public"."component_files" (
     "id" text not null,
     "component_id" text not null,
     "file_kind" text not null,
@@ -98,10 +71,7 @@ alter table "public"."chat_threads" enable row level security;
     "sha256" text,
     "created_utc" text not null
       );
-
-
-
-  create table "public"."components" (
+create table "public"."components" (
     "id" text not null,
     "shop_id" text not null,
     "part_number" text,
@@ -123,21 +93,14 @@ alter table "public"."chat_threads" enable row level security;
     "updated_utc" text not null,
     "normalized_key" text
       );
-
-
-
-  create table "public"."conversation_archives" (
+create table "public"."conversation_archives" (
     "shop_id" uuid not null,
     "conversation_id" uuid not null,
     "employee_id" uuid not null,
     "archived_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."conversation_archives" enable row level security;
-
-
-  create table "public"."conversation_members" (
+create table "public"."conversation_members" (
     "conversation_id" uuid not null,
     "employee_id" uuid not null,
     "member_role" text not null default 'member'::text,
@@ -148,12 +111,8 @@ alter table "public"."conversation_archives" enable row level security;
     "added_by_employee_id" uuid,
     "created_at" timestamp with time zone default now()
       );
-
-
 alter table "public"."conversation_members" enable row level security;
-
-
-  create table "public"."conversations" (
+create table "public"."conversations" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "type" text not null,
@@ -166,12 +125,8 @@ alter table "public"."conversation_members" enable row level security;
     "deleted_at" timestamp with time zone,
     "deleted_by" uuid
       );
-
-
 alter table "public"."conversations" enable row level security;
-
-
-  create table "public"."daily_logs" (
+create table "public"."daily_logs" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "traveler_id" uuid,
@@ -183,21 +138,14 @@ alter table "public"."conversations" enable row level security;
     "notes" text,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."employee_roles" (
+create table "public"."employee_roles" (
     "shop_id" uuid not null,
     "employee_id" uuid not null,
     "role" text not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."employee_roles" enable row level security;
-
-
-  create table "public"."employees" (
+create table "public"."employees" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "auth_user_id" uuid,
@@ -210,24 +158,16 @@ alter table "public"."employee_roles" enable row level security;
     "avatar_url_512" text,
     "avatar_updated_at" timestamp with time zone
       );
-
-
 alter table "public"."employees" enable row level security;
-
-
-  create table "public"."holiday_calendar" (
+create table "public"."holiday_calendar" (
     "shop_id" uuid not null,
     "holiday_date" date not null,
     "name" text not null,
     "is_paid" boolean not null default true,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."holiday_calendar" enable row level security;
-
-
-  create table "public"."inspection_sets" (
+create table "public"."inspection_sets" (
     "id" text not null,
     "component_id" text not null,
     "aql_level" real not null default 1.0,
@@ -236,10 +176,7 @@ alter table "public"."holiday_calendar" enable row level security;
     "final_template_file_id" text,
     "created_utc" text not null
       );
-
-
-
-  create table "public"."jobs" (
+create table "public"."jobs" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "customer" text not null,
@@ -248,10 +185,7 @@ alter table "public"."holiday_calendar" enable row level security;
     "notes" text,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."message_reactions" (
+create table "public"."message_reactions" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "conversation_id" uuid not null,
@@ -260,22 +194,14 @@ alter table "public"."holiday_calendar" enable row level security;
     "emoji" text not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."message_reactions" enable row level security;
-
-
-  create table "public"."message_reads" (
+create table "public"."message_reads" (
     "conversation_id" uuid not null,
     "employee_id" uuid not null,
     "last_read_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."message_reads" enable row level security;
-
-
-  create table "public"."messages" (
+create table "public"."messages" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "conversation_id" uuid not null,
@@ -285,24 +211,16 @@ alter table "public"."message_reads" enable row level security;
     "edited_at" timestamp with time zone,
     "deleted_at" timestamp with time zone
       );
-
-
 alter table "public"."messages" enable row level security;
-
-
-  create table "public"."messaging_roster" (
+create table "public"."messaging_roster" (
     "shop_id" uuid not null,
     "employee_id" uuid not null,
     "is_active" boolean not null default true,
     "added_by_employee_id" uuid,
     "added_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."messaging_roster" enable row level security;
-
-
-  create table "public"."op_sessions" (
+create table "public"."op_sessions" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "traveler_id" uuid,
@@ -312,10 +230,7 @@ alter table "public"."messaging_roster" enable row level security;
     "ended_at" timestamp with time zone,
     "is_complete" boolean default false
       );
-
-
-
-  create table "public"."operations" (
+create table "public"."operations" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "traveler_id" uuid,
@@ -326,10 +241,7 @@ alter table "public"."messaging_roster" enable row level security;
     "status" text default 'open'::text,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."operators" (
+create table "public"."operators" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "name" text not null,
@@ -337,10 +249,7 @@ alter table "public"."messaging_roster" enable row level security;
     "is_active" boolean default true,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."po_line_items" (
+create table "public"."po_line_items" (
     "id" text not null,
     "purchase_order_id" text not null,
     "line_no" integer,
@@ -356,10 +265,7 @@ alter table "public"."messaging_roster" enable row level security;
     "link_method" text,
     "created_utc" text not null
       );
-
-
-
-  create table "public"."purchase_orders" (
+create table "public"."purchase_orders" (
     "id" text not null,
     "shop_id" text not null,
     "vendor_name" text,
@@ -371,10 +277,7 @@ alter table "public"."messaging_roster" enable row level security;
     "extracted_json" text,
     "created_utc" text not null
       );
-
-
-
-  create table "public"."push_tokens" (
+create table "public"."push_tokens" (
     "shop_id" uuid not null,
     "employee_id" uuid not null,
     "expo_push_token" text not null,
@@ -382,12 +285,8 @@ alter table "public"."messaging_roster" enable row level security;
     "device_name" text not null default 'device'::text,
     "updated_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."push_tokens" enable row level security;
-
-
-  create table "public"."rb_audit" (
+create table "public"."rb_audit" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid,
     "actor_user_id" uuid,
@@ -398,21 +297,13 @@ alter table "public"."push_tokens" enable row level security;
     "details" jsonb not null default '{}'::jsonb,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_audit" enable row level security;
-
-
-  create table "public"."rb_control_admins" (
+create table "public"."rb_control_admins" (
     "user_id" uuid not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_control_admins" enable row level security;
-
-
-  create table "public"."rb_device_activation_tokens" (
+create table "public"."rb_device_activation_tokens" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "device_id" uuid not null,
@@ -421,12 +312,8 @@ alter table "public"."rb_control_admins" enable row level security;
     "used_at" timestamp with time zone,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_device_activation_tokens" enable row level security;
-
-
-  create table "public"."rb_devices" (
+create table "public"."rb_devices" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "name" text not null,
@@ -435,34 +322,22 @@ alter table "public"."rb_device_activation_tokens" enable row level security;
     "created_at" timestamp with time zone not null default now(),
     "device_key_hash" text
       );
-
-
 alter table "public"."rb_devices" enable row level security;
-
-
-  create table "public"."rb_shop_members" (
+create table "public"."rb_shop_members" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "user_id" uuid not null,
     "role" text not null default 'member'::text,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_shop_members" enable row level security;
-
-
-  create table "public"."rb_shops" (
+create table "public"."rb_shops" (
     "id" uuid not null default gen_random_uuid(),
     "name" text not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_shops" enable row level security;
-
-
-  create table "public"."rb_support_bundles" (
+create table "public"."rb_support_bundles" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "file_path" text not null,
@@ -470,12 +345,8 @@ alter table "public"."rb_shops" enable row level security;
     "uploaded_by" uuid not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_support_bundles" enable row level security;
-
-
-  create table "public"."rb_update_packages" (
+create table "public"."rb_update_packages" (
     "id" uuid not null default gen_random_uuid(),
     "channel" text not null default 'stable'::text,
     "version" text not null,
@@ -485,12 +356,8 @@ alter table "public"."rb_support_bundles" enable row level security;
     "created_by" uuid not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_update_packages" enable row level security;
-
-
-  create table "public"."rb_update_policy" (
+create table "public"."rb_update_policy" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "channel" text not null default 'stable'::text,
@@ -498,23 +365,15 @@ alter table "public"."rb_update_packages" enable row level security;
     "pinned_version" text,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_update_policy" enable row level security;
-
-
-  create table "public"."rb_user_prefs" (
+create table "public"."rb_user_prefs" (
     "user_id" uuid not null,
     "novice_dismissed" boolean not null default false,
     "created_at" timestamp with time zone not null default now(),
     "updated_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."rb_user_prefs" enable row level security;
-
-
-  create table "public"."routing_operations" (
+create table "public"."routing_operations" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid not null,
     "job_id" uuid not null,
@@ -524,10 +383,7 @@ alter table "public"."rb_user_prefs" enable row level security;
     "notes" text,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."shop_members" (
+create table "public"."shop_members" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "user_id" uuid not null,
@@ -536,22 +392,15 @@ alter table "public"."rb_user_prefs" enable row level security;
     "display_name" text not null,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."shop_members" enable row level security;
-
-
-  create table "public"."tenants" (
+create table "public"."tenants" (
     "id" uuid not null default gen_random_uuid(),
     "name" text not null,
     "code" text not null,
     "poster_token" text not null,
     "created_at" timestamp with time zone default now()
       );
-
-
-
-  create table "public"."time_events" (
+create table "public"."time_events" (
     "id" uuid not null default gen_random_uuid(),
     "employee_id" uuid not null,
     "shop_id" uuid not null,
@@ -567,12 +416,8 @@ alter table "public"."shop_members" enable row level security;
     "created_at" timestamp with time zone not null default now(),
     "updated_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."time_events" enable row level security;
-
-
-  create table "public"."time_off_balances" (
+create table "public"."time_off_balances" (
     "shop_id" uuid not null,
     "employee_id" uuid not null,
     "vacation_hours" numeric not null default 0,
@@ -580,12 +425,8 @@ alter table "public"."time_events" enable row level security;
     "personal_hours" numeric not null default 0,
     "updated_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."time_off_balances" enable row level security;
-
-
-  create table "public"."time_off_policy" (
+create table "public"."time_off_policy" (
     "shop_id" uuid not null,
     "vacation_hours_per_year" numeric not null default 80,
     "sick_hours_per_year" numeric not null default 40,
@@ -593,12 +434,8 @@ alter table "public"."time_off_balances" enable row level security;
     "allow_negative" boolean not null default false,
     "updated_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."time_off_policy" enable row level security;
-
-
-  create table "public"."time_off_requests" (
+create table "public"."time_off_requests" (
     "id" uuid not null default gen_random_uuid(),
     "shop_id" uuid not null,
     "employee_id" uuid not null,
@@ -613,20 +450,13 @@ alter table "public"."time_off_policy" enable row level security;
     "decided_at" timestamp with time zone,
     "created_at" timestamp with time zone not null default now()
       );
-
-
 alter table "public"."time_off_requests" enable row level security;
-
-
-  create table "public"."timeclock_settings" (
+create table "public"."timeclock_settings" (
     "shop_id" uuid not null,
     "week_start_dow" integer not null default 0,
     "updated_at" timestamp with time zone not null default now()
       );
-
-
-
-  create table "public"."travelers" (
+create table "public"."travelers" (
     "id" uuid not null default gen_random_uuid(),
     "tenant_id" uuid,
     "job_id" uuid,
@@ -637,646 +467,325 @@ alter table "public"."time_off_requests" enable row level security;
     "is_access_enabled" boolean not null default true,
     "closed_at" timestamp with time zone
       );
-
-
 CREATE UNIQUE INDEX attachments_pkey ON public.attachments USING btree (id);
-
 CREATE UNIQUE INDEX balloon_sets_pkey ON public.balloon_sets USING btree (id);
-
 CREATE UNIQUE INDEX chat_blocks_pkey ON public.chat_blocks USING btree (id);
-
 CREATE UNIQUE INDEX chat_blocks_shop_id_blocker_user_id_blocked_user_id_key ON public.chat_blocks USING btree (shop_id, blocker_user_id, blocked_user_id);
-
 CREATE INDEX chat_blocks_shop_id_idx ON public.chat_blocks USING btree (shop_id);
-
 CREATE UNIQUE INDEX chat_messages_pkey ON public.chat_messages USING btree (id);
-
 CREATE INDEX chat_messages_thread_id_created_at_idx ON public.chat_messages USING btree (thread_id, created_at);
-
 CREATE UNIQUE INDEX chat_thread_members_pkey ON public.chat_thread_members USING btree (thread_id, user_id);
-
 CREATE INDEX chat_thread_members_user_id_idx ON public.chat_thread_members USING btree (user_id);
-
 CREATE UNIQUE INDEX chat_threads_pkey ON public.chat_threads USING btree (id);
-
 CREATE INDEX chat_threads_shop_id_idx ON public.chat_threads USING btree (shop_id);
-
 CREATE UNIQUE INDEX component_aliases_pkey ON public.component_aliases USING btree (id);
-
 CREATE UNIQUE INDEX component_files_pkey ON public.component_files USING btree (id);
-
 CREATE UNIQUE INDEX components_pkey ON public.components USING btree (id);
-
 CREATE UNIQUE INDEX conversation_archives_pkey ON public.conversation_archives USING btree (shop_id, conversation_id, employee_id);
-
 CREATE UNIQUE INDEX conversation_members_pkey ON public.conversation_members USING btree (conversation_id, employee_id);
-
 CREATE UNIQUE INDEX conversations_pkey ON public.conversations USING btree (id);
-
 CREATE INDEX conversations_shop_deleted_at_idx ON public.conversations USING btree (shop_id, deleted_at);
-
 CREATE UNIQUE INDEX daily_logs_pkey ON public.daily_logs USING btree (id);
-
 CREATE UNIQUE INDEX employee_roles_pkey ON public.employee_roles USING btree (shop_id, employee_id, role);
-
 CREATE UNIQUE INDEX employees_auth_user_id_key ON public.employees USING btree (auth_user_id);
-
 CREATE UNIQUE INDEX employees_pkey ON public.employees USING btree (id);
-
 CREATE INDEX employees_shop_active_idx ON public.employees USING btree (shop_id, is_active);
-
 CREATE UNIQUE INDEX employees_shop_auth_unique ON public.employees USING btree (shop_id, auth_user_id) WHERE (auth_user_id IS NOT NULL);
-
 CREATE UNIQUE INDEX employees_shop_code_uniq ON public.employees USING btree (shop_id, employee_code);
-
 CREATE UNIQUE INDEX employees_shop_code_unique ON public.employees USING btree (shop_id, employee_code) WHERE (employee_code IS NOT NULL);
-
 CREATE UNIQUE INDEX holiday_calendar_pkey ON public.holiday_calendar USING btree (shop_id, holiday_date);
-
 CREATE INDEX idx_balloon_sets_component ON public.balloon_sets USING btree (component_id);
-
 CREATE INDEX idx_component_aliases_component ON public.component_aliases USING btree (component_id);
-
 CREATE INDEX idx_component_files_component ON public.component_files USING btree (component_id);
-
 CREATE INDEX idx_component_files_kind ON public.component_files USING btree (file_kind);
-
 CREATE INDEX idx_components_flags ON public.components USING btree (has_drawing, has_balloon, has_inspection_set);
-
 CREATE INDEX idx_components_normalized_key ON public.components USING btree (normalized_key);
-
 CREATE INDEX idx_components_part_number ON public.components USING btree (part_number);
-
 CREATE INDEX idx_components_shop ON public.components USING btree (shop_id);
-
 CREATE INDEX idx_conversation_members_emp ON public.conversation_members USING btree (employee_id);
-
 CREATE INDEX idx_conversation_members_shop_convo ON public.conversation_members USING btree (shop_id, conversation_id);
-
 CREATE INDEX idx_conversation_members_shop_employee ON public.conversation_members USING btree (shop_id, employee_id);
-
 CREATE INDEX idx_conversations_shop_created ON public.conversations USING btree (shop_id, created_at DESC);
-
 CREATE INDEX idx_conversations_shop_type_active ON public.conversations USING btree (shop_id, type, is_active);
-
 CREATE INDEX idx_conversations_shop_updated ON public.conversations USING btree (shop_id, updated_at DESC);
-
 CREATE INDEX idx_convo_archives_lookup ON public.conversation_archives USING btree (shop_id, employee_id, archived_at);
-
 CREATE INDEX idx_employees_auth_user_shop ON public.employees USING btree (auth_user_id, shop_id);
-
 CREATE INDEX idx_inspection_sets_component ON public.inspection_sets USING btree (component_id);
-
 CREATE INDEX idx_members_convo_emp ON public.conversation_members USING btree (conversation_id, employee_id);
-
 CREATE INDEX idx_message_reactions_employee ON public.message_reactions USING btree (shop_id, employee_id);
-
 CREATE INDEX idx_message_reactions_lookup ON public.message_reactions USING btree (shop_id, conversation_id, message_id);
-
 CREATE INDEX idx_messages_conversation_created ON public.messages USING btree (conversation_id, created_at DESC);
-
 CREATE INDEX idx_messages_convo_created ON public.messages USING btree (conversation_id, created_at);
-
 CREATE INDEX idx_messages_shop_convo_created ON public.messages USING btree (shop_id, conversation_id, created_at DESC);
-
 CREATE INDEX idx_messages_shop_convo_not_deleted ON public.messages USING btree (shop_id, conversation_id) WHERE (deleted_at IS NULL);
-
 CREATE INDEX idx_messaging_roster_shop_active ON public.messaging_roster USING btree (shop_id, is_active);
-
 CREATE INDEX idx_messaging_roster_shop_employee ON public.messaging_roster USING btree (shop_id, employee_id);
-
 CREATE INDEX idx_po_line_items_component ON public.po_line_items USING btree (component_id);
-
 CREATE INDEX idx_po_line_items_norm ON public.po_line_items USING btree (normalized_item);
-
 CREATE INDEX idx_po_line_items_po ON public.po_line_items USING btree (purchase_order_id);
-
 CREATE INDEX idx_purchase_orders_po_number ON public.purchase_orders USING btree (po_number);
-
 CREATE INDEX idx_purchase_orders_shop ON public.purchase_orders USING btree (shop_id);
-
 CREATE INDEX idx_roster_shop_active ON public.messaging_roster USING btree (shop_id, is_active);
-
 CREATE INDEX idx_time_off_requests_employee ON public.time_off_requests USING btree (employee_id, start_date);
-
 CREATE INDEX idx_time_off_requests_shop_status ON public.time_off_requests USING btree (shop_id, status, start_date);
-
 CREATE UNIQUE INDEX inspection_sets_pkey ON public.inspection_sets USING btree (id);
-
 CREATE INDEX ix_routing_ops_job ON public.routing_operations USING btree (job_id, op_number);
-
 CREATE INDEX ix_routing_ops_tenant ON public.routing_operations USING btree (tenant_id);
-
 CREATE UNIQUE INDEX jobs_pkey ON public.jobs USING btree (id);
-
 CREATE UNIQUE INDEX message_reactions_pkey ON public.message_reactions USING btree (id);
-
 CREATE UNIQUE INDEX message_reactions_shop_id_message_id_employee_id_emoji_key ON public.message_reactions USING btree (shop_id, message_id, employee_id, emoji);
-
 CREATE UNIQUE INDEX message_reads_pkey ON public.message_reads USING btree (conversation_id, employee_id);
-
 CREATE INDEX messages_conv_created_idx ON public.messages USING btree (conversation_id, created_at DESC);
-
 CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id);
-
 CREATE UNIQUE INDEX messaging_roster_pkey ON public.messaging_roster USING btree (shop_id, employee_id);
-
 CREATE UNIQUE INDEX op_sessions_pkey ON public.op_sessions USING btree (id);
-
 CREATE UNIQUE INDEX operations_pkey ON public.operations USING btree (id);
-
 CREATE UNIQUE INDEX operations_traveler_id_op_number_key ON public.operations USING btree (traveler_id, op_number);
-
 CREATE UNIQUE INDEX operators_pkey ON public.operators USING btree (id);
-
 CREATE UNIQUE INDEX operators_tenant_id_name_key ON public.operators USING btree (tenant_id, name);
-
 CREATE UNIQUE INDEX po_line_items_pkey ON public.po_line_items USING btree (id);
-
 CREATE UNIQUE INDEX purchase_orders_pkey ON public.purchase_orders USING btree (id);
-
 CREATE UNIQUE INDEX push_tokens_pkey ON public.push_tokens USING btree (shop_id, employee_id, expo_push_token);
-
 CREATE INDEX rb_audit_action_idx ON public.rb_audit USING btree (action, created_at DESC);
-
 CREATE UNIQUE INDEX rb_audit_pkey ON public.rb_audit USING btree (id);
-
 CREATE INDEX rb_audit_shop_idx ON public.rb_audit USING btree (shop_id, created_at DESC);
-
 CREATE UNIQUE INDEX rb_control_admins_pkey ON public.rb_control_admins USING btree (user_id);
-
 CREATE UNIQUE INDEX rb_device_activation_tokens_device_id_key ON public.rb_device_activation_tokens USING btree (device_id);
-
 CREATE UNIQUE INDEX rb_device_activation_tokens_pkey ON public.rb_device_activation_tokens USING btree (id);
-
 CREATE INDEX rb_device_activation_tokens_shop_idx ON public.rb_device_activation_tokens USING btree (shop_id);
-
 CREATE UNIQUE INDEX rb_devices_pkey ON public.rb_devices USING btree (id);
-
 CREATE INDEX rb_devices_shop_id_idx ON public.rb_devices USING btree (shop_id);
-
 CREATE UNIQUE INDEX rb_shop_members_pkey ON public.rb_shop_members USING btree (id);
-
 CREATE INDEX rb_shop_members_shop_id_idx ON public.rb_shop_members USING btree (shop_id);
-
 CREATE UNIQUE INDEX rb_shop_members_shop_id_user_id_key ON public.rb_shop_members USING btree (shop_id, user_id);
-
 CREATE INDEX rb_shop_members_user_id_idx ON public.rb_shop_members USING btree (user_id);
-
 CREATE UNIQUE INDEX rb_shops_pkey ON public.rb_shops USING btree (id);
-
 CREATE UNIQUE INDEX rb_support_bundles_pkey ON public.rb_support_bundles USING btree (id);
-
 CREATE INDEX rb_support_bundles_shop_idx ON public.rb_support_bundles USING btree (shop_id);
-
 CREATE INDEX rb_update_packages_channel_idx ON public.rb_update_packages USING btree (channel);
-
 CREATE UNIQUE INDEX rb_update_packages_channel_version_key ON public.rb_update_packages USING btree (channel, version);
-
 CREATE UNIQUE INDEX rb_update_packages_pkey ON public.rb_update_packages USING btree (id);
-
 CREATE UNIQUE INDEX rb_update_policy_pkey ON public.rb_update_policy USING btree (id);
-
 CREATE UNIQUE INDEX rb_update_policy_shop_id_key ON public.rb_update_policy USING btree (shop_id);
-
 CREATE UNIQUE INDEX rb_user_prefs_pkey ON public.rb_user_prefs USING btree (user_id);
-
 CREATE UNIQUE INDEX routing_operations_pkey ON public.routing_operations USING btree (id);
-
 CREATE UNIQUE INDEX shop_members_pkey ON public.shop_members USING btree (id);
-
 CREATE INDEX shop_members_shop_id_idx ON public.shop_members USING btree (shop_id);
-
 CREATE UNIQUE INDEX shop_members_shop_id_user_id_key ON public.shop_members USING btree (shop_id, user_id);
-
 CREATE INDEX shop_members_user_id_idx ON public.shop_members USING btree (user_id);
-
 CREATE UNIQUE INDEX tenants_code_key ON public.tenants USING btree (code);
-
 CREATE UNIQUE INDEX tenants_pkey ON public.tenants USING btree (id);
-
 CREATE UNIQUE INDEX tenants_poster_token_key ON public.tenants USING btree (poster_token);
-
 CREATE INDEX time_events_employee_day_idx ON public.time_events USING btree (employee_id, client_ts DESC);
-
 CREATE UNIQUE INDEX time_events_offline_id_key ON public.time_events USING btree (offline_id);
-
 CREATE UNIQUE INDEX time_events_offline_id_uidx ON public.time_events USING btree (offline_id);
-
 CREATE UNIQUE INDEX time_events_offline_id_uq ON public.time_events USING btree (offline_id);
-
 CREATE UNIQUE INDEX time_events_pkey ON public.time_events USING btree (id);
-
 CREATE INDEX time_events_shop_day_idx ON public.time_events USING btree (shop_id, client_ts DESC);
-
 CREATE INDEX time_events_type_idx ON public.time_events USING btree (event_type);
-
 CREATE UNIQUE INDEX time_off_balances_pkey ON public.time_off_balances USING btree (shop_id, employee_id);
-
 CREATE UNIQUE INDEX time_off_policy_pkey ON public.time_off_policy USING btree (shop_id);
-
 CREATE UNIQUE INDEX time_off_requests_pkey ON public.time_off_requests USING btree (id);
-
 CREATE UNIQUE INDEX timeclock_settings_pkey ON public.timeclock_settings USING btree (shop_id);
-
 CREATE UNIQUE INDEX travelers_pkey ON public.travelers USING btree (id);
-
 CREATE UNIQUE INDEX travelers_public_id_key ON public.travelers USING btree (public_id);
-
 CREATE UNIQUE INDEX ux_component_aliases_norm ON public.component_aliases USING btree (normalized);
-
 CREATE UNIQUE INDEX ux_routing_ops_job_op ON public.routing_operations USING btree (job_id, op_number);
-
 alter table "public"."attachments" add constraint "attachments_pkey" PRIMARY KEY using index "attachments_pkey";
-
 alter table "public"."balloon_sets" add constraint "balloon_sets_pkey" PRIMARY KEY using index "balloon_sets_pkey";
-
 alter table "public"."chat_blocks" add constraint "chat_blocks_pkey" PRIMARY KEY using index "chat_blocks_pkey";
-
 alter table "public"."chat_messages" add constraint "chat_messages_pkey" PRIMARY KEY using index "chat_messages_pkey";
-
 alter table "public"."chat_thread_members" add constraint "chat_thread_members_pkey" PRIMARY KEY using index "chat_thread_members_pkey";
-
 alter table "public"."chat_threads" add constraint "chat_threads_pkey" PRIMARY KEY using index "chat_threads_pkey";
-
 alter table "public"."component_aliases" add constraint "component_aliases_pkey" PRIMARY KEY using index "component_aliases_pkey";
-
 alter table "public"."component_files" add constraint "component_files_pkey" PRIMARY KEY using index "component_files_pkey";
-
 alter table "public"."components" add constraint "components_pkey" PRIMARY KEY using index "components_pkey";
-
 alter table "public"."conversation_archives" add constraint "conversation_archives_pkey" PRIMARY KEY using index "conversation_archives_pkey";
-
 alter table "public"."conversation_members" add constraint "conversation_members_pkey" PRIMARY KEY using index "conversation_members_pkey";
-
 alter table "public"."conversations" add constraint "conversations_pkey" PRIMARY KEY using index "conversations_pkey";
-
 alter table "public"."daily_logs" add constraint "daily_logs_pkey" PRIMARY KEY using index "daily_logs_pkey";
-
 alter table "public"."employee_roles" add constraint "employee_roles_pkey" PRIMARY KEY using index "employee_roles_pkey";
-
 alter table "public"."employees" add constraint "employees_pkey" PRIMARY KEY using index "employees_pkey";
-
 alter table "public"."holiday_calendar" add constraint "holiday_calendar_pkey" PRIMARY KEY using index "holiday_calendar_pkey";
-
 alter table "public"."inspection_sets" add constraint "inspection_sets_pkey" PRIMARY KEY using index "inspection_sets_pkey";
-
 alter table "public"."jobs" add constraint "jobs_pkey" PRIMARY KEY using index "jobs_pkey";
-
 alter table "public"."message_reactions" add constraint "message_reactions_pkey" PRIMARY KEY using index "message_reactions_pkey";
-
 alter table "public"."message_reads" add constraint "message_reads_pkey" PRIMARY KEY using index "message_reads_pkey";
-
 alter table "public"."messages" add constraint "messages_pkey" PRIMARY KEY using index "messages_pkey";
-
 alter table "public"."messaging_roster" add constraint "messaging_roster_pkey" PRIMARY KEY using index "messaging_roster_pkey";
-
 alter table "public"."op_sessions" add constraint "op_sessions_pkey" PRIMARY KEY using index "op_sessions_pkey";
-
 alter table "public"."operations" add constraint "operations_pkey" PRIMARY KEY using index "operations_pkey";
-
 alter table "public"."operators" add constraint "operators_pkey" PRIMARY KEY using index "operators_pkey";
-
 alter table "public"."po_line_items" add constraint "po_line_items_pkey" PRIMARY KEY using index "po_line_items_pkey";
-
 alter table "public"."purchase_orders" add constraint "purchase_orders_pkey" PRIMARY KEY using index "purchase_orders_pkey";
-
 alter table "public"."push_tokens" add constraint "push_tokens_pkey" PRIMARY KEY using index "push_tokens_pkey";
-
 alter table "public"."rb_audit" add constraint "rb_audit_pkey" PRIMARY KEY using index "rb_audit_pkey";
-
 alter table "public"."rb_control_admins" add constraint "rb_control_admins_pkey" PRIMARY KEY using index "rb_control_admins_pkey";
-
 alter table "public"."rb_device_activation_tokens" add constraint "rb_device_activation_tokens_pkey" PRIMARY KEY using index "rb_device_activation_tokens_pkey";
-
 alter table "public"."rb_devices" add constraint "rb_devices_pkey" PRIMARY KEY using index "rb_devices_pkey";
-
 alter table "public"."rb_shop_members" add constraint "rb_shop_members_pkey" PRIMARY KEY using index "rb_shop_members_pkey";
-
 alter table "public"."rb_shops" add constraint "rb_shops_pkey" PRIMARY KEY using index "rb_shops_pkey";
-
 alter table "public"."rb_support_bundles" add constraint "rb_support_bundles_pkey" PRIMARY KEY using index "rb_support_bundles_pkey";
-
 alter table "public"."rb_update_packages" add constraint "rb_update_packages_pkey" PRIMARY KEY using index "rb_update_packages_pkey";
-
 alter table "public"."rb_update_policy" add constraint "rb_update_policy_pkey" PRIMARY KEY using index "rb_update_policy_pkey";
-
 alter table "public"."rb_user_prefs" add constraint "rb_user_prefs_pkey" PRIMARY KEY using index "rb_user_prefs_pkey";
-
 alter table "public"."routing_operations" add constraint "routing_operations_pkey" PRIMARY KEY using index "routing_operations_pkey";
-
 alter table "public"."shop_members" add constraint "shop_members_pkey" PRIMARY KEY using index "shop_members_pkey";
-
 alter table "public"."tenants" add constraint "tenants_pkey" PRIMARY KEY using index "tenants_pkey";
-
 alter table "public"."time_events" add constraint "time_events_pkey" PRIMARY KEY using index "time_events_pkey";
-
 alter table "public"."time_off_balances" add constraint "time_off_balances_pkey" PRIMARY KEY using index "time_off_balances_pkey";
-
 alter table "public"."time_off_policy" add constraint "time_off_policy_pkey" PRIMARY KEY using index "time_off_policy_pkey";
-
 alter table "public"."time_off_requests" add constraint "time_off_requests_pkey" PRIMARY KEY using index "time_off_requests_pkey";
-
 alter table "public"."timeclock_settings" add constraint "timeclock_settings_pkey" PRIMARY KEY using index "timeclock_settings_pkey";
-
 alter table "public"."travelers" add constraint "travelers_pkey" PRIMARY KEY using index "travelers_pkey";
-
 alter table "public"."attachments" add constraint "attachments_operation_id_fkey" FOREIGN KEY (operation_id) REFERENCES public.operations(id) not valid;
-
 alter table "public"."attachments" validate constraint "attachments_operation_id_fkey";
-
 alter table "public"."attachments" add constraint "attachments_operator_id_fkey" FOREIGN KEY (operator_id) REFERENCES public.operators(id) not valid;
-
 alter table "public"."attachments" validate constraint "attachments_operator_id_fkey";
-
 alter table "public"."attachments" add constraint "attachments_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."attachments" validate constraint "attachments_tenant_id_fkey";
-
 alter table "public"."attachments" add constraint "attachments_traveler_id_fkey" FOREIGN KEY (traveler_id) REFERENCES public.travelers(id) not valid;
-
 alter table "public"."attachments" validate constraint "attachments_traveler_id_fkey";
-
 alter table "public"."balloon_sets" add constraint "balloon_sets_component_id_fkey" FOREIGN KEY (component_id) REFERENCES public.components(id) ON DELETE CASCADE not valid;
-
 alter table "public"."balloon_sets" validate constraint "balloon_sets_component_id_fkey";
-
 alter table "public"."chat_blocks" add constraint "chat_blocks_blocked_user_id_fkey" FOREIGN KEY (blocked_user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_blocks" validate constraint "chat_blocks_blocked_user_id_fkey";
-
 alter table "public"."chat_blocks" add constraint "chat_blocks_blocker_user_id_fkey" FOREIGN KEY (blocker_user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_blocks" validate constraint "chat_blocks_blocker_user_id_fkey";
-
 alter table "public"."chat_blocks" add constraint "chat_blocks_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_blocks" validate constraint "chat_blocks_created_by_fkey";
-
 alter table "public"."chat_blocks" add constraint "chat_blocks_shop_id_blocker_user_id_blocked_user_id_key" UNIQUE using index "chat_blocks_shop_id_blocker_user_id_blocked_user_id_key";
-
 alter table "public"."chat_messages" add constraint "chat_messages_sender_id_fkey" FOREIGN KEY (sender_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_messages" validate constraint "chat_messages_sender_id_fkey";
-
 alter table "public"."chat_messages" add constraint "chat_messages_thread_id_fkey" FOREIGN KEY (thread_id) REFERENCES public.chat_threads(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_messages" validate constraint "chat_messages_thread_id_fkey";
-
 alter table "public"."chat_thread_members" add constraint "chat_thread_members_added_by_fkey" FOREIGN KEY (added_by) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_thread_members" validate constraint "chat_thread_members_added_by_fkey";
-
 alter table "public"."chat_thread_members" add constraint "chat_thread_members_thread_id_fkey" FOREIGN KEY (thread_id) REFERENCES public.chat_threads(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_thread_members" validate constraint "chat_thread_members_thread_id_fkey";
-
 alter table "public"."chat_thread_members" add constraint "chat_thread_members_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_thread_members" validate constraint "chat_thread_members_user_id_fkey";
-
 alter table "public"."chat_threads" add constraint "chat_threads_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."chat_threads" validate constraint "chat_threads_created_by_fkey";
-
 alter table "public"."component_aliases" add constraint "component_aliases_component_id_fkey" FOREIGN KEY (component_id) REFERENCES public.components(id) ON DELETE CASCADE not valid;
-
 alter table "public"."component_aliases" validate constraint "component_aliases_component_id_fkey";
-
 alter table "public"."component_files" add constraint "component_files_component_id_fkey" FOREIGN KEY (component_id) REFERENCES public.components(id) ON DELETE CASCADE not valid;
-
 alter table "public"."component_files" validate constraint "component_files_component_id_fkey";
-
 alter table "public"."conversation_members" add constraint "conversation_members_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."conversation_members" validate constraint "conversation_members_conversation_id_fkey";
-
 alter table "public"."conversation_members" add constraint "conversation_members_employee_id_fkey" FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE not valid;
-
 alter table "public"."conversation_members" validate constraint "conversation_members_employee_id_fkey";
-
 alter table "public"."conversation_members" add constraint "conversation_members_member_role_check" CHECK ((member_role = ANY (ARRAY['owner'::text, 'member'::text]))) not valid;
-
 alter table "public"."conversation_members" validate constraint "conversation_members_member_role_check";
-
 alter table "public"."conversation_members" add constraint "fk_members_conversation" FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."conversation_members" validate constraint "fk_members_conversation";
-
 alter table "public"."conversations" add constraint "conversations_created_by_fkey" FOREIGN KEY (created_by) REFERENCES public.employees(id) not valid;
-
 alter table "public"."conversations" validate constraint "conversations_created_by_fkey";
-
 alter table "public"."conversations" add constraint "conversations_type_check" CHECK ((type = ANY (ARRAY['dm'::text, 'group'::text]))) not valid;
-
 alter table "public"."conversations" validate constraint "conversations_type_check";
-
 alter table "public"."daily_logs" add constraint "daily_logs_operation_id_fkey" FOREIGN KEY (operation_id) REFERENCES public.operations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."daily_logs" validate constraint "daily_logs_operation_id_fkey";
-
 alter table "public"."daily_logs" add constraint "daily_logs_operator_id_fkey" FOREIGN KEY (operator_id) REFERENCES public.operators(id) ON DELETE CASCADE not valid;
-
 alter table "public"."daily_logs" validate constraint "daily_logs_operator_id_fkey";
-
 alter table "public"."daily_logs" add constraint "daily_logs_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."daily_logs" validate constraint "daily_logs_tenant_id_fkey";
-
 alter table "public"."daily_logs" add constraint "daily_logs_traveler_id_fkey" FOREIGN KEY (traveler_id) REFERENCES public.travelers(id) ON DELETE CASCADE not valid;
-
 alter table "public"."daily_logs" validate constraint "daily_logs_traveler_id_fkey";
-
 alter table "public"."employee_roles" add constraint "employee_roles_role_check" CHECK ((role = ANY (ARRAY['foreman'::text, 'admin'::text]))) not valid;
-
 alter table "public"."employee_roles" validate constraint "employee_roles_role_check";
-
 alter table "public"."employees" add constraint "employees_auth_user_id_key" UNIQUE using index "employees_auth_user_id_key";
-
 alter table "public"."employees" add constraint "employees_role_check" CHECK ((role = ANY (ARRAY['foreman'::text, 'employee'::text]))) not valid;
-
 alter table "public"."employees" validate constraint "employees_role_check";
-
 alter table "public"."inspection_sets" add constraint "inspection_sets_component_id_fkey" FOREIGN KEY (component_id) REFERENCES public.components(id) ON DELETE CASCADE not valid;
-
 alter table "public"."inspection_sets" validate constraint "inspection_sets_component_id_fkey";
-
 alter table "public"."jobs" add constraint "jobs_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."jobs" validate constraint "jobs_tenant_id_fkey";
-
 alter table "public"."message_reactions" add constraint "message_reactions_shop_id_message_id_employee_id_emoji_key" UNIQUE using index "message_reactions_shop_id_message_id_employee_id_emoji_key";
-
 alter table "public"."message_reads" add constraint "message_reads_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."message_reads" validate constraint "message_reads_conversation_id_fkey";
-
 alter table "public"."message_reads" add constraint "message_reads_employee_id_fkey" FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE not valid;
-
 alter table "public"."message_reads" validate constraint "message_reads_employee_id_fkey";
-
 alter table "public"."messages" add constraint "fk_messages_conversation" FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."messages" validate constraint "fk_messages_conversation";
-
 alter table "public"."messages" add constraint "messages_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."messages" validate constraint "messages_conversation_id_fkey";
-
 alter table "public"."messages" add constraint "messages_sender_employee_id_fkey" FOREIGN KEY (sender_employee_id) REFERENCES public.employees(id) not valid;
-
 alter table "public"."messages" validate constraint "messages_sender_employee_id_fkey";
-
 alter table "public"."messaging_roster" add constraint "fk_roster_employee" FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE not valid;
-
 alter table "public"."messaging_roster" validate constraint "fk_roster_employee";
-
 alter table "public"."messaging_roster" add constraint "messaging_roster_added_by_employee_id_fkey" FOREIGN KEY (added_by_employee_id) REFERENCES public.employees(id) not valid;
-
 alter table "public"."messaging_roster" validate constraint "messaging_roster_added_by_employee_id_fkey";
-
 alter table "public"."messaging_roster" add constraint "messaging_roster_employee_id_fkey" FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE not valid;
-
 alter table "public"."messaging_roster" validate constraint "messaging_roster_employee_id_fkey";
-
 alter table "public"."op_sessions" add constraint "op_sessions_operation_id_fkey" FOREIGN KEY (operation_id) REFERENCES public.operations(id) ON DELETE CASCADE not valid;
-
 alter table "public"."op_sessions" validate constraint "op_sessions_operation_id_fkey";
-
 alter table "public"."op_sessions" add constraint "op_sessions_operator_id_fkey" FOREIGN KEY (operator_id) REFERENCES public.operators(id) ON DELETE CASCADE not valid;
-
 alter table "public"."op_sessions" validate constraint "op_sessions_operator_id_fkey";
-
 alter table "public"."op_sessions" add constraint "op_sessions_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."op_sessions" validate constraint "op_sessions_tenant_id_fkey";
-
 alter table "public"."op_sessions" add constraint "op_sessions_traveler_id_fkey" FOREIGN KEY (traveler_id) REFERENCES public.travelers(id) ON DELETE CASCADE not valid;
-
 alter table "public"."op_sessions" validate constraint "op_sessions_traveler_id_fkey";
-
 alter table "public"."operations" add constraint "operations_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."operations" validate constraint "operations_tenant_id_fkey";
-
 alter table "public"."operations" add constraint "operations_traveler_id_fkey" FOREIGN KEY (traveler_id) REFERENCES public.travelers(id) ON DELETE CASCADE not valid;
-
 alter table "public"."operations" validate constraint "operations_traveler_id_fkey";
-
 alter table "public"."operations" add constraint "operations_traveler_id_op_number_key" UNIQUE using index "operations_traveler_id_op_number_key";
-
 alter table "public"."operators" add constraint "operators_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."operators" validate constraint "operators_tenant_id_fkey";
-
 alter table "public"."operators" add constraint "operators_tenant_id_name_key" UNIQUE using index "operators_tenant_id_name_key";
-
 alter table "public"."po_line_items" add constraint "po_line_items_component_id_fkey" FOREIGN KEY (component_id) REFERENCES public.components(id) ON DELETE SET NULL not valid;
-
 alter table "public"."po_line_items" validate constraint "po_line_items_component_id_fkey";
-
 alter table "public"."po_line_items" add constraint "po_line_items_purchase_order_id_fkey" FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE not valid;
-
 alter table "public"."po_line_items" validate constraint "po_line_items_purchase_order_id_fkey";
-
 alter table "public"."rb_audit" add constraint "rb_audit_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES public.rb_shops(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_audit" validate constraint "rb_audit_shop_id_fkey";
-
 alter table "public"."rb_device_activation_tokens" add constraint "rb_device_activation_tokens_device_id_fkey" FOREIGN KEY (device_id) REFERENCES public.rb_devices(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_device_activation_tokens" validate constraint "rb_device_activation_tokens_device_id_fkey";
-
 alter table "public"."rb_device_activation_tokens" add constraint "rb_device_activation_tokens_device_id_key" UNIQUE using index "rb_device_activation_tokens_device_id_key";
-
 alter table "public"."rb_device_activation_tokens" add constraint "rb_device_activation_tokens_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES public.rb_shops(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_device_activation_tokens" validate constraint "rb_device_activation_tokens_shop_id_fkey";
-
 alter table "public"."rb_devices" add constraint "rb_devices_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES public.rb_shops(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_devices" validate constraint "rb_devices_shop_id_fkey";
-
 alter table "public"."rb_shop_members" add constraint "rb_shop_members_role_check" CHECK ((role = ANY (ARRAY['admin'::text, 'member'::text]))) not valid;
-
 alter table "public"."rb_shop_members" validate constraint "rb_shop_members_role_check";
-
 alter table "public"."rb_shop_members" add constraint "rb_shop_members_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES public.rb_shops(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_shop_members" validate constraint "rb_shop_members_shop_id_fkey";
-
 alter table "public"."rb_shop_members" add constraint "rb_shop_members_shop_id_user_id_key" UNIQUE using index "rb_shop_members_shop_id_user_id_key";
-
 alter table "public"."rb_support_bundles" add constraint "rb_support_bundles_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES public.rb_shops(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_support_bundles" validate constraint "rb_support_bundles_shop_id_fkey";
-
 alter table "public"."rb_update_packages" add constraint "rb_update_packages_channel_version_key" UNIQUE using index "rb_update_packages_channel_version_key";
-
 alter table "public"."rb_update_policy" add constraint "rb_update_policy_shop_id_fkey" FOREIGN KEY (shop_id) REFERENCES public.rb_shops(id) ON DELETE CASCADE not valid;
-
 alter table "public"."rb_update_policy" validate constraint "rb_update_policy_shop_id_fkey";
-
 alter table "public"."rb_update_policy" add constraint "rb_update_policy_shop_id_key" UNIQUE using index "rb_update_policy_shop_id_key";
-
 alter table "public"."routing_operations" add constraint "routing_operations_job_id_fkey" FOREIGN KEY (job_id) REFERENCES public.jobs(id) ON DELETE CASCADE not valid;
-
 alter table "public"."routing_operations" validate constraint "routing_operations_job_id_fkey";
-
 alter table "public"."routing_operations" add constraint "routing_operations_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) not valid;
-
 alter table "public"."routing_operations" validate constraint "routing_operations_tenant_id_fkey";
-
 alter table "public"."shop_members" add constraint "shop_members_role_check" CHECK ((role = ANY (ARRAY['foreman'::text, 'worker'::text]))) not valid;
-
 alter table "public"."shop_members" validate constraint "shop_members_role_check";
-
 alter table "public"."shop_members" add constraint "shop_members_shop_id_user_id_key" UNIQUE using index "shop_members_shop_id_user_id_key";
-
 alter table "public"."shop_members" add constraint "shop_members_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'suspended'::text]))) not valid;
-
 alter table "public"."shop_members" validate constraint "shop_members_status_check";
-
 alter table "public"."shop_members" add constraint "shop_members_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
 alter table "public"."shop_members" validate constraint "shop_members_user_id_fkey";
-
 alter table "public"."tenants" add constraint "tenants_code_key" UNIQUE using index "tenants_code_key";
-
 alter table "public"."tenants" add constraint "tenants_poster_token_key" UNIQUE using index "tenants_poster_token_key";
-
 alter table "public"."time_events" add constraint "fk_time_events_employee" FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE RESTRICT not valid;
-
 alter table "public"."time_events" validate constraint "fk_time_events_employee";
-
 alter table "public"."time_events" add constraint "time_events_event_type_check" CHECK ((event_type = ANY (ARRAY['CLOCK_IN'::text, 'CLOCK_OUT'::text, 'BREAK_START'::text, 'BREAK_END'::text, 'LUNCH_START'::text, 'LUNCH_END'::text]))) not valid;
-
 alter table "public"."time_events" validate constraint "time_events_event_type_check";
-
 alter table "public"."time_off_requests" add constraint "time_off_requests_hours_check" CHECK (((type = 'UNPAID'::text) OR (status = ANY (ARRAY['DENIED'::text, 'CANCELLED'::text])) OR ((hours_requested IS NOT NULL) AND (hours_requested > (0)::numeric)))) not valid;
-
 alter table "public"."time_off_requests" validate constraint "time_off_requests_hours_check";
-
 alter table "public"."time_off_requests" add constraint "time_off_requests_status_check" CHECK ((status = ANY (ARRAY['PENDING'::text, 'APPROVED'::text, 'DENIED'::text, 'CANCELLED'::text]))) not valid;
-
 alter table "public"."time_off_requests" validate constraint "time_off_requests_status_check";
-
 alter table "public"."time_off_requests" add constraint "time_off_requests_type_check" CHECK ((type = ANY (ARRAY['VACATION'::text, 'SICK'::text, 'PERSONAL'::text, 'UNPAID'::text]))) not valid;
-
 alter table "public"."time_off_requests" validate constraint "time_off_requests_type_check";
-
 alter table "public"."travelers" add constraint "travelers_job_id_fkey" FOREIGN KEY (job_id) REFERENCES public.jobs(id) ON DELETE CASCADE not valid;
-
 alter table "public"."travelers" validate constraint "travelers_job_id_fkey";
-
 alter table "public"."travelers" add constraint "travelers_public_id_key" UNIQUE using index "travelers_public_id_key";
-
 alter table "public"."travelers" add constraint "travelers_tenant_id_fkey" FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE not valid;
-
 alter table "public"."travelers" validate constraint "travelers_tenant_id_fkey";
-
 set check_function_bodies = off;
-
 CREATE OR REPLACE FUNCTION public.approve_time_off_request(p_request_id uuid, p_note text)
  RETURNS public.time_off_requests
  LANGUAGE plpgsql
@@ -1405,9 +914,7 @@ begin
 
   return v_req;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.archive_conversation(_shop_id uuid, _conversation_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -1453,9 +960,7 @@ begin
      and id = _conversation_id;
 
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.archive_conversation_for_me(_shop_id uuid, _conversation_id uuid)
  RETURNS void
  LANGUAGE sql
@@ -1466,9 +971,7 @@ insert into public.conversation_archives (shop_id, conversation_id, employee_id)
 values (_shop_id, _conversation_id, public.rb_current_employee_id(_shop_id))
 on conflict (shop_id, conversation_id, employee_id)
 do update set archived_at = now();
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.bump_conversation_updated_at()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1479,9 +982,7 @@ begin
     where id = new.conversation_id;
   return new;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.conversations_title_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1492,9 +993,7 @@ begin
   end if;
   return new;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.create_conversation(_shop_id uuid, _type text, _title text, _member_employee_ids uuid[])
  RETURNS uuid
  LANGUAGE plpgsql
@@ -1555,9 +1054,7 @@ begin
 
   return convo_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.create_conversation_with_members(_shop_id uuid, _type text, _title text, _member_employee_ids uuid[])
  RETURNS uuid
  LANGUAGE plpgsql
@@ -1639,9 +1136,7 @@ begin
 
   return convo_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.current_employee()
  RETURNS public.employees
  LANGUAGE sql
@@ -1651,9 +1146,7 @@ AS $function$
   from public.employees e
   where e.auth_user_id = auth.uid()
   limit 1
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.current_employee_clock()
  RETURNS TABLE(employee_id uuid, shop_id uuid)
  LANGUAGE sql
@@ -1663,9 +1156,7 @@ AS $function$
   from public.employees e
   where e.auth_user_id = auth.uid()
   limit 1
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.current_employee_id(_shop_id uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -1676,9 +1167,7 @@ AS $function$
   where e.shop_id = _shop_id
     and e.auth_user_id = auth.uid()
   limit 1;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.deny_time_off_request(p_request_id uuid, p_note text)
  RETURNS public.time_off_requests
  LANGUAGE plpgsql
@@ -1720,9 +1209,7 @@ begin
 
   return v_req;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_archived_inbox(_shop_id uuid)
  RETURNS TABLE(conversation_id uuid, archived_at timestamp with time zone, title text, last_message_body text, last_message_at timestamp with time zone)
  LANGUAGE plpgsql
@@ -1760,9 +1247,7 @@ begin
     and ca.employee_id = me_emp_id
   order by ca.archived_at desc;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_conversation_header(_shop_id uuid, _conversation_id uuid)
  RETURNS TABLE(conversation_id uuid, type text, display_title text, avatar_initials text, avatar_url_256 text)
  LANGUAGE sql
@@ -1822,9 +1307,7 @@ select
 from c
 left join dm_partner dp on true
 left join group_title gt on true;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_conversation_titles(_shop_id uuid)
  RETURNS TABLE(conversation_id uuid, display_title text, avatar_initials text)
  LANGUAGE sql
@@ -1900,9 +1383,7 @@ AS $function$
       end
     ) as avatar_initials
   from cleaned c;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_inbox(_shop_id uuid)
  RETURNS TABLE(conversation_id uuid, shop_id uuid, type text, title text, avatar_initials text, avatar_url_256 text, updated_at timestamp with time zone, last_message_body text, last_message_at timestamp with time zone, unread_count bigint)
  LANGUAGE sql
@@ -2006,9 +1487,7 @@ left join unread u on u.conversation_id = c.id
 left join titles t on t.conversation_id = c.id
 left join dm_partner_avatar d on d.conversation_id = c.id
 order by coalesce(c.updated_at, c.created_at) desc, c.created_at desc;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_my_employee_id(_shop_id uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -2030,9 +1509,7 @@ begin
 
   return _eid;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_or_create_dm(_employee_a uuid, _employee_b uuid, _shop_id uuid)
  RETURNS TABLE(conversation_id uuid)
  LANGUAGE plpgsql
@@ -2103,9 +1580,7 @@ begin
 
   return query select existing_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_or_create_dm(_shop_id uuid, _other_employee_id uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -2173,9 +1648,7 @@ begin
 
   return convo_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_reaction_summary_for_conversation(_shop_id uuid, _conversation_id uuid)
  RETURNS TABLE(message_id uuid, emoji text, count integer, my_reacted boolean)
  LANGUAGE sql
@@ -2195,9 +1668,7 @@ AS $function$
     and mr.conversation_id = _conversation_id
   group by mr.message_id, mr.emoji
   order by mr.message_id, mr.emoji;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.get_unread_counts(_shop_id uuid)
  RETURNS TABLE(conversation_id uuid, unread_count integer)
  LANGUAGE sql
@@ -2230,9 +1701,7 @@ AS $function$
     and m.deleted_at is null
     and m.created_at > coalesce(r.last_read_at, 'epoch'::timestamptz)
   group by m.conversation_id
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.is_approved_member(p_shop_id uuid, p_user_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2245,9 +1714,7 @@ AS $function$
       and sm.user_id = p_user_id
       and sm.status = 'approved'
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.is_blocked_pair(p_shop_id uuid, a uuid, b uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2262,9 +1729,7 @@ AS $function$
         (cb.blocker_user_id = b and cb.blocked_user_id = a)
       )
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.is_foreman(p_shop_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2277,9 +1742,7 @@ AS $function$
       and r.employee_id = (select id from public.my_employee())
       and r.role in ('foreman','admin')
   )
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.is_foreman(p_shop_id uuid, p_user_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2293,9 +1756,7 @@ AS $function$
       and sm.status = 'approved'
       and sm.role = 'foreman'
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.is_foreman_employee(_shop_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2308,9 +1769,7 @@ AS $function$
       and e.auth_user_id = auth.uid()
       and e.role = 'foreman'
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.is_messaging_active_employee(_shop_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2324,9 +1783,7 @@ AS $function$
       and e.auth_user_id = auth.uid()
       and mr.is_active = true
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.mark_conversation_read_now(_conversation_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -2367,9 +1824,7 @@ begin
   on conflict (conversation_id, employee_id)
   do update set last_read_at = excluded.last_read_at;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.my_employee()
  RETURNS TABLE(id uuid, shop_id uuid)
  LANGUAGE sql
@@ -2379,9 +1834,7 @@ AS $function$
   from public.employees e
   where e.auth_user_id = auth.uid()
   limit 1
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.my_employee_id(_shop_id uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -2392,9 +1845,7 @@ AS $function$
   where e.auth_user_id = auth.uid()
     and e.shop_id = _shop_id
   limit 1
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.my_roster_active(_shop_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2407,9 +1858,7 @@ AS $function$
       and r.employee_id = public.my_employee_id(_shop_id)
       and r.is_active = true
   )
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_create_shop(p_name text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -2436,9 +1885,7 @@ begin
 
   return v_shop_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_current_employee_id(_shop_id uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -2451,9 +1898,7 @@ AS $function$
   where e.shop_id = _shop_id
     and e.auth_user_id = auth.uid()
   limit 1
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_delete_shop(p_shop_id uuid, p_confirm_name text)
  RETURNS void
  LANGUAGE plpgsql
@@ -2508,9 +1953,7 @@ begin
   delete from public.rb_shops
   where id = p_shop_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_device_deactivate_token(p_device_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -2544,9 +1987,7 @@ begin
     jsonb_build_object('name', v.name)
   );
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_device_delete(p_device_id uuid, p_confirm_name text)
  RETURNS void
  LANGUAGE plpgsql
@@ -2586,9 +2027,7 @@ begin
   delete from public.rb_device_activation_tokens where device_id = v.id;
   delete from public.rb_devices where id = v.id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_device_set_activation_token(p_device_id uuid, p_token_hash text, p_expires_at timestamp with time zone, p_force boolean DEFAULT false)
  RETURNS void
  LANGUAGE plpgsql
@@ -2630,9 +2069,7 @@ begin
     jsonb_build_object('name', v.name, 'expiresAt', p_expires_at)
   );
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_device_toggle_status(p_device_id uuid)
  RETURNS text
  LANGUAGE plpgsql
@@ -2672,9 +2109,7 @@ begin
 
   return v_next;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_is_active_in_messaging(_shop_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2688,9 +2123,7 @@ AS $function$
       and mr.employee_id = public.rb_current_employee_id(_shop_id)
       and mr.is_active = true
   )
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_is_conversation_member(_shop_id uuid, _conversation_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2704,9 +2137,7 @@ AS $function$
       and cm.conversation_id = _conversation_id
       and cm.employee_id = public.rb_current_employee_id(_shop_id)
   )
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_is_shop_admin(p_shop uuid, p_user uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2721,9 +2152,7 @@ AS $function$
       and m.user_id = p_user
       and m.role = 'admin'
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_is_shop_member(p_shop uuid, p_user uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2737,9 +2166,7 @@ AS $function$
     where m.shop_id = p_shop
       and m.user_id = p_user
   );
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_me_roster_active(_shop_id uuid)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -2762,9 +2189,7 @@ begin
 
   return coalesce(v_ok,false);
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_my_employee_id(_shop_id uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -2781,9 +2206,7 @@ begin
   limit 1;
   return v_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_remove_shop_member(p_shop_id uuid, p_user_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -2821,9 +2244,7 @@ begin
   delete from public.rb_shop_members
   where shop_id = p_shop_id and user_id = p_user_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_set_shop_member_role(p_shop_id uuid, p_user_id uuid, p_role text)
  RETURNS void
  LANGUAGE plpgsql
@@ -2866,9 +2287,7 @@ begin
   set role = p_role
   where shop_id = p_shop_id and user_id = p_user_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rb_touch_conversation_updated_at()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2882,9 +2301,7 @@ begin
     and shop_id = new.shop_id;
   return new;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rename_group_conversation(_shop_id uuid, _conversation_id uuid, _title text)
  RETURNS void
  LANGUAGE plpgsql
@@ -2926,9 +2343,7 @@ begin
   where shop_id = _shop_id
     and id = _conversation_id;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.set_updated_at()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2937,9 +2352,7 @@ begin
   new.updated_at = now();
   return new;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.tg_set_updated_at_routing_ops()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2948,9 +2361,7 @@ begin
   new.updated_at := now();
   return new;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.time_events_block_if_timeoff()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2982,9 +2393,7 @@ begin
 
   return new;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.timeclock_is_blocked_now(p_shop_id uuid, p_employee_id uuid)
  RETURNS TABLE(is_blocked boolean, reason text, request_id uuid, request_type text, start_date date, end_date date, manager_note text)
  LANGUAGE sql
@@ -3014,9 +2423,7 @@ AS $function$
     h.manager_note
   from (select 1) one
   left join hit h on true;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.timeclock_weekly_summary(p_shop_id uuid, p_employee_id uuid, p_week_start date)
  RETURNS TABLE(day date, work_seconds bigint, break_seconds bigint, lunch_seconds bigint, total_seconds bigint, last_event_ts timestamp with time zone, status text)
  LANGUAGE sql
@@ -3104,9 +2511,7 @@ from week_days d
 left join seconds_by_day s on s.day = d.day
 cross join last_evt l
 order by d.day;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.toggle_my_message_reaction(_shop_id uuid, _conversation_id uuid, _message_id uuid, _emoji text)
  RETURNS TABLE(did_add boolean)
  LANGUAGE plpgsql
@@ -3161,9 +2566,7 @@ begin
     return;
   end if;
 end;
-$function$
-;
-
+$function$;
 CREATE OR REPLACE FUNCTION public.upsert_my_push_token(_shop_id uuid, _expo_push_token text, _platform text, _device_name text)
  RETURNS void
  LANGUAGE plpgsql
@@ -3180,9 +2583,7 @@ begin
   on conflict (shop_id, employee_id, expo_push_token)
   do update set platform = excluded.platform, device_name = excluded.device_name, updated_at = now();
 end;
-$function$
-;
-
+$function$;
 create or replace view "public"."v_timeclock_status" as  WITH last_event AS (
          SELECT te.id,
             te.employee_id,
@@ -3236,2020 +2637,1018 @@ create or replace view "public"."v_timeclock_status" as  WITH last_event AS (
            FROM public.time_events te2
           WHERE ((te2.shop_id = l.shop_id) AND (te2.employee_id = l.employee_id) AND (te2.event_type = 'CLOCK_IN'::text) AND (te2.client_ts <= l.client_ts))) AS since_ts
    FROM latest l;
-
-
 grant delete on table "public"."attachments" to "anon";
-
 grant insert on table "public"."attachments" to "anon";
-
 grant references on table "public"."attachments" to "anon";
-
 grant select on table "public"."attachments" to "anon";
-
 grant trigger on table "public"."attachments" to "anon";
-
 grant truncate on table "public"."attachments" to "anon";
-
 grant update on table "public"."attachments" to "anon";
-
 grant delete on table "public"."attachments" to "authenticated";
-
 grant insert on table "public"."attachments" to "authenticated";
-
 grant references on table "public"."attachments" to "authenticated";
-
 grant select on table "public"."attachments" to "authenticated";
-
 grant trigger on table "public"."attachments" to "authenticated";
-
 grant truncate on table "public"."attachments" to "authenticated";
-
 grant update on table "public"."attachments" to "authenticated";
-
 grant delete on table "public"."attachments" to "service_role";
-
 grant insert on table "public"."attachments" to "service_role";
-
 grant references on table "public"."attachments" to "service_role";
-
 grant select on table "public"."attachments" to "service_role";
-
 grant trigger on table "public"."attachments" to "service_role";
-
 grant truncate on table "public"."attachments" to "service_role";
-
 grant update on table "public"."attachments" to "service_role";
-
 grant delete on table "public"."balloon_sets" to "anon";
-
 grant insert on table "public"."balloon_sets" to "anon";
-
 grant references on table "public"."balloon_sets" to "anon";
-
 grant select on table "public"."balloon_sets" to "anon";
-
 grant trigger on table "public"."balloon_sets" to "anon";
-
 grant truncate on table "public"."balloon_sets" to "anon";
-
 grant update on table "public"."balloon_sets" to "anon";
-
 grant delete on table "public"."balloon_sets" to "authenticated";
-
 grant insert on table "public"."balloon_sets" to "authenticated";
-
 grant references on table "public"."balloon_sets" to "authenticated";
-
 grant select on table "public"."balloon_sets" to "authenticated";
-
 grant trigger on table "public"."balloon_sets" to "authenticated";
-
 grant truncate on table "public"."balloon_sets" to "authenticated";
-
 grant update on table "public"."balloon_sets" to "authenticated";
-
 grant delete on table "public"."balloon_sets" to "service_role";
-
 grant insert on table "public"."balloon_sets" to "service_role";
-
 grant references on table "public"."balloon_sets" to "service_role";
-
 grant select on table "public"."balloon_sets" to "service_role";
-
 grant trigger on table "public"."balloon_sets" to "service_role";
-
 grant truncate on table "public"."balloon_sets" to "service_role";
-
 grant update on table "public"."balloon_sets" to "service_role";
-
 grant delete on table "public"."chat_blocks" to "anon";
-
 grant insert on table "public"."chat_blocks" to "anon";
-
 grant references on table "public"."chat_blocks" to "anon";
-
 grant select on table "public"."chat_blocks" to "anon";
-
 grant trigger on table "public"."chat_blocks" to "anon";
-
 grant truncate on table "public"."chat_blocks" to "anon";
-
 grant update on table "public"."chat_blocks" to "anon";
-
 grant delete on table "public"."chat_blocks" to "authenticated";
-
 grant insert on table "public"."chat_blocks" to "authenticated";
-
 grant references on table "public"."chat_blocks" to "authenticated";
-
 grant select on table "public"."chat_blocks" to "authenticated";
-
 grant trigger on table "public"."chat_blocks" to "authenticated";
-
 grant truncate on table "public"."chat_blocks" to "authenticated";
-
 grant update on table "public"."chat_blocks" to "authenticated";
-
 grant delete on table "public"."chat_blocks" to "service_role";
-
 grant insert on table "public"."chat_blocks" to "service_role";
-
 grant references on table "public"."chat_blocks" to "service_role";
-
 grant select on table "public"."chat_blocks" to "service_role";
-
 grant trigger on table "public"."chat_blocks" to "service_role";
-
 grant truncate on table "public"."chat_blocks" to "service_role";
-
 grant update on table "public"."chat_blocks" to "service_role";
-
 grant delete on table "public"."chat_messages" to "anon";
-
 grant insert on table "public"."chat_messages" to "anon";
-
 grant references on table "public"."chat_messages" to "anon";
-
 grant select on table "public"."chat_messages" to "anon";
-
 grant trigger on table "public"."chat_messages" to "anon";
-
 grant truncate on table "public"."chat_messages" to "anon";
-
 grant update on table "public"."chat_messages" to "anon";
-
 grant delete on table "public"."chat_messages" to "authenticated";
-
 grant insert on table "public"."chat_messages" to "authenticated";
-
 grant references on table "public"."chat_messages" to "authenticated";
-
 grant select on table "public"."chat_messages" to "authenticated";
-
 grant trigger on table "public"."chat_messages" to "authenticated";
-
 grant truncate on table "public"."chat_messages" to "authenticated";
-
 grant update on table "public"."chat_messages" to "authenticated";
-
 grant delete on table "public"."chat_messages" to "service_role";
-
 grant insert on table "public"."chat_messages" to "service_role";
-
 grant references on table "public"."chat_messages" to "service_role";
-
 grant select on table "public"."chat_messages" to "service_role";
-
 grant trigger on table "public"."chat_messages" to "service_role";
-
 grant truncate on table "public"."chat_messages" to "service_role";
-
 grant update on table "public"."chat_messages" to "service_role";
-
 grant delete on table "public"."chat_thread_members" to "anon";
-
 grant insert on table "public"."chat_thread_members" to "anon";
-
 grant references on table "public"."chat_thread_members" to "anon";
-
 grant select on table "public"."chat_thread_members" to "anon";
-
 grant trigger on table "public"."chat_thread_members" to "anon";
-
 grant truncate on table "public"."chat_thread_members" to "anon";
-
 grant update on table "public"."chat_thread_members" to "anon";
-
 grant delete on table "public"."chat_thread_members" to "authenticated";
-
 grant insert on table "public"."chat_thread_members" to "authenticated";
-
 grant references on table "public"."chat_thread_members" to "authenticated";
-
 grant select on table "public"."chat_thread_members" to "authenticated";
-
 grant trigger on table "public"."chat_thread_members" to "authenticated";
-
 grant truncate on table "public"."chat_thread_members" to "authenticated";
-
 grant update on table "public"."chat_thread_members" to "authenticated";
-
 grant delete on table "public"."chat_thread_members" to "service_role";
-
 grant insert on table "public"."chat_thread_members" to "service_role";
-
 grant references on table "public"."chat_thread_members" to "service_role";
-
 grant select on table "public"."chat_thread_members" to "service_role";
-
 grant trigger on table "public"."chat_thread_members" to "service_role";
-
 grant truncate on table "public"."chat_thread_members" to "service_role";
-
 grant update on table "public"."chat_thread_members" to "service_role";
-
 grant delete on table "public"."chat_threads" to "anon";
-
 grant insert on table "public"."chat_threads" to "anon";
-
 grant references on table "public"."chat_threads" to "anon";
-
 grant select on table "public"."chat_threads" to "anon";
-
 grant trigger on table "public"."chat_threads" to "anon";
-
 grant truncate on table "public"."chat_threads" to "anon";
-
 grant update on table "public"."chat_threads" to "anon";
-
 grant delete on table "public"."chat_threads" to "authenticated";
-
 grant insert on table "public"."chat_threads" to "authenticated";
-
 grant references on table "public"."chat_threads" to "authenticated";
-
 grant select on table "public"."chat_threads" to "authenticated";
-
 grant trigger on table "public"."chat_threads" to "authenticated";
-
 grant truncate on table "public"."chat_threads" to "authenticated";
-
 grant update on table "public"."chat_threads" to "authenticated";
-
 grant delete on table "public"."chat_threads" to "service_role";
-
 grant insert on table "public"."chat_threads" to "service_role";
-
 grant references on table "public"."chat_threads" to "service_role";
-
 grant select on table "public"."chat_threads" to "service_role";
-
 grant trigger on table "public"."chat_threads" to "service_role";
-
 grant truncate on table "public"."chat_threads" to "service_role";
-
 grant update on table "public"."chat_threads" to "service_role";
-
 grant delete on table "public"."component_aliases" to "anon";
-
 grant insert on table "public"."component_aliases" to "anon";
-
 grant references on table "public"."component_aliases" to "anon";
-
 grant select on table "public"."component_aliases" to "anon";
-
 grant trigger on table "public"."component_aliases" to "anon";
-
 grant truncate on table "public"."component_aliases" to "anon";
-
 grant update on table "public"."component_aliases" to "anon";
-
 grant delete on table "public"."component_aliases" to "authenticated";
-
 grant insert on table "public"."component_aliases" to "authenticated";
-
 grant references on table "public"."component_aliases" to "authenticated";
-
 grant select on table "public"."component_aliases" to "authenticated";
-
 grant trigger on table "public"."component_aliases" to "authenticated";
-
 grant truncate on table "public"."component_aliases" to "authenticated";
-
 grant update on table "public"."component_aliases" to "authenticated";
-
 grant delete on table "public"."component_aliases" to "service_role";
-
 grant insert on table "public"."component_aliases" to "service_role";
-
 grant references on table "public"."component_aliases" to "service_role";
-
 grant select on table "public"."component_aliases" to "service_role";
-
 grant trigger on table "public"."component_aliases" to "service_role";
-
 grant truncate on table "public"."component_aliases" to "service_role";
-
 grant update on table "public"."component_aliases" to "service_role";
-
 grant delete on table "public"."component_files" to "anon";
-
 grant insert on table "public"."component_files" to "anon";
-
 grant references on table "public"."component_files" to "anon";
-
 grant select on table "public"."component_files" to "anon";
-
 grant trigger on table "public"."component_files" to "anon";
-
 grant truncate on table "public"."component_files" to "anon";
-
 grant update on table "public"."component_files" to "anon";
-
 grant delete on table "public"."component_files" to "authenticated";
-
 grant insert on table "public"."component_files" to "authenticated";
-
 grant references on table "public"."component_files" to "authenticated";
-
 grant select on table "public"."component_files" to "authenticated";
-
 grant trigger on table "public"."component_files" to "authenticated";
-
 grant truncate on table "public"."component_files" to "authenticated";
-
 grant update on table "public"."component_files" to "authenticated";
-
 grant delete on table "public"."component_files" to "service_role";
-
 grant insert on table "public"."component_files" to "service_role";
-
 grant references on table "public"."component_files" to "service_role";
-
 grant select on table "public"."component_files" to "service_role";
-
 grant trigger on table "public"."component_files" to "service_role";
-
 grant truncate on table "public"."component_files" to "service_role";
-
 grant update on table "public"."component_files" to "service_role";
-
 grant delete on table "public"."components" to "anon";
-
 grant insert on table "public"."components" to "anon";
-
 grant references on table "public"."components" to "anon";
-
 grant select on table "public"."components" to "anon";
-
 grant trigger on table "public"."components" to "anon";
-
 grant truncate on table "public"."components" to "anon";
-
 grant update on table "public"."components" to "anon";
-
 grant delete on table "public"."components" to "authenticated";
-
 grant insert on table "public"."components" to "authenticated";
-
 grant references on table "public"."components" to "authenticated";
-
 grant select on table "public"."components" to "authenticated";
-
 grant trigger on table "public"."components" to "authenticated";
-
 grant truncate on table "public"."components" to "authenticated";
-
 grant update on table "public"."components" to "authenticated";
-
 grant delete on table "public"."components" to "service_role";
-
 grant insert on table "public"."components" to "service_role";
-
 grant references on table "public"."components" to "service_role";
-
 grant select on table "public"."components" to "service_role";
-
 grant trigger on table "public"."components" to "service_role";
-
 grant truncate on table "public"."components" to "service_role";
-
 grant update on table "public"."components" to "service_role";
-
 grant delete on table "public"."conversation_archives" to "anon";
-
 grant insert on table "public"."conversation_archives" to "anon";
-
 grant references on table "public"."conversation_archives" to "anon";
-
 grant select on table "public"."conversation_archives" to "anon";
-
 grant trigger on table "public"."conversation_archives" to "anon";
-
 grant truncate on table "public"."conversation_archives" to "anon";
-
 grant update on table "public"."conversation_archives" to "anon";
-
 grant delete on table "public"."conversation_archives" to "authenticated";
-
 grant insert on table "public"."conversation_archives" to "authenticated";
-
 grant references on table "public"."conversation_archives" to "authenticated";
-
 grant select on table "public"."conversation_archives" to "authenticated";
-
 grant trigger on table "public"."conversation_archives" to "authenticated";
-
 grant truncate on table "public"."conversation_archives" to "authenticated";
-
 grant update on table "public"."conversation_archives" to "authenticated";
-
 grant delete on table "public"."conversation_archives" to "service_role";
-
 grant insert on table "public"."conversation_archives" to "service_role";
-
 grant references on table "public"."conversation_archives" to "service_role";
-
 grant select on table "public"."conversation_archives" to "service_role";
-
 grant trigger on table "public"."conversation_archives" to "service_role";
-
 grant truncate on table "public"."conversation_archives" to "service_role";
-
 grant update on table "public"."conversation_archives" to "service_role";
-
 grant delete on table "public"."conversation_members" to "anon";
-
 grant insert on table "public"."conversation_members" to "anon";
-
 grant references on table "public"."conversation_members" to "anon";
-
 grant select on table "public"."conversation_members" to "anon";
-
 grant trigger on table "public"."conversation_members" to "anon";
-
 grant truncate on table "public"."conversation_members" to "anon";
-
 grant update on table "public"."conversation_members" to "anon";
-
 grant delete on table "public"."conversation_members" to "authenticated";
-
 grant insert on table "public"."conversation_members" to "authenticated";
-
 grant references on table "public"."conversation_members" to "authenticated";
-
 grant select on table "public"."conversation_members" to "authenticated";
-
 grant trigger on table "public"."conversation_members" to "authenticated";
-
 grant truncate on table "public"."conversation_members" to "authenticated";
-
 grant update on table "public"."conversation_members" to "authenticated";
-
 grant delete on table "public"."conversation_members" to "service_role";
-
 grant insert on table "public"."conversation_members" to "service_role";
-
 grant references on table "public"."conversation_members" to "service_role";
-
 grant select on table "public"."conversation_members" to "service_role";
-
 grant trigger on table "public"."conversation_members" to "service_role";
-
 grant truncate on table "public"."conversation_members" to "service_role";
-
 grant update on table "public"."conversation_members" to "service_role";
-
 grant delete on table "public"."conversations" to "anon";
-
 grant insert on table "public"."conversations" to "anon";
-
 grant references on table "public"."conversations" to "anon";
-
 grant select on table "public"."conversations" to "anon";
-
 grant trigger on table "public"."conversations" to "anon";
-
 grant truncate on table "public"."conversations" to "anon";
-
 grant update on table "public"."conversations" to "anon";
-
 grant delete on table "public"."conversations" to "authenticated";
-
 grant insert on table "public"."conversations" to "authenticated";
-
 grant references on table "public"."conversations" to "authenticated";
-
 grant select on table "public"."conversations" to "authenticated";
-
 grant trigger on table "public"."conversations" to "authenticated";
-
 grant truncate on table "public"."conversations" to "authenticated";
-
 grant update on table "public"."conversations" to "authenticated";
-
 grant delete on table "public"."conversations" to "service_role";
-
 grant insert on table "public"."conversations" to "service_role";
-
 grant references on table "public"."conversations" to "service_role";
-
 grant select on table "public"."conversations" to "service_role";
-
 grant trigger on table "public"."conversations" to "service_role";
-
 grant truncate on table "public"."conversations" to "service_role";
-
 grant update on table "public"."conversations" to "service_role";
-
 grant delete on table "public"."daily_logs" to "anon";
-
 grant insert on table "public"."daily_logs" to "anon";
-
 grant references on table "public"."daily_logs" to "anon";
-
 grant select on table "public"."daily_logs" to "anon";
-
 grant trigger on table "public"."daily_logs" to "anon";
-
 grant truncate on table "public"."daily_logs" to "anon";
-
 grant update on table "public"."daily_logs" to "anon";
-
 grant delete on table "public"."daily_logs" to "authenticated";
-
 grant insert on table "public"."daily_logs" to "authenticated";
-
 grant references on table "public"."daily_logs" to "authenticated";
-
 grant select on table "public"."daily_logs" to "authenticated";
-
 grant trigger on table "public"."daily_logs" to "authenticated";
-
 grant truncate on table "public"."daily_logs" to "authenticated";
-
 grant update on table "public"."daily_logs" to "authenticated";
-
 grant delete on table "public"."daily_logs" to "service_role";
-
 grant insert on table "public"."daily_logs" to "service_role";
-
 grant references on table "public"."daily_logs" to "service_role";
-
 grant select on table "public"."daily_logs" to "service_role";
-
 grant trigger on table "public"."daily_logs" to "service_role";
-
 grant truncate on table "public"."daily_logs" to "service_role";
-
 grant update on table "public"."daily_logs" to "service_role";
-
 grant delete on table "public"."employee_roles" to "anon";
-
 grant insert on table "public"."employee_roles" to "anon";
-
 grant references on table "public"."employee_roles" to "anon";
-
 grant select on table "public"."employee_roles" to "anon";
-
 grant trigger on table "public"."employee_roles" to "anon";
-
 grant truncate on table "public"."employee_roles" to "anon";
-
 grant update on table "public"."employee_roles" to "anon";
-
 grant delete on table "public"."employee_roles" to "authenticated";
-
 grant insert on table "public"."employee_roles" to "authenticated";
-
 grant references on table "public"."employee_roles" to "authenticated";
-
 grant select on table "public"."employee_roles" to "authenticated";
-
 grant trigger on table "public"."employee_roles" to "authenticated";
-
 grant truncate on table "public"."employee_roles" to "authenticated";
-
 grant update on table "public"."employee_roles" to "authenticated";
-
 grant delete on table "public"."employee_roles" to "service_role";
-
 grant insert on table "public"."employee_roles" to "service_role";
-
 grant references on table "public"."employee_roles" to "service_role";
-
 grant select on table "public"."employee_roles" to "service_role";
-
 grant trigger on table "public"."employee_roles" to "service_role";
-
 grant truncate on table "public"."employee_roles" to "service_role";
-
 grant update on table "public"."employee_roles" to "service_role";
-
 grant delete on table "public"."employees" to "anon";
-
 grant insert on table "public"."employees" to "anon";
-
 grant references on table "public"."employees" to "anon";
-
 grant select on table "public"."employees" to "anon";
-
 grant trigger on table "public"."employees" to "anon";
-
 grant truncate on table "public"."employees" to "anon";
-
 grant update on table "public"."employees" to "anon";
-
 grant delete on table "public"."employees" to "authenticated";
-
 grant insert on table "public"."employees" to "authenticated";
-
 grant references on table "public"."employees" to "authenticated";
-
 grant select on table "public"."employees" to "authenticated";
-
 grant trigger on table "public"."employees" to "authenticated";
-
 grant truncate on table "public"."employees" to "authenticated";
-
 grant update on table "public"."employees" to "authenticated";
-
 grant delete on table "public"."employees" to "service_role";
-
 grant insert on table "public"."employees" to "service_role";
-
 grant references on table "public"."employees" to "service_role";
-
 grant select on table "public"."employees" to "service_role";
-
 grant trigger on table "public"."employees" to "service_role";
-
 grant truncate on table "public"."employees" to "service_role";
-
 grant update on table "public"."employees" to "service_role";
-
 grant delete on table "public"."holiday_calendar" to "anon";
-
 grant insert on table "public"."holiday_calendar" to "anon";
-
 grant references on table "public"."holiday_calendar" to "anon";
-
 grant select on table "public"."holiday_calendar" to "anon";
-
 grant trigger on table "public"."holiday_calendar" to "anon";
-
 grant truncate on table "public"."holiday_calendar" to "anon";
-
 grant update on table "public"."holiday_calendar" to "anon";
-
 grant delete on table "public"."holiday_calendar" to "authenticated";
-
 grant insert on table "public"."holiday_calendar" to "authenticated";
-
 grant references on table "public"."holiday_calendar" to "authenticated";
-
 grant select on table "public"."holiday_calendar" to "authenticated";
-
 grant trigger on table "public"."holiday_calendar" to "authenticated";
-
 grant truncate on table "public"."holiday_calendar" to "authenticated";
-
 grant update on table "public"."holiday_calendar" to "authenticated";
-
 grant delete on table "public"."holiday_calendar" to "service_role";
-
 grant insert on table "public"."holiday_calendar" to "service_role";
-
 grant references on table "public"."holiday_calendar" to "service_role";
-
 grant select on table "public"."holiday_calendar" to "service_role";
-
 grant trigger on table "public"."holiday_calendar" to "service_role";
-
 grant truncate on table "public"."holiday_calendar" to "service_role";
-
 grant update on table "public"."holiday_calendar" to "service_role";
-
 grant delete on table "public"."inspection_sets" to "anon";
-
 grant insert on table "public"."inspection_sets" to "anon";
-
 grant references on table "public"."inspection_sets" to "anon";
-
 grant select on table "public"."inspection_sets" to "anon";
-
 grant trigger on table "public"."inspection_sets" to "anon";
-
 grant truncate on table "public"."inspection_sets" to "anon";
-
 grant update on table "public"."inspection_sets" to "anon";
-
 grant delete on table "public"."inspection_sets" to "authenticated";
-
 grant insert on table "public"."inspection_sets" to "authenticated";
-
 grant references on table "public"."inspection_sets" to "authenticated";
-
 grant select on table "public"."inspection_sets" to "authenticated";
-
 grant trigger on table "public"."inspection_sets" to "authenticated";
-
 grant truncate on table "public"."inspection_sets" to "authenticated";
-
 grant update on table "public"."inspection_sets" to "authenticated";
-
 grant delete on table "public"."inspection_sets" to "service_role";
-
 grant insert on table "public"."inspection_sets" to "service_role";
-
 grant references on table "public"."inspection_sets" to "service_role";
-
 grant select on table "public"."inspection_sets" to "service_role";
-
 grant trigger on table "public"."inspection_sets" to "service_role";
-
 grant truncate on table "public"."inspection_sets" to "service_role";
-
 grant update on table "public"."inspection_sets" to "service_role";
-
 grant delete on table "public"."jobs" to "anon";
-
 grant insert on table "public"."jobs" to "anon";
-
 grant references on table "public"."jobs" to "anon";
-
 grant select on table "public"."jobs" to "anon";
-
 grant trigger on table "public"."jobs" to "anon";
-
 grant truncate on table "public"."jobs" to "anon";
-
 grant update on table "public"."jobs" to "anon";
-
 grant delete on table "public"."jobs" to "authenticated";
-
 grant insert on table "public"."jobs" to "authenticated";
-
 grant references on table "public"."jobs" to "authenticated";
-
 grant select on table "public"."jobs" to "authenticated";
-
 grant trigger on table "public"."jobs" to "authenticated";
-
 grant truncate on table "public"."jobs" to "authenticated";
-
 grant update on table "public"."jobs" to "authenticated";
-
 grant delete on table "public"."jobs" to "service_role";
-
 grant insert on table "public"."jobs" to "service_role";
-
 grant references on table "public"."jobs" to "service_role";
-
 grant select on table "public"."jobs" to "service_role";
-
 grant trigger on table "public"."jobs" to "service_role";
-
 grant truncate on table "public"."jobs" to "service_role";
-
 grant update on table "public"."jobs" to "service_role";
-
 grant delete on table "public"."message_reactions" to "anon";
-
 grant insert on table "public"."message_reactions" to "anon";
-
 grant references on table "public"."message_reactions" to "anon";
-
 grant select on table "public"."message_reactions" to "anon";
-
 grant trigger on table "public"."message_reactions" to "anon";
-
 grant truncate on table "public"."message_reactions" to "anon";
-
 grant update on table "public"."message_reactions" to "anon";
-
 grant delete on table "public"."message_reactions" to "authenticated";
-
 grant insert on table "public"."message_reactions" to "authenticated";
-
 grant references on table "public"."message_reactions" to "authenticated";
-
 grant select on table "public"."message_reactions" to "authenticated";
-
 grant trigger on table "public"."message_reactions" to "authenticated";
-
 grant truncate on table "public"."message_reactions" to "authenticated";
-
 grant update on table "public"."message_reactions" to "authenticated";
-
 grant delete on table "public"."message_reactions" to "service_role";
-
 grant insert on table "public"."message_reactions" to "service_role";
-
 grant references on table "public"."message_reactions" to "service_role";
-
 grant select on table "public"."message_reactions" to "service_role";
-
 grant trigger on table "public"."message_reactions" to "service_role";
-
 grant truncate on table "public"."message_reactions" to "service_role";
-
 grant update on table "public"."message_reactions" to "service_role";
-
 grant delete on table "public"."message_reads" to "anon";
-
 grant insert on table "public"."message_reads" to "anon";
-
 grant references on table "public"."message_reads" to "anon";
-
 grant select on table "public"."message_reads" to "anon";
-
 grant trigger on table "public"."message_reads" to "anon";
-
 grant truncate on table "public"."message_reads" to "anon";
-
 grant update on table "public"."message_reads" to "anon";
-
 grant delete on table "public"."message_reads" to "authenticated";
-
 grant insert on table "public"."message_reads" to "authenticated";
-
 grant references on table "public"."message_reads" to "authenticated";
-
 grant select on table "public"."message_reads" to "authenticated";
-
 grant trigger on table "public"."message_reads" to "authenticated";
-
 grant truncate on table "public"."message_reads" to "authenticated";
-
 grant update on table "public"."message_reads" to "authenticated";
-
 grant delete on table "public"."message_reads" to "service_role";
-
 grant insert on table "public"."message_reads" to "service_role";
-
 grant references on table "public"."message_reads" to "service_role";
-
 grant select on table "public"."message_reads" to "service_role";
-
 grant trigger on table "public"."message_reads" to "service_role";
-
 grant truncate on table "public"."message_reads" to "service_role";
-
 grant update on table "public"."message_reads" to "service_role";
-
 grant delete on table "public"."messages" to "anon";
-
 grant insert on table "public"."messages" to "anon";
-
 grant references on table "public"."messages" to "anon";
-
 grant select on table "public"."messages" to "anon";
-
 grant trigger on table "public"."messages" to "anon";
-
 grant truncate on table "public"."messages" to "anon";
-
 grant update on table "public"."messages" to "anon";
-
 grant delete on table "public"."messages" to "authenticated";
-
 grant insert on table "public"."messages" to "authenticated";
-
 grant references on table "public"."messages" to "authenticated";
-
 grant select on table "public"."messages" to "authenticated";
-
 grant trigger on table "public"."messages" to "authenticated";
-
 grant truncate on table "public"."messages" to "authenticated";
-
 grant update on table "public"."messages" to "authenticated";
-
 grant delete on table "public"."messages" to "service_role";
-
 grant insert on table "public"."messages" to "service_role";
-
 grant references on table "public"."messages" to "service_role";
-
 grant select on table "public"."messages" to "service_role";
-
 grant trigger on table "public"."messages" to "service_role";
-
 grant truncate on table "public"."messages" to "service_role";
-
 grant update on table "public"."messages" to "service_role";
-
 grant delete on table "public"."messaging_roster" to "anon";
-
 grant insert on table "public"."messaging_roster" to "anon";
-
 grant references on table "public"."messaging_roster" to "anon";
-
 grant select on table "public"."messaging_roster" to "anon";
-
 grant trigger on table "public"."messaging_roster" to "anon";
-
 grant truncate on table "public"."messaging_roster" to "anon";
-
 grant update on table "public"."messaging_roster" to "anon";
-
 grant delete on table "public"."messaging_roster" to "authenticated";
-
 grant insert on table "public"."messaging_roster" to "authenticated";
-
 grant references on table "public"."messaging_roster" to "authenticated";
-
 grant select on table "public"."messaging_roster" to "authenticated";
-
 grant trigger on table "public"."messaging_roster" to "authenticated";
-
 grant truncate on table "public"."messaging_roster" to "authenticated";
-
 grant update on table "public"."messaging_roster" to "authenticated";
-
 grant delete on table "public"."messaging_roster" to "service_role";
-
 grant insert on table "public"."messaging_roster" to "service_role";
-
 grant references on table "public"."messaging_roster" to "service_role";
-
 grant select on table "public"."messaging_roster" to "service_role";
-
 grant trigger on table "public"."messaging_roster" to "service_role";
-
 grant truncate on table "public"."messaging_roster" to "service_role";
-
 grant update on table "public"."messaging_roster" to "service_role";
-
 grant delete on table "public"."op_sessions" to "anon";
-
 grant insert on table "public"."op_sessions" to "anon";
-
 grant references on table "public"."op_sessions" to "anon";
-
 grant select on table "public"."op_sessions" to "anon";
-
 grant trigger on table "public"."op_sessions" to "anon";
-
 grant truncate on table "public"."op_sessions" to "anon";
-
 grant update on table "public"."op_sessions" to "anon";
-
 grant delete on table "public"."op_sessions" to "authenticated";
-
 grant insert on table "public"."op_sessions" to "authenticated";
-
 grant references on table "public"."op_sessions" to "authenticated";
-
 grant select on table "public"."op_sessions" to "authenticated";
-
 grant trigger on table "public"."op_sessions" to "authenticated";
-
 grant truncate on table "public"."op_sessions" to "authenticated";
-
 grant update on table "public"."op_sessions" to "authenticated";
-
 grant delete on table "public"."op_sessions" to "service_role";
-
 grant insert on table "public"."op_sessions" to "service_role";
-
 grant references on table "public"."op_sessions" to "service_role";
-
 grant select on table "public"."op_sessions" to "service_role";
-
 grant trigger on table "public"."op_sessions" to "service_role";
-
 grant truncate on table "public"."op_sessions" to "service_role";
-
 grant update on table "public"."op_sessions" to "service_role";
-
 grant delete on table "public"."operations" to "anon";
-
 grant insert on table "public"."operations" to "anon";
-
 grant references on table "public"."operations" to "anon";
-
 grant select on table "public"."operations" to "anon";
-
 grant trigger on table "public"."operations" to "anon";
-
 grant truncate on table "public"."operations" to "anon";
-
 grant update on table "public"."operations" to "anon";
-
 grant delete on table "public"."operations" to "authenticated";
-
 grant insert on table "public"."operations" to "authenticated";
-
 grant references on table "public"."operations" to "authenticated";
-
 grant select on table "public"."operations" to "authenticated";
-
 grant trigger on table "public"."operations" to "authenticated";
-
 grant truncate on table "public"."operations" to "authenticated";
-
 grant update on table "public"."operations" to "authenticated";
-
 grant delete on table "public"."operations" to "service_role";
-
 grant insert on table "public"."operations" to "service_role";
-
 grant references on table "public"."operations" to "service_role";
-
 grant select on table "public"."operations" to "service_role";
-
 grant trigger on table "public"."operations" to "service_role";
-
 grant truncate on table "public"."operations" to "service_role";
-
 grant update on table "public"."operations" to "service_role";
-
 grant delete on table "public"."operators" to "anon";
-
 grant insert on table "public"."operators" to "anon";
-
 grant references on table "public"."operators" to "anon";
-
 grant select on table "public"."operators" to "anon";
-
 grant trigger on table "public"."operators" to "anon";
-
 grant truncate on table "public"."operators" to "anon";
-
 grant update on table "public"."operators" to "anon";
-
 grant delete on table "public"."operators" to "authenticated";
-
 grant insert on table "public"."operators" to "authenticated";
-
 grant references on table "public"."operators" to "authenticated";
-
 grant select on table "public"."operators" to "authenticated";
-
 grant trigger on table "public"."operators" to "authenticated";
-
 grant truncate on table "public"."operators" to "authenticated";
-
 grant update on table "public"."operators" to "authenticated";
-
 grant delete on table "public"."operators" to "service_role";
-
 grant insert on table "public"."operators" to "service_role";
-
 grant references on table "public"."operators" to "service_role";
-
 grant select on table "public"."operators" to "service_role";
-
 grant trigger on table "public"."operators" to "service_role";
-
 grant truncate on table "public"."operators" to "service_role";
-
 grant update on table "public"."operators" to "service_role";
-
 grant delete on table "public"."po_line_items" to "anon";
-
 grant insert on table "public"."po_line_items" to "anon";
-
 grant references on table "public"."po_line_items" to "anon";
-
 grant select on table "public"."po_line_items" to "anon";
-
 grant trigger on table "public"."po_line_items" to "anon";
-
 grant truncate on table "public"."po_line_items" to "anon";
-
 grant update on table "public"."po_line_items" to "anon";
-
 grant delete on table "public"."po_line_items" to "authenticated";
-
 grant insert on table "public"."po_line_items" to "authenticated";
-
 grant references on table "public"."po_line_items" to "authenticated";
-
 grant select on table "public"."po_line_items" to "authenticated";
-
 grant trigger on table "public"."po_line_items" to "authenticated";
-
 grant truncate on table "public"."po_line_items" to "authenticated";
-
 grant update on table "public"."po_line_items" to "authenticated";
-
 grant delete on table "public"."po_line_items" to "service_role";
-
 grant insert on table "public"."po_line_items" to "service_role";
-
 grant references on table "public"."po_line_items" to "service_role";
-
 grant select on table "public"."po_line_items" to "service_role";
-
 grant trigger on table "public"."po_line_items" to "service_role";
-
 grant truncate on table "public"."po_line_items" to "service_role";
-
 grant update on table "public"."po_line_items" to "service_role";
-
 grant delete on table "public"."purchase_orders" to "anon";
-
 grant insert on table "public"."purchase_orders" to "anon";
-
 grant references on table "public"."purchase_orders" to "anon";
-
 grant select on table "public"."purchase_orders" to "anon";
-
 grant trigger on table "public"."purchase_orders" to "anon";
-
 grant truncate on table "public"."purchase_orders" to "anon";
-
 grant update on table "public"."purchase_orders" to "anon";
-
 grant delete on table "public"."purchase_orders" to "authenticated";
-
 grant insert on table "public"."purchase_orders" to "authenticated";
-
 grant references on table "public"."purchase_orders" to "authenticated";
-
 grant select on table "public"."purchase_orders" to "authenticated";
-
 grant trigger on table "public"."purchase_orders" to "authenticated";
-
 grant truncate on table "public"."purchase_orders" to "authenticated";
-
 grant update on table "public"."purchase_orders" to "authenticated";
-
 grant delete on table "public"."purchase_orders" to "service_role";
-
 grant insert on table "public"."purchase_orders" to "service_role";
-
 grant references on table "public"."purchase_orders" to "service_role";
-
 grant select on table "public"."purchase_orders" to "service_role";
-
 grant trigger on table "public"."purchase_orders" to "service_role";
-
 grant truncate on table "public"."purchase_orders" to "service_role";
-
 grant update on table "public"."purchase_orders" to "service_role";
-
 grant delete on table "public"."push_tokens" to "anon";
-
 grant insert on table "public"."push_tokens" to "anon";
-
 grant references on table "public"."push_tokens" to "anon";
-
 grant select on table "public"."push_tokens" to "anon";
-
 grant trigger on table "public"."push_tokens" to "anon";
-
 grant truncate on table "public"."push_tokens" to "anon";
-
 grant update on table "public"."push_tokens" to "anon";
-
 grant delete on table "public"."push_tokens" to "authenticated";
-
 grant insert on table "public"."push_tokens" to "authenticated";
-
 grant references on table "public"."push_tokens" to "authenticated";
-
 grant select on table "public"."push_tokens" to "authenticated";
-
 grant trigger on table "public"."push_tokens" to "authenticated";
-
 grant truncate on table "public"."push_tokens" to "authenticated";
-
 grant update on table "public"."push_tokens" to "authenticated";
-
 grant delete on table "public"."push_tokens" to "service_role";
-
 grant insert on table "public"."push_tokens" to "service_role";
-
 grant references on table "public"."push_tokens" to "service_role";
-
 grant select on table "public"."push_tokens" to "service_role";
-
 grant trigger on table "public"."push_tokens" to "service_role";
-
 grant truncate on table "public"."push_tokens" to "service_role";
-
 grant update on table "public"."push_tokens" to "service_role";
-
 grant delete on table "public"."rb_audit" to "anon";
-
 grant insert on table "public"."rb_audit" to "anon";
-
 grant references on table "public"."rb_audit" to "anon";
-
 grant select on table "public"."rb_audit" to "anon";
-
 grant trigger on table "public"."rb_audit" to "anon";
-
 grant truncate on table "public"."rb_audit" to "anon";
-
 grant update on table "public"."rb_audit" to "anon";
-
 grant delete on table "public"."rb_audit" to "authenticated";
-
 grant insert on table "public"."rb_audit" to "authenticated";
-
 grant references on table "public"."rb_audit" to "authenticated";
-
 grant select on table "public"."rb_audit" to "authenticated";
-
 grant trigger on table "public"."rb_audit" to "authenticated";
-
 grant truncate on table "public"."rb_audit" to "authenticated";
-
 grant update on table "public"."rb_audit" to "authenticated";
-
 grant delete on table "public"."rb_audit" to "service_role";
-
 grant insert on table "public"."rb_audit" to "service_role";
-
 grant references on table "public"."rb_audit" to "service_role";
-
 grant select on table "public"."rb_audit" to "service_role";
-
 grant trigger on table "public"."rb_audit" to "service_role";
-
 grant truncate on table "public"."rb_audit" to "service_role";
-
 grant update on table "public"."rb_audit" to "service_role";
-
 grant delete on table "public"."rb_control_admins" to "anon";
-
 grant insert on table "public"."rb_control_admins" to "anon";
-
 grant references on table "public"."rb_control_admins" to "anon";
-
 grant select on table "public"."rb_control_admins" to "anon";
-
 grant trigger on table "public"."rb_control_admins" to "anon";
-
 grant truncate on table "public"."rb_control_admins" to "anon";
-
 grant update on table "public"."rb_control_admins" to "anon";
-
 grant delete on table "public"."rb_control_admins" to "authenticated";
-
 grant insert on table "public"."rb_control_admins" to "authenticated";
-
 grant references on table "public"."rb_control_admins" to "authenticated";
-
 grant select on table "public"."rb_control_admins" to "authenticated";
-
 grant trigger on table "public"."rb_control_admins" to "authenticated";
-
 grant truncate on table "public"."rb_control_admins" to "authenticated";
-
 grant update on table "public"."rb_control_admins" to "authenticated";
-
 grant delete on table "public"."rb_control_admins" to "service_role";
-
 grant insert on table "public"."rb_control_admins" to "service_role";
-
 grant references on table "public"."rb_control_admins" to "service_role";
-
 grant select on table "public"."rb_control_admins" to "service_role";
-
 grant trigger on table "public"."rb_control_admins" to "service_role";
-
 grant truncate on table "public"."rb_control_admins" to "service_role";
-
 grant update on table "public"."rb_control_admins" to "service_role";
-
 grant delete on table "public"."rb_device_activation_tokens" to "anon";
-
 grant insert on table "public"."rb_device_activation_tokens" to "anon";
-
 grant references on table "public"."rb_device_activation_tokens" to "anon";
-
 grant select on table "public"."rb_device_activation_tokens" to "anon";
-
 grant trigger on table "public"."rb_device_activation_tokens" to "anon";
-
 grant truncate on table "public"."rb_device_activation_tokens" to "anon";
-
 grant update on table "public"."rb_device_activation_tokens" to "anon";
-
 grant delete on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant insert on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant references on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant select on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant trigger on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant truncate on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant update on table "public"."rb_device_activation_tokens" to "authenticated";
-
 grant delete on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant insert on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant references on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant select on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant trigger on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant truncate on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant update on table "public"."rb_device_activation_tokens" to "service_role";
-
 grant delete on table "public"."rb_devices" to "anon";
-
 grant insert on table "public"."rb_devices" to "anon";
-
 grant references on table "public"."rb_devices" to "anon";
-
 grant select on table "public"."rb_devices" to "anon";
-
 grant trigger on table "public"."rb_devices" to "anon";
-
 grant truncate on table "public"."rb_devices" to "anon";
-
 grant update on table "public"."rb_devices" to "anon";
-
 grant delete on table "public"."rb_devices" to "authenticated";
-
 grant insert on table "public"."rb_devices" to "authenticated";
-
 grant references on table "public"."rb_devices" to "authenticated";
-
 grant select on table "public"."rb_devices" to "authenticated";
-
 grant trigger on table "public"."rb_devices" to "authenticated";
-
 grant truncate on table "public"."rb_devices" to "authenticated";
-
 grant update on table "public"."rb_devices" to "authenticated";
-
 grant delete on table "public"."rb_devices" to "service_role";
-
 grant insert on table "public"."rb_devices" to "service_role";
-
 grant references on table "public"."rb_devices" to "service_role";
-
 grant select on table "public"."rb_devices" to "service_role";
-
 grant trigger on table "public"."rb_devices" to "service_role";
-
 grant truncate on table "public"."rb_devices" to "service_role";
-
 grant update on table "public"."rb_devices" to "service_role";
-
 grant delete on table "public"."rb_shop_members" to "anon";
-
 grant insert on table "public"."rb_shop_members" to "anon";
-
 grant references on table "public"."rb_shop_members" to "anon";
-
 grant select on table "public"."rb_shop_members" to "anon";
-
 grant trigger on table "public"."rb_shop_members" to "anon";
-
 grant truncate on table "public"."rb_shop_members" to "anon";
-
 grant update on table "public"."rb_shop_members" to "anon";
-
 grant delete on table "public"."rb_shop_members" to "authenticated";
-
 grant insert on table "public"."rb_shop_members" to "authenticated";
-
 grant references on table "public"."rb_shop_members" to "authenticated";
-
 grant select on table "public"."rb_shop_members" to "authenticated";
-
 grant trigger on table "public"."rb_shop_members" to "authenticated";
-
 grant truncate on table "public"."rb_shop_members" to "authenticated";
-
 grant update on table "public"."rb_shop_members" to "authenticated";
-
 grant delete on table "public"."rb_shop_members" to "service_role";
-
 grant insert on table "public"."rb_shop_members" to "service_role";
-
 grant references on table "public"."rb_shop_members" to "service_role";
-
 grant select on table "public"."rb_shop_members" to "service_role";
-
 grant trigger on table "public"."rb_shop_members" to "service_role";
-
 grant truncate on table "public"."rb_shop_members" to "service_role";
-
 grant update on table "public"."rb_shop_members" to "service_role";
-
 grant delete on table "public"."rb_shops" to "anon";
-
 grant insert on table "public"."rb_shops" to "anon";
-
 grant references on table "public"."rb_shops" to "anon";
-
 grant select on table "public"."rb_shops" to "anon";
-
 grant trigger on table "public"."rb_shops" to "anon";
-
 grant truncate on table "public"."rb_shops" to "anon";
-
 grant update on table "public"."rb_shops" to "anon";
-
 grant delete on table "public"."rb_shops" to "authenticated";
-
 grant insert on table "public"."rb_shops" to "authenticated";
-
 grant references on table "public"."rb_shops" to "authenticated";
-
 grant select on table "public"."rb_shops" to "authenticated";
-
 grant trigger on table "public"."rb_shops" to "authenticated";
-
 grant truncate on table "public"."rb_shops" to "authenticated";
-
 grant update on table "public"."rb_shops" to "authenticated";
-
 grant delete on table "public"."rb_shops" to "service_role";
-
 grant insert on table "public"."rb_shops" to "service_role";
-
 grant references on table "public"."rb_shops" to "service_role";
-
 grant select on table "public"."rb_shops" to "service_role";
-
 grant trigger on table "public"."rb_shops" to "service_role";
-
 grant truncate on table "public"."rb_shops" to "service_role";
-
 grant update on table "public"."rb_shops" to "service_role";
-
 grant delete on table "public"."rb_support_bundles" to "anon";
-
 grant insert on table "public"."rb_support_bundles" to "anon";
-
 grant references on table "public"."rb_support_bundles" to "anon";
-
 grant select on table "public"."rb_support_bundles" to "anon";
-
 grant trigger on table "public"."rb_support_bundles" to "anon";
-
 grant truncate on table "public"."rb_support_bundles" to "anon";
-
 grant update on table "public"."rb_support_bundles" to "anon";
-
 grant delete on table "public"."rb_support_bundles" to "authenticated";
-
 grant insert on table "public"."rb_support_bundles" to "authenticated";
-
 grant references on table "public"."rb_support_bundles" to "authenticated";
-
 grant select on table "public"."rb_support_bundles" to "authenticated";
-
 grant trigger on table "public"."rb_support_bundles" to "authenticated";
-
 grant truncate on table "public"."rb_support_bundles" to "authenticated";
-
 grant update on table "public"."rb_support_bundles" to "authenticated";
-
 grant delete on table "public"."rb_support_bundles" to "service_role";
-
 grant insert on table "public"."rb_support_bundles" to "service_role";
-
 grant references on table "public"."rb_support_bundles" to "service_role";
-
 grant select on table "public"."rb_support_bundles" to "service_role";
-
 grant trigger on table "public"."rb_support_bundles" to "service_role";
-
 grant truncate on table "public"."rb_support_bundles" to "service_role";
-
 grant update on table "public"."rb_support_bundles" to "service_role";
-
 grant delete on table "public"."rb_update_packages" to "anon";
-
 grant insert on table "public"."rb_update_packages" to "anon";
-
 grant references on table "public"."rb_update_packages" to "anon";
-
 grant select on table "public"."rb_update_packages" to "anon";
-
 grant trigger on table "public"."rb_update_packages" to "anon";
-
 grant truncate on table "public"."rb_update_packages" to "anon";
-
 grant update on table "public"."rb_update_packages" to "anon";
-
 grant delete on table "public"."rb_update_packages" to "authenticated";
-
 grant insert on table "public"."rb_update_packages" to "authenticated";
-
 grant references on table "public"."rb_update_packages" to "authenticated";
-
 grant select on table "public"."rb_update_packages" to "authenticated";
-
 grant trigger on table "public"."rb_update_packages" to "authenticated";
-
 grant truncate on table "public"."rb_update_packages" to "authenticated";
-
 grant update on table "public"."rb_update_packages" to "authenticated";
-
 grant delete on table "public"."rb_update_packages" to "service_role";
-
 grant insert on table "public"."rb_update_packages" to "service_role";
-
 grant references on table "public"."rb_update_packages" to "service_role";
-
 grant select on table "public"."rb_update_packages" to "service_role";
-
 grant trigger on table "public"."rb_update_packages" to "service_role";
-
 grant truncate on table "public"."rb_update_packages" to "service_role";
-
 grant update on table "public"."rb_update_packages" to "service_role";
-
 grant delete on table "public"."rb_update_policy" to "anon";
-
 grant insert on table "public"."rb_update_policy" to "anon";
-
 grant references on table "public"."rb_update_policy" to "anon";
-
 grant select on table "public"."rb_update_policy" to "anon";
-
 grant trigger on table "public"."rb_update_policy" to "anon";
-
 grant truncate on table "public"."rb_update_policy" to "anon";
-
 grant update on table "public"."rb_update_policy" to "anon";
-
 grant delete on table "public"."rb_update_policy" to "authenticated";
-
 grant insert on table "public"."rb_update_policy" to "authenticated";
-
 grant references on table "public"."rb_update_policy" to "authenticated";
-
 grant select on table "public"."rb_update_policy" to "authenticated";
-
 grant trigger on table "public"."rb_update_policy" to "authenticated";
-
 grant truncate on table "public"."rb_update_policy" to "authenticated";
-
 grant update on table "public"."rb_update_policy" to "authenticated";
-
 grant delete on table "public"."rb_update_policy" to "service_role";
-
 grant insert on table "public"."rb_update_policy" to "service_role";
-
 grant references on table "public"."rb_update_policy" to "service_role";
-
 grant select on table "public"."rb_update_policy" to "service_role";
-
 grant trigger on table "public"."rb_update_policy" to "service_role";
-
 grant truncate on table "public"."rb_update_policy" to "service_role";
-
 grant update on table "public"."rb_update_policy" to "service_role";
-
 grant delete on table "public"."rb_user_prefs" to "anon";
-
 grant insert on table "public"."rb_user_prefs" to "anon";
-
 grant references on table "public"."rb_user_prefs" to "anon";
-
 grant select on table "public"."rb_user_prefs" to "anon";
-
 grant trigger on table "public"."rb_user_prefs" to "anon";
-
 grant truncate on table "public"."rb_user_prefs" to "anon";
-
 grant update on table "public"."rb_user_prefs" to "anon";
-
 grant delete on table "public"."rb_user_prefs" to "authenticated";
-
 grant insert on table "public"."rb_user_prefs" to "authenticated";
-
 grant references on table "public"."rb_user_prefs" to "authenticated";
-
 grant select on table "public"."rb_user_prefs" to "authenticated";
-
 grant trigger on table "public"."rb_user_prefs" to "authenticated";
-
 grant truncate on table "public"."rb_user_prefs" to "authenticated";
-
 grant update on table "public"."rb_user_prefs" to "authenticated";
-
 grant delete on table "public"."rb_user_prefs" to "service_role";
-
 grant insert on table "public"."rb_user_prefs" to "service_role";
-
 grant references on table "public"."rb_user_prefs" to "service_role";
-
 grant select on table "public"."rb_user_prefs" to "service_role";
-
 grant trigger on table "public"."rb_user_prefs" to "service_role";
-
 grant truncate on table "public"."rb_user_prefs" to "service_role";
-
 grant update on table "public"."rb_user_prefs" to "service_role";
-
 grant delete on table "public"."routing_operations" to "anon";
-
 grant insert on table "public"."routing_operations" to "anon";
-
 grant references on table "public"."routing_operations" to "anon";
-
 grant select on table "public"."routing_operations" to "anon";
-
 grant trigger on table "public"."routing_operations" to "anon";
-
 grant truncate on table "public"."routing_operations" to "anon";
-
 grant update on table "public"."routing_operations" to "anon";
-
 grant delete on table "public"."routing_operations" to "authenticated";
-
 grant insert on table "public"."routing_operations" to "authenticated";
-
 grant references on table "public"."routing_operations" to "authenticated";
-
 grant select on table "public"."routing_operations" to "authenticated";
-
 grant trigger on table "public"."routing_operations" to "authenticated";
-
 grant truncate on table "public"."routing_operations" to "authenticated";
-
 grant update on table "public"."routing_operations" to "authenticated";
-
 grant delete on table "public"."routing_operations" to "service_role";
-
 grant insert on table "public"."routing_operations" to "service_role";
-
 grant references on table "public"."routing_operations" to "service_role";
-
 grant select on table "public"."routing_operations" to "service_role";
-
 grant trigger on table "public"."routing_operations" to "service_role";
-
 grant truncate on table "public"."routing_operations" to "service_role";
-
 grant update on table "public"."routing_operations" to "service_role";
-
 grant delete on table "public"."shop_members" to "anon";
-
 grant insert on table "public"."shop_members" to "anon";
-
 grant references on table "public"."shop_members" to "anon";
-
 grant select on table "public"."shop_members" to "anon";
-
 grant trigger on table "public"."shop_members" to "anon";
-
 grant truncate on table "public"."shop_members" to "anon";
-
 grant update on table "public"."shop_members" to "anon";
-
 grant delete on table "public"."shop_members" to "authenticated";
-
 grant insert on table "public"."shop_members" to "authenticated";
-
 grant references on table "public"."shop_members" to "authenticated";
-
 grant select on table "public"."shop_members" to "authenticated";
-
 grant trigger on table "public"."shop_members" to "authenticated";
-
 grant truncate on table "public"."shop_members" to "authenticated";
-
 grant update on table "public"."shop_members" to "authenticated";
-
 grant delete on table "public"."shop_members" to "service_role";
-
 grant insert on table "public"."shop_members" to "service_role";
-
 grant references on table "public"."shop_members" to "service_role";
-
 grant select on table "public"."shop_members" to "service_role";
-
 grant trigger on table "public"."shop_members" to "service_role";
-
 grant truncate on table "public"."shop_members" to "service_role";
-
 grant update on table "public"."shop_members" to "service_role";
-
 grant delete on table "public"."tenants" to "anon";
-
 grant insert on table "public"."tenants" to "anon";
-
 grant references on table "public"."tenants" to "anon";
-
 grant select on table "public"."tenants" to "anon";
-
 grant trigger on table "public"."tenants" to "anon";
-
 grant truncate on table "public"."tenants" to "anon";
-
 grant update on table "public"."tenants" to "anon";
-
 grant delete on table "public"."tenants" to "authenticated";
-
 grant insert on table "public"."tenants" to "authenticated";
-
 grant references on table "public"."tenants" to "authenticated";
-
 grant select on table "public"."tenants" to "authenticated";
-
 grant trigger on table "public"."tenants" to "authenticated";
-
 grant truncate on table "public"."tenants" to "authenticated";
-
 grant update on table "public"."tenants" to "authenticated";
-
 grant delete on table "public"."tenants" to "service_role";
-
 grant insert on table "public"."tenants" to "service_role";
-
 grant references on table "public"."tenants" to "service_role";
-
 grant select on table "public"."tenants" to "service_role";
-
 grant trigger on table "public"."tenants" to "service_role";
-
 grant truncate on table "public"."tenants" to "service_role";
-
 grant update on table "public"."tenants" to "service_role";
-
 grant delete on table "public"."time_events" to "anon";
-
 grant insert on table "public"."time_events" to "anon";
-
 grant references on table "public"."time_events" to "anon";
-
 grant select on table "public"."time_events" to "anon";
-
 grant trigger on table "public"."time_events" to "anon";
-
 grant truncate on table "public"."time_events" to "anon";
-
 grant update on table "public"."time_events" to "anon";
-
 grant delete on table "public"."time_events" to "authenticated";
-
 grant insert on table "public"."time_events" to "authenticated";
-
 grant references on table "public"."time_events" to "authenticated";
-
 grant select on table "public"."time_events" to "authenticated";
-
 grant trigger on table "public"."time_events" to "authenticated";
-
 grant truncate on table "public"."time_events" to "authenticated";
-
 grant update on table "public"."time_events" to "authenticated";
-
 grant delete on table "public"."time_events" to "service_role";
-
 grant insert on table "public"."time_events" to "service_role";
-
 grant references on table "public"."time_events" to "service_role";
-
 grant select on table "public"."time_events" to "service_role";
-
 grant trigger on table "public"."time_events" to "service_role";
-
 grant truncate on table "public"."time_events" to "service_role";
-
 grant update on table "public"."time_events" to "service_role";
-
 grant delete on table "public"."time_off_balances" to "anon";
-
 grant insert on table "public"."time_off_balances" to "anon";
-
 grant references on table "public"."time_off_balances" to "anon";
-
 grant select on table "public"."time_off_balances" to "anon";
-
 grant trigger on table "public"."time_off_balances" to "anon";
-
 grant truncate on table "public"."time_off_balances" to "anon";
-
 grant update on table "public"."time_off_balances" to "anon";
-
 grant delete on table "public"."time_off_balances" to "authenticated";
-
 grant insert on table "public"."time_off_balances" to "authenticated";
-
 grant references on table "public"."time_off_balances" to "authenticated";
-
 grant select on table "public"."time_off_balances" to "authenticated";
-
 grant trigger on table "public"."time_off_balances" to "authenticated";
-
 grant truncate on table "public"."time_off_balances" to "authenticated";
-
 grant update on table "public"."time_off_balances" to "authenticated";
-
 grant delete on table "public"."time_off_balances" to "service_role";
-
 grant insert on table "public"."time_off_balances" to "service_role";
-
 grant references on table "public"."time_off_balances" to "service_role";
-
 grant select on table "public"."time_off_balances" to "service_role";
-
 grant trigger on table "public"."time_off_balances" to "service_role";
-
 grant truncate on table "public"."time_off_balances" to "service_role";
-
 grant update on table "public"."time_off_balances" to "service_role";
-
 grant delete on table "public"."time_off_policy" to "anon";
-
 grant insert on table "public"."time_off_policy" to "anon";
-
 grant references on table "public"."time_off_policy" to "anon";
-
 grant select on table "public"."time_off_policy" to "anon";
-
 grant trigger on table "public"."time_off_policy" to "anon";
-
 grant truncate on table "public"."time_off_policy" to "anon";
-
 grant update on table "public"."time_off_policy" to "anon";
-
 grant delete on table "public"."time_off_policy" to "authenticated";
-
 grant insert on table "public"."time_off_policy" to "authenticated";
-
 grant references on table "public"."time_off_policy" to "authenticated";
-
 grant select on table "public"."time_off_policy" to "authenticated";
-
 grant trigger on table "public"."time_off_policy" to "authenticated";
-
 grant truncate on table "public"."time_off_policy" to "authenticated";
-
 grant update on table "public"."time_off_policy" to "authenticated";
-
 grant delete on table "public"."time_off_policy" to "service_role";
-
 grant insert on table "public"."time_off_policy" to "service_role";
-
 grant references on table "public"."time_off_policy" to "service_role";
-
 grant select on table "public"."time_off_policy" to "service_role";
-
 grant trigger on table "public"."time_off_policy" to "service_role";
-
 grant truncate on table "public"."time_off_policy" to "service_role";
-
 grant update on table "public"."time_off_policy" to "service_role";
-
 grant delete on table "public"."time_off_requests" to "anon";
-
 grant insert on table "public"."time_off_requests" to "anon";
-
 grant references on table "public"."time_off_requests" to "anon";
-
 grant select on table "public"."time_off_requests" to "anon";
-
 grant trigger on table "public"."time_off_requests" to "anon";
-
 grant truncate on table "public"."time_off_requests" to "anon";
-
 grant update on table "public"."time_off_requests" to "anon";
-
 grant delete on table "public"."time_off_requests" to "authenticated";
-
 grant insert on table "public"."time_off_requests" to "authenticated";
-
 grant references on table "public"."time_off_requests" to "authenticated";
-
 grant select on table "public"."time_off_requests" to "authenticated";
-
 grant trigger on table "public"."time_off_requests" to "authenticated";
-
 grant truncate on table "public"."time_off_requests" to "authenticated";
-
 grant update on table "public"."time_off_requests" to "authenticated";
-
 grant delete on table "public"."time_off_requests" to "service_role";
-
 grant insert on table "public"."time_off_requests" to "service_role";
-
 grant references on table "public"."time_off_requests" to "service_role";
-
 grant select on table "public"."time_off_requests" to "service_role";
-
 grant trigger on table "public"."time_off_requests" to "service_role";
-
 grant truncate on table "public"."time_off_requests" to "service_role";
-
 grant update on table "public"."time_off_requests" to "service_role";
-
 grant delete on table "public"."timeclock_settings" to "anon";
-
 grant insert on table "public"."timeclock_settings" to "anon";
-
 grant references on table "public"."timeclock_settings" to "anon";
-
 grant select on table "public"."timeclock_settings" to "anon";
-
 grant trigger on table "public"."timeclock_settings" to "anon";
-
 grant truncate on table "public"."timeclock_settings" to "anon";
-
 grant update on table "public"."timeclock_settings" to "anon";
-
 grant delete on table "public"."timeclock_settings" to "authenticated";
-
 grant insert on table "public"."timeclock_settings" to "authenticated";
-
 grant references on table "public"."timeclock_settings" to "authenticated";
-
 grant select on table "public"."timeclock_settings" to "authenticated";
-
 grant trigger on table "public"."timeclock_settings" to "authenticated";
-
 grant truncate on table "public"."timeclock_settings" to "authenticated";
-
 grant update on table "public"."timeclock_settings" to "authenticated";
-
 grant delete on table "public"."timeclock_settings" to "service_role";
-
 grant insert on table "public"."timeclock_settings" to "service_role";
-
 grant references on table "public"."timeclock_settings" to "service_role";
-
 grant select on table "public"."timeclock_settings" to "service_role";
-
 grant trigger on table "public"."timeclock_settings" to "service_role";
-
 grant truncate on table "public"."timeclock_settings" to "service_role";
-
 grant update on table "public"."timeclock_settings" to "service_role";
-
 grant delete on table "public"."travelers" to "anon";
-
 grant insert on table "public"."travelers" to "anon";
-
 grant references on table "public"."travelers" to "anon";
-
 grant select on table "public"."travelers" to "anon";
-
 grant trigger on table "public"."travelers" to "anon";
-
 grant truncate on table "public"."travelers" to "anon";
-
 grant update on table "public"."travelers" to "anon";
-
 grant delete on table "public"."travelers" to "authenticated";
-
 grant insert on table "public"."travelers" to "authenticated";
-
 grant references on table "public"."travelers" to "authenticated";
-
 grant select on table "public"."travelers" to "authenticated";
-
 grant trigger on table "public"."travelers" to "authenticated";
-
 grant truncate on table "public"."travelers" to "authenticated";
-
 grant update on table "public"."travelers" to "authenticated";
-
 grant delete on table "public"."travelers" to "service_role";
-
 grant insert on table "public"."travelers" to "service_role";
-
 grant references on table "public"."travelers" to "service_role";
-
 grant select on table "public"."travelers" to "service_role";
-
 grant trigger on table "public"."travelers" to "service_role";
-
 grant truncate on table "public"."travelers" to "service_role";
-
 grant update on table "public"."travelers" to "service_role";
-
-
-  create policy "conversation_archives_delete_self"
+create policy "conversation_archives_delete_self"
   on "public"."conversation_archives"
   as permissive
   for delete
   to authenticated
 using ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "conversation_archives_insert_self"
+create policy "conversation_archives_insert_self"
   on "public"."conversation_archives"
   as permissive
   for insert
   to authenticated
 with check ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "conversation_archives_select_self"
+create policy "conversation_archives_select_self"
   on "public"."conversation_archives"
   as permissive
   for select
   to authenticated
 using ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "cm_read_own_memberships"
+create policy "cm_read_own_memberships"
   on "public"."conversation_members"
   as permissive
   for select
   to authenticated
 using (((shop_id = shop_id) AND (employee_id = public.rb_current_employee_id(shop_id))));
-
-
-
-  create policy "conversation_members_select_self"
+create policy "conversation_members_select_self"
   on "public"."conversation_members"
   as permissive
   for select
@@ -5257,28 +3656,19 @@ using (((shop_id = shop_id) AND (employee_id = public.rb_current_employee_id(sho
 using ((EXISTS ( SELECT 1
    FROM public.employees e
   WHERE ((e.auth_user_id = auth.uid()) AND (e.shop_id = conversation_members.shop_id) AND (e.id = conversation_members.employee_id)))));
-
-
-
-  create policy "conversations_insert_active"
+create policy "conversations_insert_active"
   on "public"."conversations"
   as permissive
   for insert
   to public
 with check (((shop_id = (public.current_employee()).shop_id) AND (created_by = (public.current_employee()).id) AND (is_active = true)));
-
-
-
-  create policy "conversations_read_if_member"
+create policy "conversations_read_if_member"
   on "public"."conversations"
   as permissive
   for select
   to authenticated
 using ((public.rb_is_conversation_member(shop_id, id) = true));
-
-
-
-  create policy "conversations_select_member"
+create policy "conversations_select_member"
   on "public"."conversations"
   as permissive
   for select
@@ -5286,134 +3676,92 @@ using ((public.rb_is_conversation_member(shop_id, id) = true));
 using (((public.my_roster_active(shop_id) = true) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = conversations.id) AND (cm.employee_id = public.my_employee_id(conversations.shop_id)))))));
-
-
-
-  create policy "conversations_update_foreman"
+create policy "conversations_update_foreman"
   on "public"."conversations"
   as permissive
   for update
   to public
 using (((shop_id = (public.current_employee()).shop_id) AND ((public.current_employee()).role = 'foreman'::text)))
 with check (((shop_id = (public.current_employee()).shop_id) AND ((public.current_employee()).role = 'foreman'::text)));
-
-
-
-  create policy "employee_roles_manage"
+create policy "employee_roles_manage"
   on "public"."employee_roles"
   as permissive
   for all
   to authenticated
 using (public.is_foreman(shop_id))
 with check (public.is_foreman(shop_id));
-
-
-
-  create policy "employee_roles_select"
+create policy "employee_roles_select"
   on "public"."employee_roles"
   as permissive
   for select
   to authenticated
 using ((shop_id = ( SELECT my_employee.shop_id
    FROM public.my_employee() my_employee(id, shop_id))));
-
-
-
-  create policy "employees read self"
+create policy "employees read self"
   on "public"."employees"
   as permissive
   for select
   to public
 using ((auth_user_id = auth.uid()));
-
-
-
-  create policy "employees_foreman_manage"
+create policy "employees_foreman_manage"
   on "public"."employees"
   as permissive
   for all
   to public
 using ((((public.current_employee()).role = 'foreman'::text) AND (shop_id = (public.current_employee()).shop_id)))
 with check ((((public.current_employee()).role = 'foreman'::text) AND (shop_id = (public.current_employee()).shop_id)));
-
-
-
-  create policy "employees_read_if_active_in_messaging"
+create policy "employees_read_if_active_in_messaging"
   on "public"."employees"
   as permissive
   for select
   to authenticated
 using ((public.rb_is_active_in_messaging(shop_id) = true));
-
-
-
-  create policy "employees_select_own"
+create policy "employees_select_own"
   on "public"."employees"
   as permissive
   for select
   to authenticated
 using ((auth_user_id = auth.uid()));
-
-
-
-  create policy "employees_select_same_shop"
+create policy "employees_select_same_shop"
   on "public"."employees"
   as permissive
   for select
   to public
 using (((is_active = true) AND (shop_id = (public.current_employee()).shop_id)));
-
-
-
-  create policy "employees_select_self"
+create policy "employees_select_self"
   on "public"."employees"
   as permissive
   for select
   to public
 using ((auth_user_id = auth.uid()));
-
-
-
-  create policy "employees_update_self"
+create policy "employees_update_self"
   on "public"."employees"
   as permissive
   for update
   to authenticated
 using ((auth_user_id = auth.uid()))
 with check ((auth_user_id = auth.uid()));
-
-
-
-  create policy "holiday_manage"
+create policy "holiday_manage"
   on "public"."holiday_calendar"
   as permissive
   for all
   to authenticated
 using (public.is_foreman(shop_id))
 with check (public.is_foreman(shop_id));
-
-
-
-  create policy "holiday_select"
+create policy "holiday_select"
   on "public"."holiday_calendar"
   as permissive
   for select
   to authenticated
 using ((shop_id = ( SELECT my_employee.shop_id
    FROM public.my_employee() my_employee(id, shop_id))));
-
-
-
-  create policy "mr_delete_self"
+create policy "mr_delete_self"
   on "public"."message_reactions"
   as permissive
   for delete
   to public
 using ((employee_id = public.get_my_employee_id(shop_id)));
-
-
-
-  create policy "mr_insert_self_member"
+create policy "mr_insert_self_member"
   on "public"."message_reactions"
   as permissive
   for insert
@@ -5421,10 +3769,7 @@ using ((employee_id = public.get_my_employee_id(shop_id)));
 with check (((employee_id = public.get_my_employee_id(shop_id)) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.shop_id = cm.shop_id) AND (cm.conversation_id = cm.conversation_id) AND (cm.employee_id = public.get_my_employee_id(cm.shop_id)))))));
-
-
-
-  create policy "mr_select_member"
+create policy "mr_select_member"
   on "public"."message_reactions"
   as permissive
   for select
@@ -5432,10 +3777,7 @@ with check (((employee_id = public.get_my_employee_id(shop_id)) AND (EXISTS ( SE
 using ((EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.shop_id = message_reactions.shop_id) AND (cm.conversation_id = message_reactions.conversation_id) AND (cm.employee_id = public.get_my_employee_id(message_reactions.shop_id))))));
-
-
-
-  create policy "message_reads_select_for_members"
+create policy "message_reads_select_for_members"
   on "public"."message_reads"
   as permissive
   for select
@@ -5444,10 +3786,7 @@ using ((EXISTS ( SELECT 1
    FROM (public.conversation_members cm
      JOIN public.conversations c ON ((c.id = cm.conversation_id)))
   WHERE ((cm.conversation_id = message_reads.conversation_id) AND (cm.employee_id = public.rb_current_employee_id(c.shop_id)) AND (c.shop_id = cm.shop_id)))));
-
-
-
-  create policy "message_reads_write_own_row"
+create policy "message_reads_write_own_row"
   on "public"."message_reads"
   as permissive
   for insert
@@ -5456,20 +3795,14 @@ with check ((employee_id = ( SELECT public.rb_current_employee_id(c.shop_id) AS 
    FROM public.conversations c
   WHERE (c.id = message_reads.conversation_id)
  LIMIT 1)));
-
-
-
-  create policy "reads_upsert_self"
+create policy "reads_upsert_self"
   on "public"."message_reads"
   as permissive
   for all
   to public
 using ((employee_id = (public.current_employee()).id))
 with check ((employee_id = (public.current_employee()).id));
-
-
-
-  create policy "messages read if member & active"
+create policy "messages read if member & active"
   on "public"."messages"
   as permissive
   for select
@@ -5477,10 +3810,7 @@ with check ((employee_id = (public.current_employee()).id));
 using ((public.is_messaging_active_employee(shop_id) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = cm.conversation_id) AND (cm.employee_id = public.current_employee_id(messages.shop_id)))))));
-
-
-
-  create policy "messages send if member & active"
+create policy "messages send if member & active"
   on "public"."messages"
   as permissive
   for insert
@@ -5488,19 +3818,13 @@ using ((public.is_messaging_active_employee(shop_id) AND (EXISTS ( SELECT 1
 with check ((public.is_messaging_active_employee(shop_id) AND (sender_employee_id = public.current_employee_id(shop_id)) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = cm.conversation_id) AND (cm.employee_id = public.current_employee_id(messages.shop_id)))))));
-
-
-
-  create policy "messages_insert_if_member_and_sender_is_me"
+create policy "messages_insert_if_member_and_sender_is_me"
   on "public"."messages"
   as permissive
   for insert
   to authenticated
 with check (((public.rb_is_active_in_messaging(shop_id) = true) AND (public.rb_is_conversation_member(shop_id, conversation_id) = true) AND (sender_employee_id = public.rb_current_employee_id(shop_id))));
-
-
-
-  create policy "messages_insert_member"
+create policy "messages_insert_member"
   on "public"."messages"
   as permissive
   for insert
@@ -5508,10 +3832,7 @@ with check (((public.rb_is_active_in_messaging(shop_id) = true) AND (public.rb_i
 with check (((shop_id = (public.current_employee()).shop_id) AND (sender_employee_id = (public.current_employee()).id) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = messages.conversation_id) AND (cm.employee_id = (public.current_employee()).id) AND (cm.is_active = true))))));
-
-
-
-  create policy "messages_insert_self"
+create policy "messages_insert_self"
   on "public"."messages"
   as permissive
   for insert
@@ -5519,19 +3840,13 @@ with check (((shop_id = (public.current_employee()).shop_id) AND (sender_employe
 with check (((public.my_roster_active(shop_id) = true) AND (sender_employee_id = public.my_employee_id(shop_id)) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = messages.conversation_id) AND (cm.employee_id = public.my_employee_id(messages.shop_id)))))));
-
-
-
-  create policy "messages_read_if_member_and_active"
+create policy "messages_read_if_member_and_active"
   on "public"."messages"
   as permissive
   for select
   to authenticated
 using (((public.rb_is_active_in_messaging(shop_id) = true) AND (public.rb_is_conversation_member(shop_id, conversation_id) = true) AND (deleted_at IS NULL)));
-
-
-
-  create policy "messages_select_if_in_convo"
+create policy "messages_select_if_in_convo"
   on "public"."messages"
   as permissive
   for select
@@ -5539,10 +3854,7 @@ using (((public.rb_is_active_in_messaging(shop_id) = true) AND (public.rb_is_con
 using (((public.my_roster_active(shop_id) = true) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = messages.conversation_id) AND (cm.employee_id = public.my_employee_id(messages.shop_id)))))));
-
-
-
-  create policy "messages_select_member"
+create policy "messages_select_member"
   on "public"."messages"
   as permissive
   for select
@@ -5550,19 +3862,13 @@ using (((public.my_roster_active(shop_id) = true) AND (EXISTS ( SELECT 1
 using (((shop_id = (public.current_employee()).shop_id) AND (EXISTS ( SELECT 1
    FROM public.conversation_members cm
   WHERE ((cm.conversation_id = messages.conversation_id) AND (cm.employee_id = (public.current_employee()).id) AND (cm.is_active = true))))));
-
-
-
-  create policy "messaging_roster_read_if_active"
+create policy "messaging_roster_read_if_active"
   on "public"."messaging_roster"
   as permissive
   for select
   to authenticated
 using ((public.rb_is_active_in_messaging(shop_id) = true));
-
-
-
-  create policy "roster_select_shop_member"
+create policy "roster_select_shop_member"
   on "public"."messaging_roster"
   as permissive
   for select
@@ -5570,56 +3876,38 @@ using ((public.rb_is_active_in_messaging(shop_id) = true));
 using ((EXISTS ( SELECT 1
    FROM public.employees e
   WHERE ((e.auth_user_id = auth.uid()) AND (e.shop_id = messaging_roster.shop_id)))));
-
-
-
-  create policy "push_tokens_delete_self"
+create policy "push_tokens_delete_self"
   on "public"."push_tokens"
   as permissive
   for delete
   to public
 using ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "push_tokens_insert_self"
+create policy "push_tokens_insert_self"
   on "public"."push_tokens"
   as permissive
   for insert
   to public
 with check ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "push_tokens_select_self"
+create policy "push_tokens_select_self"
   on "public"."push_tokens"
   as permissive
   for select
   to public
 using ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "push_tokens_update_self"
+create policy "push_tokens_update_self"
   on "public"."push_tokens"
   as permissive
   for update
   to public
 using ((employee_id = public.rb_current_employee_id(shop_id)))
 with check ((employee_id = public.rb_current_employee_id(shop_id)));
-
-
-
-  create policy "audit_select_member"
+create policy "audit_select_member"
   on "public"."rb_audit"
   as permissive
   for select
   to authenticated
 using (((shop_id IS NULL) OR public.rb_is_shop_member(shop_id, auth.uid())));
-
-
-
-  create policy "ca_delete_admins"
+create policy "ca_delete_admins"
   on "public"."rb_control_admins"
   as permissive
   for delete
@@ -5627,10 +3915,7 @@ using (((shop_id IS NULL) OR public.rb_is_shop_member(shop_id, auth.uid())));
 using ((EXISTS ( SELECT 1
    FROM public.rb_control_admins a
   WHERE (a.user_id = auth.uid()))));
-
-
-
-  create policy "ca_insert_admins"
+create policy "ca_insert_admins"
   on "public"."rb_control_admins"
   as permissive
   for insert
@@ -5638,10 +3923,7 @@ using ((EXISTS ( SELECT 1
 with check ((EXISTS ( SELECT 1
    FROM public.rb_control_admins a
   WHERE (a.user_id = auth.uid()))));
-
-
-
-  create policy "ca_select_admins"
+create policy "ca_select_admins"
   on "public"."rb_control_admins"
   as permissive
   for select
@@ -5649,176 +3931,119 @@ with check ((EXISTS ( SELECT 1
 using ((EXISTS ( SELECT 1
    FROM public.rb_control_admins a
   WHERE (a.user_id = auth.uid()))));
-
-
-
-  create policy "dat_delete_admin"
+create policy "dat_delete_admin"
   on "public"."rb_device_activation_tokens"
   as permissive
   for delete
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "dat_insert_admin"
+create policy "dat_insert_admin"
   on "public"."rb_device_activation_tokens"
   as permissive
   for insert
   to authenticated
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "dat_select_member"
+create policy "dat_select_member"
   on "public"."rb_device_activation_tokens"
   as permissive
   for select
   to authenticated
 using (public.rb_is_shop_member(shop_id, auth.uid()));
-
-
-
-  create policy "dat_update_admin"
+create policy "dat_update_admin"
   on "public"."rb_device_activation_tokens"
   as permissive
   for update
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()))
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "devices_delete_admin"
+create policy "devices_delete_admin"
   on "public"."rb_devices"
   as permissive
   for delete
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "devices_insert_admin"
+create policy "devices_insert_admin"
   on "public"."rb_devices"
   as permissive
   for insert
   to authenticated
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "devices_select_member"
+create policy "devices_select_member"
   on "public"."rb_devices"
   as permissive
   for select
   to authenticated
 using (public.rb_is_shop_member(shop_id, auth.uid()));
-
-
-
-  create policy "devices_update_admin"
+create policy "devices_update_admin"
   on "public"."rb_devices"
   as permissive
   for update
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()))
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "members_delete_admin"
+create policy "members_delete_admin"
   on "public"."rb_shop_members"
   as permissive
   for delete
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "members_insert_admin"
+create policy "members_insert_admin"
   on "public"."rb_shop_members"
   as permissive
   for insert
   to authenticated
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "members_select_self"
+create policy "members_select_self"
   on "public"."rb_shop_members"
   as permissive
   for select
   to authenticated
 using ((user_id = auth.uid()));
-
-
-
-  create policy "members_select_shop_admin"
+create policy "members_select_shop_admin"
   on "public"."rb_shop_members"
   as permissive
   for select
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "members_update_admin"
+create policy "members_update_admin"
   on "public"."rb_shop_members"
   as permissive
   for update
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()))
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "shops_delete_admin"
+create policy "shops_delete_admin"
   on "public"."rb_shops"
   as permissive
   for delete
   to authenticated
 using (public.rb_is_shop_admin(id, auth.uid()));
-
-
-
-  create policy "shops_select_member"
+create policy "shops_select_member"
   on "public"."rb_shops"
   as permissive
   for select
   to authenticated
 using (public.rb_is_shop_member(id, auth.uid()));
-
-
-
-  create policy "shops_update_admin"
+create policy "shops_update_admin"
   on "public"."rb_shops"
   as permissive
   for update
   to authenticated
 using (public.rb_is_shop_admin(id, auth.uid()))
 with check (public.rb_is_shop_admin(id, auth.uid()));
-
-
-
-  create policy "sb_insert_member"
+create policy "sb_insert_member"
   on "public"."rb_support_bundles"
   as permissive
   for insert
   to authenticated
 with check (public.rb_is_shop_member(shop_id, auth.uid()));
-
-
-
-  create policy "sb_select_member"
+create policy "sb_select_member"
   on "public"."rb_support_bundles"
   as permissive
   for select
   to authenticated
 using (public.rb_is_shop_member(shop_id, auth.uid()));
-
-
-
-  create policy "up_insert_control_admin"
+create policy "up_insert_control_admin"
   on "public"."rb_update_packages"
   as permissive
   for insert
@@ -5826,19 +4051,13 @@ using (public.rb_is_shop_member(shop_id, auth.uid()));
 with check ((EXISTS ( SELECT 1
    FROM public.rb_control_admins a
   WHERE (a.user_id = auth.uid()))));
-
-
-
-  create policy "up_select_authed"
+create policy "up_select_authed"
   on "public"."rb_update_packages"
   as permissive
   for select
   to authenticated
 using (true);
-
-
-
-  create policy "up_update_control_admin"
+create policy "up_update_control_admin"
   on "public"."rb_update_packages"
   as permissive
   for update
@@ -5849,75 +4068,51 @@ using ((EXISTS ( SELECT 1
 with check ((EXISTS ( SELECT 1
    FROM public.rb_control_admins a
   WHERE (a.user_id = auth.uid()))));
-
-
-
-  create policy "policy_select_member"
+create policy "policy_select_member"
   on "public"."rb_update_policy"
   as permissive
   for select
   to authenticated
 using (public.rb_is_shop_member(shop_id, auth.uid()));
-
-
-
-  create policy "policy_update_admin"
+create policy "policy_update_admin"
   on "public"."rb_update_policy"
   as permissive
   for update
   to authenticated
 using (public.rb_is_shop_admin(shop_id, auth.uid()))
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "policy_upsert_admin"
+create policy "policy_upsert_admin"
   on "public"."rb_update_policy"
   as permissive
   for insert
   to authenticated
 with check (public.rb_is_shop_admin(shop_id, auth.uid()));
-
-
-
-  create policy "prefs_insert_self"
+create policy "prefs_insert_self"
   on "public"."rb_user_prefs"
   as permissive
   for insert
   to authenticated
 with check ((user_id = auth.uid()));
-
-
-
-  create policy "prefs_select_self"
+create policy "prefs_select_self"
   on "public"."rb_user_prefs"
   as permissive
   for select
   to authenticated
 using ((user_id = auth.uid()));
-
-
-
-  create policy "prefs_update_self"
+create policy "prefs_update_self"
   on "public"."rb_user_prefs"
   as permissive
   for update
   to authenticated
 using ((user_id = auth.uid()))
 with check ((user_id = auth.uid()));
-
-
-
-  create policy "time_events_delete_none"
+create policy "time_events_delete_none"
   on "public"."time_events"
   as permissive
   for delete
   to authenticated
 using (false);
-
-
-
-  create policy "time_events_insert_own"
+create policy "time_events_insert_own"
   on "public"."time_events"
   as permissive
   for insert
@@ -5925,10 +4120,7 @@ using (false);
 with check ((EXISTS ( SELECT 1
    FROM public.current_employee_clock() ce(employee_id, shop_id)
   WHERE ((ce.employee_id = time_events.employee_id) AND (ce.shop_id = time_events.shop_id)))));
-
-
-
-  create policy "time_events_select_own"
+create policy "time_events_select_own"
   on "public"."time_events"
   as permissive
   for select
@@ -5936,59 +4128,41 @@ with check ((EXISTS ( SELECT 1
 using ((EXISTS ( SELECT 1
    FROM public.current_employee_clock() ce(employee_id, shop_id)
   WHERE ((ce.employee_id = time_events.employee_id) AND (ce.shop_id = time_events.shop_id)))));
-
-
-
-  create policy "time_events_update_none"
+create policy "time_events_update_none"
   on "public"."time_events"
   as permissive
   for update
   to authenticated
 using (false);
-
-
-
-  create policy "balances_select"
+create policy "balances_select"
   on "public"."time_off_balances"
   as permissive
   for select
   to authenticated
 using (((employee_id = ( SELECT my_employee.id
    FROM public.my_employee() my_employee(id, shop_id))) OR public.is_foreman(shop_id)));
-
-
-
-  create policy "balances_update_foreman"
+create policy "balances_update_foreman"
   on "public"."time_off_balances"
   as permissive
   for update
   to authenticated
 using (public.is_foreman(shop_id))
 with check (public.is_foreman(shop_id));
-
-
-
-  create policy "policy_select"
+create policy "policy_select"
   on "public"."time_off_policy"
   as permissive
   for select
   to authenticated
 using ((shop_id = ( SELECT my_employee.shop_id
    FROM public.my_employee() my_employee(id, shop_id))));
-
-
-
-  create policy "policy_update"
+create policy "policy_update"
   on "public"."time_off_policy"
   as permissive
   for update
   to authenticated
 using (public.is_foreman(shop_id))
 with check (public.is_foreman(shop_id));
-
-
-
-  create policy "req_cancel_self"
+create policy "req_cancel_self"
   on "public"."time_off_requests"
   as permissive
   for update
@@ -5997,20 +4171,14 @@ using (((employee_id = ( SELECT my_employee.id
    FROM public.my_employee() my_employee(id, shop_id))) AND (status = 'PENDING'::text)))
 with check (((employee_id = ( SELECT my_employee.id
    FROM public.my_employee() my_employee(id, shop_id))) AND (status = ANY (ARRAY['PENDING'::text, 'CANCELLED'::text]))));
-
-
-
-  create policy "req_decide_foreman"
+create policy "req_decide_foreman"
   on "public"."time_off_requests"
   as permissive
   for update
   to authenticated
 using (public.is_foreman(shop_id))
 with check (public.is_foreman(shop_id));
-
-
-
-  create policy "req_insert_self"
+create policy "req_insert_self"
   on "public"."time_off_requests"
   as permissive
   for insert
@@ -6018,96 +4186,63 @@ with check (public.is_foreman(shop_id));
 with check (((employee_id = ( SELECT my_employee.id
    FROM public.my_employee() my_employee(id, shop_id))) AND (shop_id = ( SELECT my_employee.shop_id
    FROM public.my_employee() my_employee(id, shop_id)))));
-
-
-
-  create policy "req_select"
+create policy "req_select"
   on "public"."time_off_requests"
   as permissive
   for select
   to authenticated
 using (((employee_id = ( SELECT my_employee.id
    FROM public.my_employee() my_employee(id, shop_id))) OR public.is_foreman(shop_id)));
-
-
 CREATE TRIGGER trg_conversations_title_check BEFORE INSERT OR UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.conversations_title_check();
-
 CREATE TRIGGER trg_bump_conversation_updated_at AFTER INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION public.bump_conversation_updated_at();
-
 CREATE TRIGGER trg_rb_touch_convo_updated_at AFTER INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION public.rb_touch_conversation_updated_at();
-
 CREATE TRIGGER trg_routing_ops_updated_at BEFORE UPDATE ON public.routing_operations FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at_routing_ops();
-
 CREATE TRIGGER trg_time_events_block_if_timeoff BEFORE INSERT OR UPDATE ON public.time_events FOR EACH ROW EXECUTE FUNCTION public.time_events_block_if_timeoff();
-
 CREATE TRIGGER trg_time_events_updated_at BEFORE UPDATE ON public.time_events FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
-  create policy "avatars_read 1oj01fe_0"
+create policy "avatars_read 1oj01fe_0"
   on "storage"."objects"
   as permissive
   for update
   to authenticated
 using ((bucket_id = 'avatars'::text));
-
-
-
-  create policy "avatars_read 1oj01fe_1"
+create policy "avatars_read 1oj01fe_1"
   on "storage"."objects"
   as permissive
   for select
   to authenticated
 using ((bucket_id = 'avatars'::text));
-
-
-
-  create policy "avatars_read"
+create policy "avatars_read"
   on "storage"."objects"
   as permissive
   for select
   to public
 using ((bucket_id = 'avatars'::text));
-
-
-
-  create policy "avatars_update_authenticated"
+create policy "avatars_update_authenticated"
   on "storage"."objects"
   as permissive
   for update
   to authenticated
 using ((bucket_id = 'avatars'::text))
 with check ((bucket_id = 'avatars'::text));
-
-
-
-  create policy "avatars_upload_authenticated 1oj01fe_0"
+create policy "avatars_upload_authenticated 1oj01fe_0"
   on "storage"."objects"
   as permissive
   for insert
   to authenticated
 with check ((bucket_id = 'avatars'::text));
-
-
-
-  create policy "avatars_upload_authenticated"
+create policy "avatars_upload_authenticated"
   on "storage"."objects"
   as permissive
   for insert
   to authenticated
 with check ((bucket_id = 'avatars'::text));
-
-
-
-  create policy "support_upload_shop_member"
+create policy "support_upload_shop_member"
   on "storage"."objects"
   as permissive
   for insert
   to authenticated
 with check (((bucket_id = 'rb-support-bundles'::text) AND public.rb_is_shop_member((split_part(name, '/'::text, 2))::uuid, auth.uid())));
-
-
-
-  create policy "updates_upload_control_admin"
+create policy "updates_upload_control_admin"
   on "storage"."objects"
   as permissive
   for insert
@@ -6115,16 +4250,8 @@ with check (((bucket_id = 'rb-support-bundles'::text) AND public.rb_is_shop_memb
 with check (((bucket_id = 'rb-updates'::text) AND (EXISTS ( SELECT 1
    FROM public.rb_control_admins a
   WHERE (a.user_id = auth.uid())))));
-
-
 CREATE TRIGGER objects_delete_delete_prefix AFTER DELETE ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.delete_prefix_hierarchy_trigger();
-
 CREATE TRIGGER objects_insert_create_prefix BEFORE INSERT ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.objects_insert_prefix_trigger();
-
 CREATE TRIGGER objects_update_create_prefix BEFORE UPDATE ON storage.objects FOR EACH ROW WHEN (((new.name <> old.name) OR (new.bucket_id <> old.bucket_id))) EXECUTE FUNCTION storage.objects_update_prefix_trigger();
-
 CREATE TRIGGER prefixes_create_hierarchy BEFORE INSERT ON storage.prefixes FOR EACH ROW WHEN ((pg_trigger_depth() < 1)) EXECUTE FUNCTION storage.prefixes_insert_trigger();
-
 CREATE TRIGGER prefixes_delete_hierarchy AFTER DELETE ON storage.prefixes FOR EACH ROW EXECUTE FUNCTION storage.delete_prefix_hierarchy_trigger();
-
-

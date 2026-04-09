@@ -1,7 +1,9 @@
 import React from "react";
 import {
   ActionLink,
+  DataList,
   EmptyState,
+  MetricCard,
   PageHeader,
   SectionBlock,
   StatusBadge,
@@ -46,7 +48,7 @@ export default async function PeoplePage({
     snapshot.counts.employees_total === 0 ? "Pending" : accessReady === 0 ? "Action Needed" : "Healthy";
 
   return (
-    <div style={{ display: "grid", gap: 22 }}>
+    <div style={{ display: "grid", gap: 16 }}>
       <PageHeader
         eyebrow="People"
         title={`People for ${snapshot.name}`}
@@ -60,49 +62,28 @@ export default async function PeoplePage({
         }
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Employees" description="Lead with simple counts that answer the first admin question.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.employees_total}</div>
-          <div style={{ color: "rgba(230,232,239,0.8)" }}>{snapshot.counts.employees_active} currently active employees.</div>
-        </SectionBlock>
-        <SectionBlock title="Mobile Access" description="Employees currently eligible for Mobile access.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.employees_mobile_ready}</div>
-          <div style={{ color: "rgba(230,232,239,0.8)" }}>Ready to sign in and use Mobile.</div>
-        </SectionBlock>
-        <SectionBlock title="Workstation Access" description="Employees currently eligible for Workstation sign-in.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.employees_workstation_ready}</div>
-          <div style={{ color: "rgba(230,232,239,0.8)" }}>Ready for passcode-based workstation access.</div>
-        </SectionBlock>
-        <SectionBlock title="Sync Status" description="Summarize employee readiness in plain language.">
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <StatusBadge label={syncHealth} tone={toneFromStatus(syncHealth)} />
-          </div>
-          <div style={{ color: "rgba(230,232,239,0.8)", marginTop: 8 }}>
-            {snapshot.counts.employees_total === 0
-              ? "No employees are connected yet."
-              : accessReady === 0
-              ? "Employees exist, but app access still needs setup."
-              : "Employees are synced well enough to continue with access setup and review."}
-          </div>
-        </SectionBlock>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <MetricCard title="Employees" value={String(snapshot.counts.employees_total)} summary={`${snapshot.counts.employees_active} currently active employees.`} tone={snapshot.counts.employees_total === 0 ? "subtle" : "healthy"} />
+        <MetricCard title="Mobile Access" value={String(snapshot.counts.employees_mobile_ready)} summary="Ready to sign in and use Mobile." tone="subtle" />
+        <MetricCard title="Workstation Access" value={String(snapshot.counts.employees_workstation_ready)} summary="Ready for passcode-based workstation access." tone="subtle" />
+        <MetricCard title="Sync Status" value={syncHealth} summary={snapshot.counts.employees_total === 0
+          ? "No employees are connected yet."
+          : accessReady === 0
+          ? "Employees exist, but app access still needs setup."
+          : "Employees are synced well enough to continue with access setup and review."} badge={<StatusBadge label={syncHealth} tone={toneFromStatus(syncHealth)} />} tone={toneFromStatus(syncHealth) === "critical" ? "critical" : toneFromStatus(syncHealth) === "warning" ? "warning" : "subtle"} />
       </div>
 
       <SectionBlock
         title="Admin Guidance"
         description="Turn raw provisioning mechanics into clear workflows."
       >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ fontWeight: 900 }}>Recommended actions</div>
-          <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.55 }}>
-            1. Add or import employees from Desktop HR.
-          </div>
-          <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.55 }}>
-            2. Review which employees should have Mobile and Workstation access.
-          </div>
-          <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.55 }}>
-            3. Confirm billing allows the access level you expect before troubleshooting setup.
-          </div>
-        </div>
+        <DataList
+          items={[
+            { label: "Start", value: "Add or import employees from Desktop HR." },
+            { label: "Review", value: "Decide which employees should have Mobile and Workstation access." },
+            { label: "Confirm", value: "Check billing before assuming access setup is broken." },
+          ]}
+        />
       </SectionBlock>
 
       <SectionBlock

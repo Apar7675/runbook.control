@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { assertUuid } from "@/lib/authz";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
 import { describeShopAccess } from "@/lib/billing/access";
+import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,24 @@ export async function GET(req: Request) {
     assertUuid("shop_id", shop_id);
 
     const admin = supabaseAdmin();
+    const pendingCleanup = await loadPendingCleanup({
+      shopId: shop_id,
+      authUserId: user.id,
+      targetApps: ["mobile"],
+    });
+
+    if (pendingCleanup.preferred) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Cleanup required",
+          cleanup_required: true,
+          cleanup: formatCleanupResponse(pendingCleanup.preferred),
+        },
+        { status: 410, headers: corsHeaders(req) }
+      );
+    }
+
     const { data: member, error: memberError } = await admin
       .from("rb_shop_members")
       .select("id,role")

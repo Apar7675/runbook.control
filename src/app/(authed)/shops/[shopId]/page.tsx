@@ -3,6 +3,7 @@ import {
   ActionLink,
   DataList,
   EmptyState,
+  MetricCard,
   PageHeader,
   SectionBlock,
   StatusBadge,
@@ -48,24 +49,10 @@ export default async function ShopPage({ params }: Props) {
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Access" description="Current access outcome for the shop.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={snapshot.access.display_status} tone={toneFromStatus(snapshot.access.display_status)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>{snapshot.access.summary}</div>
-          </div>
-        </SectionBlock>
-        <SectionBlock title="People" description="Who is active and ready.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.employees_active}</div>
-          <div style={{ color: "rgba(230,232,239,0.82)" }}>Active employees of {snapshot.counts.employees_total} total.</div>
-        </SectionBlock>
-        <SectionBlock title="Devices" description="Connected devices for this shop.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.devices_active}</div>
-          <div style={{ color: "rgba(230,232,239,0.82)" }}>Active devices of {snapshot.counts.devices_total} total.</div>
-        </SectionBlock>
-        <SectionBlock title="Attention" description="Items that need review.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.health.offline_devices + snapshot.health.stale_devices}</div>
-          <div style={{ color: "rgba(230,232,239,0.82)" }}>{snapshot.health.offline_devices} offline and {snapshot.health.stale_devices} stale devices.</div>
-        </SectionBlock>
+        <MetricCard title="Access" value={snapshot.access.display_status} summary={snapshot.access.summary} badge={<StatusBadge label={snapshot.access.display_status} tone={toneFromStatus(snapshot.access.display_status)} />} tone={toneFromStatus(snapshot.access.display_status) === "critical" ? "critical" : toneFromStatus(snapshot.access.display_status) === "warning" ? "warning" : "subtle"} />
+        <MetricCard title="People" value={String(snapshot.counts.employees_active)} summary={`Active employees of ${snapshot.counts.employees_total} total.`} tone={snapshot.counts.employees_total === 0 ? "subtle" : "healthy"} />
+        <MetricCard title="Devices" value={String(snapshot.counts.devices_active)} summary={`Active devices of ${snapshot.counts.devices_total} total.`} tone={snapshot.health.offline_devices > 0 ? "critical" : snapshot.health.stale_devices > 0 ? "warning" : "healthy"} />
+        <MetricCard title="Attention" value={String(snapshot.health.offline_devices + snapshot.health.stale_devices)} summary={`${snapshot.health.offline_devices} offline and ${snapshot.health.stale_devices} stale devices.`} tone={snapshot.health.offline_devices + snapshot.health.stale_devices > 0 ? "warning" : "subtle"} />
       </div>
 
       <SectionBlock title="Shop Summary" description="Replace raw record dumps with an admin-friendly summary.">
@@ -82,11 +69,20 @@ export default async function ShopPage({ params }: Props) {
       </SectionBlock>
 
       <SectionBlock title="Suggested Next Steps" description="Keep the setup sequence simple and guided.">
-        <div style={{ display: "grid", gap: 10, color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-          <div>1. Confirm billing and access are in the expected state.</div>
-          <div>2. Register or review devices for Desktop and Workstation.</div>
-          <div>3. Review which employees are ready for Mobile and Workstation.</div>
-          <div>4. Check recent activity before troubleshooting anything deeper.</div>
+        <div style={{ display: "grid", gap: 12 }}>
+          {[
+            "Confirm billing and access are in the expected state.",
+            "Register or review devices for Desktop and Workstation.",
+            "Review which employees are ready for Mobile and Workstation.",
+            "Check recent activity before troubleshooting anything deeper.",
+          ].map((step, index) => (
+            <div key={step} style={{ display: "grid", gridTemplateColumns: "32px 1fr", gap: 12, alignItems: "start" }}>
+              <div style={{ width: 32, height: 32, borderRadius: 999, border: "1px solid rgba(126,171,217,0.18)", background: "rgba(126,171,217,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>
+                {index + 1}
+              </div>
+              <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.58 }}>{step}</div>
+            </div>
+          ))}
         </div>
       </SectionBlock>
     </div>

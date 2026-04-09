@@ -2,6 +2,7 @@ import React from "react";
 import {
   ActionLink,
   EmptyState,
+  MetricCard,
   PageHeader,
   SectionBlock,
   StatusBadge,
@@ -67,60 +68,10 @@ export default async function AppsPage({
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Desktop" description="Bootstrap, registration, and employee directory health.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={desktopStatus} tone={toneFromStatus(desktopStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.desktops_active > 0
-                ? `${snapshot.counts.desktops_active} desktop devices are active for this shop.`
-                : "No desktop devices are registered yet."}
-            </div>
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.access.desktop_mode === "full"
-                ? "Desktop has full access."
-                : "Desktop is still available, but access is reduced until billing is restored."}
-            </div>
-          </div>
-        </SectionBlock>
-
-        <SectionBlock title="Workstation" description="Passcode access and time clock readiness.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={workstationStatus} tone={toneFromStatus(workstationStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.workstations_active > 0
-                ? `${snapshot.counts.workstations_active} workstation devices are active.`
-                : "No workstation devices are active yet."}
-            </div>
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.employees_workstation_ready} employees are ready for workstation sign-in.
-            </div>
-          </div>
-        </SectionBlock>
-
-        <SectionBlock title="Mobile" description="Employee eligibility and billing restrictions.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={mobileStatus} tone={toneFromStatus(mobileStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.counts.employees_mobile_ready} employees are currently eligible for Mobile.
-            </div>
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              {snapshot.access.mobile_mode === "full"
-                ? "Mobile is fully available."
-                : snapshot.access.mobile_mode === "queue_only"
-                ? "Mobile can keep queued punches, but normal access is restricted."
-                : "Mobile is blocked until access is restored."}
-            </div>
-          </div>
-        </SectionBlock>
-
-        <SectionBlock title="Control" description="Admin web access and status visibility.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <StatusBadge label={controlStatus} tone={toneFromStatus(controlStatus)} />
-            <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5 }}>
-              Control remains available for settings, diagnostics, billing review, and admin guidance.
-            </div>
-          </div>
-        </SectionBlock>
+        <MetricCard title="Desktop" value={desktopStatus} summary={snapshot.counts.desktops_active > 0 ? `${snapshot.counts.desktops_active} desktop devices are active for this shop.` : "No desktop devices are registered yet."} badge={<StatusBadge label={desktopStatus} tone={toneFromStatus(desktopStatus)} />} tone={toneFromStatus(desktopStatus) === "critical" ? "critical" : toneFromStatus(desktopStatus) === "warning" ? "warning" : "healthy"} />
+        <MetricCard title="Workstation" value={workstationStatus} summary={`${snapshot.counts.employees_workstation_ready} employees are ready for workstation sign-in.`} badge={<StatusBadge label={workstationStatus} tone={toneFromStatus(workstationStatus)} />} tone={toneFromStatus(workstationStatus) === "critical" ? "critical" : "healthy"} />
+        <MetricCard title="Mobile" value={mobileStatus} summary={`${snapshot.counts.employees_mobile_ready} employees are currently eligible for Mobile.`} badge={<StatusBadge label={mobileStatus} tone={toneFromStatus(mobileStatus)} />} tone={toneFromStatus(mobileStatus) === "critical" ? "critical" : toneFromStatus(mobileStatus) === "warning" ? "warning" : "healthy"} />
+        <MetricCard title="Control" value={controlStatus} summary="Control remains available for settings, diagnostics, billing review, and admin guidance." badge={<StatusBadge label={controlStatus} tone={toneFromStatus(controlStatus)} />} tone="subtle" />
       </div>
 
       <SectionBlock title="What This Means" description="Translate entitlement outcomes into clear operational language.">

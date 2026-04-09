@@ -4,6 +4,7 @@ import { requireSessionUser } from "@/lib/desktopAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
 import { describeShopAccess } from "@/lib/billing/access";
+import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
 import { WorkstationModule, signWorkstationSession } from "@/lib/workstationAuth";
 
 export const runtime = "nodejs";
@@ -160,6 +161,24 @@ export async function POST(req: Request) {
     if (!passcode) return NextResponse.json({ ok: false, error: "Passcode required" }, { status: 400 });
 
     const admin = supabaseAdmin();
+    const pendingCleanup = await loadPendingCleanup({
+      shopId: shop_id,
+      deviceId: workstation_id,
+      targetApps: ["workstation"],
+    });
+
+    if (pendingCleanup.preferred) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Cleanup required",
+          cleanup_required: true,
+          cleanup: formatCleanupResponse(pendingCleanup.preferred),
+        },
+        { status: 410 }
+      );
+    }
+
     await getShopMembership(admin, shop_id, user.id);
     const workstation = await requireActiveWorkstation(admin, shop_id, workstation_id);
     const access = describeShopAccess(await getShopEntitlement(shop_id));

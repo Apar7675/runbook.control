@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RunBook Control
 
-## Getting Started
+RunBook Control is the remote orchestration and admin surface for the RunBook system.
 
-First, run the development server:
+## Role
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Control is the remote authority for:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- account identity
+- shop membership
+- billing and entitlement
+- device enrollment and revocation
+- workstation registration policy
+- shared access policy
+- onboarding coordination
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Control is not the owner of Desktop local manufacturing files or Desktop company shells.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What Control Owns
 
-## Learn More
+Control owns remote/shared authority for:
 
-To learn more about Next.js, take a look at the following resources:
+- `shop_id` membership and admin access
+- billing state and seat enforcement
+- desktop/device enrollment state
+- workstation registration state
+- shared remote access decisions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## What Control Must Not Own
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Control must not:
 
-## Deploy on Vercel
+- become the primary authority for Desktop local manufacturing artifacts
+- redefine Desktop-owned local manufacturing domain rules independently
+- normalize legacy compatibility patterns as final architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Current Architecture Reality
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repo is a Next.js app plus remote API/admin layer.
+It uses Supabase and Stripe-backed infrastructure for many shared authority flows.
+
+It also still contains staged compatibility patterns and some legacy-tenancy coexistence.
+Those compatibility paths are implementation reality, not the final ideal.
+
+## Important Remote Surfaces
+
+Examples include:
+
+- desktop bootstrap / onboarding
+- billing checkout / portal / status
+- device enrollment / activation / token validation
+- workstation login / timeclock
+- shared membership and device admin pages
+
+## Documentation
+
+For the cross-app architecture source of truth, see:
+
+- `D:\RunBook.Desktop\Docs\RUNBOOK_BIBLE.md`
+- `D:\RunBook.Desktop\Docs\SYSTEM_DATA_CONTRACT.md`
+
+For a deeper current-state repo-specific review, see:
+
+- `RUNBOOK_CONTROL_AUDIT_REPORT.md`
+

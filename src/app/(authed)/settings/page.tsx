@@ -1,5 +1,5 @@
 import React from "react";
-import GlassCard from "@/components/GlassCard";
+import { PageHeader, SectionBlock } from "@/components/control/ui";
 import NoviceModeToggle from "@/components/NoviceModeToggle";
 import EnableMFAClient from "@/components/EnableMFAClient";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -17,27 +17,30 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const noviceDismissed = Boolean((prefs as any)?.novice_dismissed);
   const noviceOn = !noviceDismissed;
 
-  // Keep your current behavior: allow querystring override
   const sp = searchParams ?? {};
   const mfaRequired = sp.mfa === "required";
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 900 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Settings</h1>
+      <PageHeader
+        eyebrow="Settings"
+        title="Settings"
+        description="Keep this page simple: security first, preferences second, and product context last."
+      />
 
-      <GlassCard title="Security">
+      <SectionBlock title="Security" description="Protect Control access before changing anything else.">
         <EnableMFAClient required={mfaRequired} />
-      </GlassCard>
+      </SectionBlock>
 
-      <GlassCard title="Preferences">
+      <SectionBlock title="Preferences" description="Choose how much guidance Control should show by default.">
         <NoviceModeToggle initialOn={noviceOn} />
-      </GlassCard>
+      </SectionBlock>
 
-      <GlassCard title="About">
+      <SectionBlock title="About" description="A short reminder of what Control is for.">
         <div style={{ opacity: 0.8 }}>
-          RunBook.Control — admin console for shop lifecycle, devices, updates, and audit.
+          RunBook.Control - admin console for shop lifecycle, devices, updates, and audit.
         </div>
-      </GlassCard>
+      </SectionBlock>
     </div>
   );
 }

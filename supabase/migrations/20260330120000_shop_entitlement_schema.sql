@@ -66,32 +66,24 @@ BEGIN
   END IF;
 END
 $$;
-
 UPDATE public.rb_shops
 SET billing_status = COALESCE(NULLIF(lower(trim(billing_status)), ''), 'trialing')
 WHERE billing_status IS NULL OR trim(billing_status) = '';
-
 ALTER TABLE public.rb_shops
   ALTER COLUMN billing_status SET DEFAULT 'trialing';
-
 ALTER TABLE public.rb_shops
   ALTER COLUMN billing_status SET NOT NULL;
-
 ALTER TABLE public.rb_shops
   DROP CONSTRAINT IF EXISTS rb_shops_billing_status_check;
-
 ALTER TABLE public.rb_shops
   ADD CONSTRAINT rb_shops_billing_status_check
   CHECK (billing_status IN ('trialing', 'active', 'past_due', 'canceled', 'expired'));
-
 UPDATE public.rb_shops
 SET entitlement_override = NULL
 WHERE entitlement_override IS NOT NULL
   AND lower(trim(entitlement_override)) NOT IN ('allow', 'restricted');
-
 ALTER TABLE public.rb_shops
   DROP CONSTRAINT IF EXISTS rb_shops_entitlement_override_check;
-
 ALTER TABLE public.rb_shops
   ADD CONSTRAINT rb_shops_entitlement_override_check
   CHECK (entitlement_override IS NULL OR entitlement_override IN ('allow', 'restricted'));

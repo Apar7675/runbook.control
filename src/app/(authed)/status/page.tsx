@@ -1,5 +1,5 @@
 import React from "react";
-import GlassCard from "@/components/GlassCard";
+import { MetricCard, PageHeader, SectionBlock, StatusBadge } from "@/components/control/ui";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requirePlatformAdminAal2 } from "@/lib/authz";
 import { formatDateTime } from "@/lib/ui/dates";
@@ -7,7 +7,7 @@ import { formatDateTime } from "@/lib/ui/dates";
 export const dynamic = "force-dynamic";
 
 function iso(ts?: string | null) {
-  if (!ts) return "—";
+  if (!ts) return "-";
   try {
     return formatDateTime(ts);
   } catch {
@@ -16,8 +16,8 @@ function iso(ts?: string | null) {
 }
 
 function shortId(id?: string | null) {
-  if (!id) return "—";
-  return id.length > 10 ? `${id.slice(0, 8)}…` : id;
+  if (!id) return "-";
+  return id.length > 10 ? `${id.slice(0, 8)}...` : id;
 }
 
 function msToAge(ms: number) {
@@ -34,11 +34,11 @@ function msToAge(ms: number) {
 }
 
 function ageFromIso(ts?: string | null) {
-  if (!ts) return "—";
+  if (!ts) return "-";
   const t = Date.parse(ts);
-  if (!Number.isFinite(t)) return "—";
+  if (!Number.isFinite(t)) return "-";
   const age = Date.now() - t;
-  if (age < 0) return "—";
+  if (age < 0) return "-";
   return msToAge(age);
 }
 
@@ -50,7 +50,7 @@ function pill(text: string, tone: "ok" | "warn" | "bad" | "info" = "info") {
       ? { background: "rgba(255,180,80,0.16)", color: "#ffe4c6" }
       : tone === "bad"
       ? { background: "rgba(255,120,120,0.16)", color: "#ffd0d0" }
-      : { background: "rgba(139,140,255,0.16)", color: "#cfd0ff" };
+      : { background: "rgba(126,171,217,0.16)", color: "#d7e6ff" };
 
   return (
     <span
@@ -83,18 +83,14 @@ function isMissingColumnError(msg: string) {
 }
 
 export default async function StatusPage() {
-  // Enforce platform admin + AAL2
   const { user } = await requirePlatformAdminAal2();
-
   const admin = supabaseAdmin();
 
-  // --- SUPABASE HEALTH + COUNTS ---
   const health: { ok: boolean; error?: string } = { ok: true };
   let shopsCount = 0;
   let devicesCount = 0;
   let tokensCount = 0;
 
-  // devices slice (we compute stale/offline)
   type DevRow = {
     id: string;
     shop_id: string | null;
@@ -115,13 +111,11 @@ export default async function StatusPage() {
   const versions = new Map<string, number>();
 
   try {
-    // shops count
     {
       const r = await admin.from("rb_shops").select("id", { count: "exact", head: true });
       shopsCount = r.count ?? 0;
     }
 
-    // devices (new schema first, fallback)
     {
       const selectNew = "id,shop_id,status,last_seen_at,reported_version";
       const selectOld = "id,shop_id,status";
@@ -148,7 +142,6 @@ export default async function StatusPage() {
       }
     }
 
-    // tokens for those devices
     {
       const ids = devices.map((d) => d.id).filter(Boolean);
       if (ids.length) {
@@ -162,7 +155,6 @@ export default async function StatusPage() {
       tokensCount = tokens.length;
     }
 
-    // compute lastSeen = max(device.last_seen_at, token.last_seen_at)
     const tokLastByDevice = new Map<string, string>();
     for (const t of tokens) {
       if (!t.last_seen_at) continue;
@@ -174,7 +166,7 @@ export default async function StatusPage() {
     const now = Date.now();
     for (const d of devices) {
       const a = String(d.status ?? "").toLowerCase();
-      if (a !== "active") continue; // stale/offline only matters for active fleet
+      if (a !== "active") continue;
 
       const tokTs = tokLastByDevice.get(d.id) ?? null;
       const devTs = (d.last_seen_at ?? null) as any;
@@ -191,14 +183,13 @@ export default async function StatusPage() {
       }
       const age = now - t;
       if (age > 7 * day) offline7d++;
-      else if (age > 1 * day) stale24h++;
+      else if (age > day) stale24h++;
     }
   } catch (e: any) {
     health.ok = false;
     health.error = e?.message ?? String(e);
   }
 
-  // --- AUDIT HEALTH ---
   let lastAuditAt: string | null = null;
   let lastAuditAction: string | null = null;
   let recentAudit: any[] = [];
@@ -217,10 +208,9 @@ export default async function StatusPage() {
       }
     }
   } catch {
-    // best-effort
+    // best effort
   }
 
-  // --- BILLING CONFIG (env presence) ---
   const supaUrlOk = safeEnv("NEXT_PUBLIC_SUPABASE_URL");
   const supaAnonOk = safeEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const supaSvcOk = safeEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -232,28 +222,39 @@ export default async function StatusPage() {
   const gateMode = process.env.RUNBOOK_BILLING_GATE_MODE ?? "hybrid";
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1300 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Control Status</h1>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {boolChip("Supabase", health.ok)}
-          {pill(`Gate: ${gateMode}`, "info")}
-        </div>
+    <div style={{ display: "grid", gap: 18, maxWidth: 1380 }}>
+      <PageHeader
+        eyebrow="Platform Status"
+        title="Control Status"
+        description="This page answers the platform-admin version of one question: is Control healthy enough to trust right now?"
+        actions={
+          <>
+            <StatusBadge label={health.ok ? "Healthy" : "Problem"} tone={health.ok ? "healthy" : "critical"} />
+            <StatusBadge label={`Gate ${gateMode}`} tone="neutral" />
+          </>
+        }
+      />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
+        <MetricCard title="Shops" value={String(shopsCount)} summary="Shops currently visible to the platform." tone="subtle" />
+        <MetricCard title="Devices" value={String(devicesCount)} summary={`${activeDevices} active and ${disabledDevices} disabled devices in the recent slice.`} tone="subtle" />
+        <MetricCard title="Stale >24h" value={String(stale24h)} summary="Active devices that may need review soon." tone={stale24h > 0 ? "warning" : "healthy"} />
+        <MetricCard title="Offline >7d" value={String(offline7d)} summary="Active devices that are no longer checking in." tone={offline7d > 0 ? "critical" : "healthy"} />
       </div>
 
-      <GlassCard title="Session">
+      <SectionBlock title="Session" description="Who is currently using this platform-admin view.">
         <div style={{ display: "grid", gap: 8 }}>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
-            user: <b>{user?.email ?? user?.id ?? "—"}</b>
+            user: <b>{user?.email ?? user?.id ?? "-"}</b>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {pill("platform admin: yes", "ok")}
             {pill("AAL2: yes", "ok")}
           </div>
         </div>
-      </GlassCard>
+      </SectionBlock>
 
-      <GlassCard title="Configuration">
+      <SectionBlock title="Configuration" description="Check the environment pieces that Control depends on.">
         <div style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {boolChip("SUPABASE_URL", supaUrlOk)}
@@ -266,10 +267,10 @@ export default async function StatusPage() {
             {boolChip("STRIPE_WEBHOOK", stripeWhOk)}
           </div>
         </div>
-      </GlassCard>
+      </SectionBlock>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-        <GlassCard title="Supabase Health">
+        <SectionBlock title="Supabase Health" description="Live counts and device-health signals from the current backend state.">
           {!health.ok ? (
             <div style={{ fontSize: 12, opacity: 0.85 }}>
               {pill("ERROR", "bad")} <span style={{ marginLeft: 8 }}>{health.error}</span>
@@ -291,7 +292,7 @@ export default async function StatusPage() {
               <div style={{ fontSize: 12, opacity: 0.75 }}>
                 Version samples (last 500 devices):{" "}
                 {versions.size === 0 ? (
-                  <b>—</b>
+                  <b>-</b>
                 ) : (
                   <span>
                     {[...versions.entries()]
@@ -299,18 +300,18 @@ export default async function StatusPage() {
                       .slice(0, 6)
                       .map(([v, n]) => `${v} (${n})`)
                       .join(", ")}
-                    {versions.size > 6 ? " …" : ""}
+                    {versions.size > 6 ? " ..." : ""}
                   </span>
                 )}
               </div>
             </div>
           )}
-        </GlassCard>
+        </SectionBlock>
 
-        <GlassCard title="Audit Health">
+        <SectionBlock title="Audit Health" description="Recent platform activity so you can tell if the system is still moving.">
           <div style={{ display: "grid", gap: 10 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              {pill(`Last event: ${lastAuditAction ?? "—"}`, "info")}
+              {pill(`Last event: ${lastAuditAction ?? "-"}`, "info")}
               {pill(`At: ${iso(lastAuditAt)}`, "info")}
               <span style={{ fontSize: 12, opacity: 0.75 }}>(~{ageFromIso(lastAuditAt)} ago)</span>
             </div>
@@ -323,8 +324,8 @@ export default async function StatusPage() {
                   <div
                     key={a.id}
                     style={{
-                      padding: 10,
-                      borderRadius: 12,
+                      padding: 12,
+                      borderRadius: 14,
                       border: "1px solid rgba(255,255,255,0.08)",
                       background: "rgba(255,255,255,0.02)",
                       display: "grid",
@@ -334,7 +335,7 @@ export default async function StatusPage() {
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                       <div style={{ fontWeight: 900 }}>{a.action}</div>
                       <div style={{ fontSize: 12, opacity: 0.75 }}>
-                        shop: {shortId(a.shop_id)} • target: {shortId(a.target_id)} • actor: {a.actor_email ?? "—"}
+                        shop: {shortId(a.shop_id)} | target: {shortId(a.target_id)} | actor: {a.actor_email ?? "-"}
                       </div>
                     </div>
                     <div style={{ fontSize: 12, opacity: 0.7 }}>
@@ -345,16 +346,16 @@ export default async function StatusPage() {
               </div>
             )}
           </div>
-        </GlassCard>
+        </SectionBlock>
       </div>
 
-      <GlassCard title="Notes">
+      <SectionBlock title="Notes" description="Short plain-English rules for reading this page.">
         <div style={{ fontSize: 12, opacity: 0.8, display: "grid", gap: 8 }}>
-          <div>• This page is server-rendered and queries Supabase directly (service role) for fast, reliable truth.</div>
-          <div>• If Supabase is down or keys are wrong, you’ll see it here immediately.</div>
-          <div>• “Stale/Offline” only counts active devices (disabled devices are intentionally ignored).</div>
+          <div>This page is server-rendered and queries Supabase directly for reliable platform truth.</div>
+          <div>If Supabase is down or keys are wrong, you should see it here immediately.</div>
+          <div>"Stale" and "Offline" only count active devices. Disabled devices are intentionally ignored.</div>
         </div>
-      </GlassCard>
+      </SectionBlock>
     </div>
   );
 }

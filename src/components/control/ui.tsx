@@ -219,16 +219,16 @@ export function StatusBadge({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
-        minHeight: 30,
-        padding: "6px 11px",
+        gap: 7,
+        minHeight: 26,
+        padding: "4px 9px",
         borderRadius: 999,
         border: `1px solid ${styles.borderColor}`,
         background: styles.background,
         color: styles.color,
-        fontSize: 10,
+        fontSize: 9.5,
         fontWeight: 900,
-        letterSpacing: 0.56,
+        letterSpacing: 0.48,
         textTransform: "uppercase",
       }}
     >
@@ -263,18 +263,19 @@ export function PageHeader({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "flex-end",
-        gap: 24,
+        gap: 18,
         flexWrap: "wrap",
+        padding: "0",
       }}
     >
-      <div style={{ display: "grid", gap: 10, maxWidth: 820 }}>
+      <div style={{ display: "grid", gap: 8, maxWidth: 820 }}>
         {eyebrow ? (
-          <div style={{ color: theme.text.accentSoft, fontSize: 11, fontWeight: 900, letterSpacing: 1.2, textTransform: "uppercase" }}>
+          <div style={{ color: theme.text.accentSoft, fontSize: 10, fontWeight: 900, letterSpacing: 1.04, textTransform: "uppercase" }}>
             {eyebrow}
           </div>
         ) : null}
-        <h1 style={{ margin: 0, fontSize: 42, lineHeight: 0.98, letterSpacing: -0.8 }}>{title}</h1>
-        {description ? <div style={{ color: theme.text.secondary, fontSize: 15, lineHeight: 1.58, maxWidth: 760 }}>{description}</div> : null}
+        <h1 style={{ margin: 0, fontSize: 33, lineHeight: 1.04, letterSpacing: -0.72 }}>{title}</h1>
+        {description ? <div style={{ color: theme.text.muted, fontSize: 13, lineHeight: 1.54, maxWidth: 760 }}>{description}</div> : null}
       </div>
 
       {actions ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>{actions}</div> : null}
@@ -299,8 +300,8 @@ export function ActionLink({
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
-    minHeight: 44,
-    borderRadius: 15,
+    minHeight: 38,
+    borderRadius: 12,
     textDecoration: "none",
     fontWeight: 900,
     letterSpacing: 0.15,
@@ -308,7 +309,7 @@ export function ActionLink({
   };
   const toneStyle: React.CSSProperties = primary
     ? {
-        padding: "11px 16px",
+        padding: "9px 13px",
         color: "#f7f9ff",
         border: theme.border.accent,
         background: "linear-gradient(135deg, rgba(88, 107, 255, 0.72), rgba(70, 170, 255, 0.34))",
@@ -384,32 +385,32 @@ export function MetricCard({
         borderRadius: theme.radius.xl,
         border: toneStyles.border,
         background: toneStyles.background,
-        padding: "20px 20px 18px",
-        minHeight: 164,
+        padding: "14px 14px 13px",
+        minHeight: 124,
         display: "grid",
         alignContent: "space-between",
-        gap: 16,
+        gap: 12,
         boxShadow: toneStyles.boxShadow,
         transition: "transform 150ms ease, box-shadow 170ms ease, border-color 170ms ease, background 170ms ease",
       }}
     >
-      <div style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "grid", gap: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-          <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "grid", gap: 8 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {icon ? <Icon name={icon} size={15} tone={tone === "critical" ? "critical" : tone === "warning" ? "warning" : tone === "healthy" ? "healthy" : "neutral"} /> : null}
-              <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 0.9, textTransform: "uppercase", color: toneStyles.titleColor }}>
+              <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 0.82, textTransform: "uppercase", color: toneStyles.titleColor }}>
                 {title}
               </div>
             </div>
-            <div style={{ fontSize: 31, fontWeight: 900, lineHeight: 1.02, letterSpacing: -0.5, color: toneStyles.valueColor }}>
+            <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1.02, letterSpacing: -0.38, color: toneStyles.valueColor }}>
               {value}
             </div>
           </div>
           {badge}
         </div>
       </div>
-      <div style={{ color: theme.text.secondary, lineHeight: 1.52, fontSize: 13 }}>{summary}</div>
+      <div style={{ color: theme.text.secondary, lineHeight: 1.46, fontSize: 12 }}>{summary}</div>
     </div>
   );
 
@@ -424,16 +425,104 @@ export function DataList({
   items: Array<{ label: string; value: React.ReactNode }>;
 }) {
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div style={{ display: "grid", gap: 12 }}>
       {items.map((item) => (
-        <div key={item.label} style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 14, alignItems: "start" }}>
-          <div style={{ color: theme.text.quiet, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.82, fontWeight: 900 }}>
+        <div key={item.label} style={{ display: "grid", gridTemplateColumns: "122px 1fr", gap: 12, alignItems: "start" }}>
+          <div style={{ color: theme.text.quiet, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.74, fontWeight: 900 }}>
             {item.label}
           </div>
-          <div style={{ color: theme.text.primary, fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>{item.value}</div>
+          <div style={{ color: theme.text.primary, fontSize: 13, fontWeight: 800, lineHeight: 1.42 }}>{item.value}</div>
         </div>
       ))}
     </div>
+  );
+}
+
+const fieldBaseStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 40,
+  borderRadius: 12,
+  border: theme.border.accentSoft,
+  background: theme.bg.panelInset,
+  color: theme.text.primary,
+  padding: "10px 12px",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+};
+
+export function FieldLabel({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <label
+      style={{
+        fontSize: 10,
+        fontWeight: 900,
+        letterSpacing: 0.74,
+        textTransform: "uppercase",
+        color: theme.text.quiet,
+      }}
+    >
+      {children}
+    </label>
+  );
+}
+
+export function ControlInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} style={{ ...fieldBaseStyle, ...(props.style ?? {}) }} />;
+}
+
+export function ControlSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...props} style={{ ...fieldBaseStyle, ...(props.style ?? {}) }} />;
+}
+
+export function ControlButton({
+  children,
+  tone = "secondary",
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  tone?: "primary" | "secondary" | "danger";
+}) {
+  const toneStyle: React.CSSProperties =
+    tone === "primary"
+      ? {
+          border: theme.border.accent,
+          background: "linear-gradient(135deg, rgba(96, 134, 198, 0.78), rgba(90, 130, 214, 0.40))",
+          color: "#f7f9ff",
+          boxShadow: "0 12px 24px rgba(27, 52, 138, 0.30)",
+        }
+      : tone === "danger"
+      ? {
+          border: theme.border.critical,
+          background: "linear-gradient(180deg, rgba(64,24,28,0.92), rgba(29,16,18,0.92))",
+          color: "#ffd8d8",
+        }
+      : {
+          border: theme.border.soft,
+          background: "rgba(255,255,255,0.04)",
+          color: theme.text.primary,
+          boxShadow: "0 8px 18px rgba(0,0,0,0.18)",
+        };
+
+  return (
+    <button
+      {...props}
+      style={{
+        minHeight: 38,
+        borderRadius: 12,
+        padding: "8px 12px",
+        fontWeight: 900,
+        letterSpacing: 0.1,
+        cursor: props.disabled ? "not-allowed" : "pointer",
+        opacity: props.disabled ? 0.68 : 1,
+        transition: "transform 140ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease",
+        ...toneStyle,
+        ...(props.style ?? {}),
+      }}
+    >
+      {children}
+    </button>
   );
 }
 

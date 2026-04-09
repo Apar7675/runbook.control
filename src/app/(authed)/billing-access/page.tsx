@@ -2,6 +2,7 @@ import React from "react";
 import {
   ActionLink,
   EmptyState,
+  MetricCard,
   PageHeader,
   SectionBlock,
   StatusBadge,
@@ -70,21 +71,9 @@ export default async function BillingAccessPage({
       </SectionBlock>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Desktop" description="How billing affects Desktop.">
-          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
-            {snapshot.access.desktop_mode === "full" ? "Full Access" : "Read-Only"}
-          </div>
-        </SectionBlock>
-        <SectionBlock title="Workstation" description="How billing affects Workstation.">
-          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
-            {snapshot.access.workstation_mode === "full" ? "Full Access" : "Blocked"}
-          </div>
-        </SectionBlock>
-        <SectionBlock title="Mobile" description="How billing affects Mobile.">
-          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
-            {snapshot.access.mobile_mode === "full" ? "Full Access" : snapshot.access.mobile_mode === "queue_only" ? "Queue-Only" : "Blocked"}
-          </div>
-        </SectionBlock>
+        <MetricCard title="Desktop" value={snapshot.access.desktop_mode === "full" ? "Full Access" : "Read-Only"} summary="How billing affects Desktop." tone={snapshot.access.desktop_mode === "full" ? "healthy" : "warning"} />
+        <MetricCard title="Workstation" value={snapshot.access.workstation_mode === "full" ? "Full Access" : "Blocked"} summary="How billing affects Workstation." tone={snapshot.access.workstation_mode === "full" ? "healthy" : "critical"} />
+        <MetricCard title="Mobile" value={snapshot.access.mobile_mode === "full" ? "Full Access" : snapshot.access.mobile_mode === "queue_only" ? "Queue-Only" : "Blocked"} summary="How billing affects Mobile." tone={snapshot.access.mobile_mode === "full" ? "healthy" : snapshot.access.mobile_mode === "queue_only" ? "warning" : "critical"} />
       </div>
 
       <SectionBlock title="Billing Timeline" description="Show the important dates, not raw backend fields first.">

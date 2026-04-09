@@ -37,49 +37,15 @@ export async function POST(req: Request) {
     const email = user.email ?? null;
     const isEmailAdmin = isPlatformAdminEmail(email);
 
-    if (isEmailAdmin) {
-      const admin = supabaseAdmin();
-      const { data: existing, error: existingError } = await admin
-        .from("rb_shops")
-        .select("id,name")
-        .eq("id", shopId)
-        .maybeSingle();
-
-      if (existingError) {
-        return NextResponse.json({ ok: false, error: existingError.message }, { status: 500 });
-      }
-
-      if (!existing?.id) {
-        return NextResponse.json({ ok: false, error: "shop not found" }, { status: 400 });
-      }
-
-      if (existing.name !== confirmName) {
-        return NextResponse.json({ ok: false, error: "confirmation name did not match" }, { status: 400 });
-      }
-
-      await admin.from("rb_audit").insert({
-        shop_id: shopId,
-        actor_user_id: user.id,
-        actor_kind: "user",
-        action: "shop.deleted",
-        entity_type: "shop",
-        entity_id: shopId,
-        details: { name: existing.name, via: "platform_admin_email_allowlist" },
-      });
-
-      const { error: deleteError } = await admin.from("rb_shops").delete().eq("id", shopId);
-      if (deleteError) {
-        return NextResponse.json({ ok: false, error: deleteError.message }, { status: 500 });
-      }
-
-      return NextResponse.json({ ok: true }, { status: 200 });
+    if (!isEmailAdmin) {
+      await requirePlatformAdminAal2();
     }
 
-    await requirePlatformAdminAal2();
-
-    const { error } = await supabase.rpc("rb_delete_shop", {
+    const admin = supabaseAdmin();
+    const { data, error } = await admin.rpc("rb_delete_shop_authoritative", {
       p_shop_id: shopId,
       p_confirm_name: confirmName,
+      p_actor_user_id: user.id,
     });
 
     if (error) {
@@ -94,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: msg }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ ok: true, result: data ?? null }, { status: 200 });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     const status =

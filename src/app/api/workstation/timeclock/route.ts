@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
 import { describeShopAccess } from "@/lib/billing/access";
+import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
 import { requireWorkstationSession, workstationAuthError } from "@/lib/workstationAuth";
 
 export const runtime = "nodejs";
@@ -70,6 +71,25 @@ export async function GET(req: Request) {
   try {
     const session = requireWorkstationSession(req);
     const admin = supabaseAdmin();
+    const pendingCleanup = await loadPendingCleanup({
+      shopId: session.shop_id,
+      employeeId: session.employee_id,
+      deviceId: session.workstation_id,
+      targetApps: ["workstation"],
+    });
+
+    if (pendingCleanup.preferred) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Cleanup required",
+          cleanup_required: true,
+          cleanup: formatCleanupResponse(pendingCleanup.preferred),
+        },
+        { status: 410 }
+      );
+    }
+
     const access = describeShopAccess(await getShopEntitlement(session.shop_id));
     if (access.workstation_mode !== "full") {
       return NextResponse.json({ ok: false, error: access.summary, access }, { status: 402 });
@@ -86,6 +106,25 @@ export async function POST(req: Request) {
   try {
     const session = requireWorkstationSession(req);
     const admin = supabaseAdmin();
+    const pendingCleanup = await loadPendingCleanup({
+      shopId: session.shop_id,
+      employeeId: session.employee_id,
+      deviceId: session.workstation_id,
+      targetApps: ["workstation"],
+    });
+
+    if (pendingCleanup.preferred) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Cleanup required",
+          cleanup_required: true,
+          cleanup: formatCleanupResponse(pendingCleanup.preferred),
+        },
+        { status: 410 }
+      );
+    }
+
     const access = describeShopAccess(await getShopEntitlement(session.shop_id));
     if (access.workstation_mode !== "full") {
       return NextResponse.json({ ok: false, error: access.summary, access }, { status: 402 });

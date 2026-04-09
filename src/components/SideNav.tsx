@@ -16,11 +16,11 @@ function NavGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "grid", gap: 7 }}>
+    <div style={{ display: "grid", gap: 6 }}>
       <div
         style={{
           color: theme.text.quiet,
-          fontSize: 10,
+          fontSize: 9.5,
           fontWeight: 900,
           letterSpacing: 1.1,
           textTransform: "uppercase",
@@ -29,7 +29,18 @@ function NavGroup({
       >
         {title}
       </div>
-      <div style={{ display: "grid", gap: 5 }}>{children}</div>
+      <div
+        style={{
+          display: "grid",
+          gap: 5,
+          padding: 6,
+          borderRadius: 14,
+          border: "1px solid rgba(255,255,255,0.05)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -63,37 +74,51 @@ function NavItem({
       </Link>
       <style jsx>{`
         .rbNavItem {
+          position: relative;
           display: grid;
           grid-template-columns: 28px minmax(0, 1fr);
           align-items: start;
-          gap: 10px;
-          padding: 10px 11px;
-          border-radius: 14px;
+          gap: 9px;
+          padding: 9px 10px 9px 12px;
+          border-radius: 12px;
           text-decoration: none;
           color: ${theme.text.primary};
           border: 1px solid rgba(255, 255, 255, 0.05);
-          background: rgba(255, 255, 255, 0.018);
+          background: rgba(255, 255, 255, 0.02);
           transition: transform 140ms ease, border-color 160ms ease, background 160ms ease, box-shadow 170ms ease;
+        }
+        .rbNavItem::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 9px;
+          bottom: 9px;
+          width: 2px;
+          border-radius: 999px;
+          background: transparent;
         }
         .rbNavItem:hover {
           transform: translateX(1px);
-          border-color: rgba(255, 255, 255, 0.11);
-          background: rgba(255, 255, 255, 0.034);
-          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+          border-color: rgba(122, 157, 214, 0.16);
+          background: rgba(255, 255, 255, 0.04);
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
         }
         .rbNavItemSelected {
           color: #f2f5ff;
-          border-color: rgba(132, 153, 255, 0.24);
-          background: linear-gradient(135deg, rgba(78, 96, 255, 0.19), rgba(69, 160, 255, 0.11));
-          box-shadow: 0 12px 28px rgba(26, 43, 118, 0.21);
+          border-color: rgba(122, 157, 214, 0.26);
+          background: linear-gradient(135deg, rgba(126, 171, 217, 0.16), rgba(58, 84, 123, 0.12));
+          box-shadow: 0 16px 34px rgba(10, 18, 32, 0.26);
+        }
+        .rbNavItemSelected::before {
+          background: linear-gradient(180deg, #7ea8ff, #6d82ff 50%, #e2ae58);
         }
         .rbNavItemSelected:hover {
           transform: translateX(1px);
-          box-shadow: 0 16px 32px rgba(26, 43, 118, 0.26);
+          box-shadow: 0 16px 32px rgba(10, 18, 32, 0.30);
         }
         .rbNavIcon {
-          width: 28px;
-          height: 28px;
+          width: 24px;
+          height: 24px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -108,7 +133,7 @@ function NavItem({
         }
         .rbNavDetail {
           color: ${theme.text.secondary};
-          font-size: 11px;
+          font-size: 10px;
           line-height: 1.3;
         }
         .rbNavItemSelected .rbNavDetail {
@@ -159,14 +184,14 @@ export default function SideNav(props: {
 
   if (mode === "shop" && shopId) {
     return (
-      <nav style={{ display: "grid", gap: 16 }}>
-        <div style={{ display: "grid", gap: 8, paddingBottom: 4 }}>
-          <ModePill>Shop Command Center</ModePill>
-          <div style={{ fontWeight: 900, fontSize: 15, letterSpacing: -0.1 }}>{shopName ?? "Shop"}</div>
-          <div style={{ color: theme.text.secondary, fontSize: 11, lineHeight: 1.34 }}>
-            Manage people, devices, billing, and access without digging through platform internals.
-          </div>
+      <nav style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gap: 6, paddingBottom: 2 }}>
+        <ModePill>Shop Command Center</ModePill>
+        <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: -0.24 }}>{shopName ?? "Shop"}</div>
+        <div style={{ color: theme.text.muted, fontSize: 10.5, lineHeight: 1.34 }}>
+          Manage people, devices, billing, and access without digging through platform internals.
         </div>
+      </div>
 
         <NavGroup title="Shop">
           <NavItem href={`/shops/${shopId}`} label="Overview" detail="Status, setup, and attention items." icon="shop" selected={isSelected(pathname, `/shops/${shopId}`)} />
@@ -185,10 +210,11 @@ export default function SideNav(props: {
   }
 
   return (
-    <nav style={{ display: "grid", gap: 16 }}>
-      <div style={{ display: "grid", gap: 8, paddingBottom: 4 }}>
+    <nav style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gap: 6, paddingBottom: 2 }}>
         <ModePill>{isPlatformAdmin ? "Platform Command Center" : "Admin Workspace"}</ModePill>
-        <div style={{ color: theme.text.secondary, fontSize: 11, lineHeight: 1.34 }}>
+        <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: -0.24 }}>RunBook Control</div>
+        <div style={{ color: theme.text.muted, fontSize: 10.5, lineHeight: 1.34 }}>
           Monitor health, manage people, review devices, and fix access quickly.
         </div>
       </div>

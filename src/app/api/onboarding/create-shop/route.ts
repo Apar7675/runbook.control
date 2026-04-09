@@ -76,6 +76,10 @@ function buildAdminEmployeeCode(userId: string) {
   return `ADM${token || "USER"}`;
 }
 
+function persistedBillingStatusForShopCreation(restricted: boolean): "trialing" | "expired" {
+  return restricted ? "expired" : "trialing";
+}
+
 async function ensureAdminEmployee(
   admin: any,
   input: {
@@ -308,7 +312,7 @@ export async function POST(req: Request) {
     });
 
     const restricted = Boolean(reuseRisk);
-    const billingStatus = restricted ? "restricted" : "trialing";
+    const billingStatus = persistedBillingStatusForShopCreation(restricted);
     const restrictionReason = reuseRisk ? `trial_reuse_${reuseRisk.field}` : null;
 
     const shop = await insertWithAutoStrip(

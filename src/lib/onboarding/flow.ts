@@ -221,7 +221,7 @@ export async function resolveOnboardingPath(state: OnboardingState | null) {
 
 export async function resolveOnboardingPathForCurrentUser() {
   const { context, state } = await loadOnboardingStateForCurrentUser();
-  const path = await resolveOnboardingPath(state);
+  const path = context.isPlatformAdmin ? "/dashboard" : await resolveOnboardingPath(state);
   return { context, state, path };
 }
 

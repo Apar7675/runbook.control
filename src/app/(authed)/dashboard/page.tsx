@@ -11,6 +11,7 @@ import {
 } from "@/components/control/ui";
 import { getPlatformSnapshot, getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
 import { formatDateTime } from "@/lib/ui/dates";
+import { theme } from "@/lib/ui/theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -146,7 +147,7 @@ export default async function DashboardPage() {
   }>;
 
   return (
-    <div style={{ display: "grid", gap: 26 }}>
+    <div style={{ display: "grid", gap: 18 }}>
       <PageHeader
         eyebrow="Dashboard"
         title={context.isPlatformAdmin ? "RunBook Command Center" : `${shopSnapshot.name} Command Center`}
@@ -159,7 +160,7 @@ export default async function DashboardPage() {
         }
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
         <MetricCard
           title="Billing"
           value={billingLabel}
@@ -210,72 +211,126 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 14 }}>
         <SectionBlock
           title="Action Required"
           description="This is the operational heartbeat of the page."
           tone={actionItems.length > 0 ? "critical" : "healthy"}
         >
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 10 }}>
             {actionItems.length === 0 ? (
               <div
                 style={{
                   border: "1px solid rgba(86, 220, 154, 0.14)",
-                  borderRadius: 18,
+                  borderRadius: 14,
                   background: "linear-gradient(180deg, rgba(84,196,138,0.08), rgba(255,255,255,0.02))",
-                  padding: "18px 18px 17px",
+                  padding: "14px 14px 13px",
                   display: "grid",
-                  gap: 10,
+                  gap: 8,
                 }}
               >
                 <StatusBadge label="Healthy" tone="healthy" />
-                <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: -0.3 }}>No urgent action is needed right now</div>
-                <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.58 }}>
+                <div style={{ fontWeight: 900, fontSize: 17, letterSpacing: -0.24 }}>No urgent action is needed right now</div>
+                <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.5, fontSize: 13 }}>
                   Billing, apps, devices, and people all look ready. You can move on to routine review.
                 </div>
               </div>
             ) : (
               actionItems.map((item) => (
-                <a
+                <div
                   key={item.title}
-                  href={item.href}
                   style={{
-                    textDecoration: "none",
-                    color: "inherit",
-                    borderRadius: 18,
-                    padding: "0 18px 0 0",
+                    borderRadius: 16,
+                    padding: "0 12px 0 0",
                     display: "grid",
                     gridTemplateColumns: "6px 1fr",
-                    transition: "transform 150ms ease, box-shadow 170ms ease, border-color 170ms ease, background 170ms ease",
-                    border: item.priority === "high" ? "1px solid rgba(255, 120, 120, 0.24)" : "1px solid rgba(255, 196, 107, 0.18)",
+                    border: item.priority === "high" ? theme.border.critical : theme.border.warning,
                     background:
-                      item.priority === "high"
-                        ? "linear-gradient(180deg, rgba(255, 120, 120, 0.16), rgba(255, 255, 255, 0.03))"
-                        : "linear-gradient(180deg, rgba(255, 196, 107, 0.11), rgba(255, 255, 255, 0.03))",
-                    boxShadow: item.priority === "high" ? "0 18px 42px rgba(74, 10, 14, 0.18)" : "0 12px 28px rgba(72, 42, 8, 0.12)",
+                      (item.priority === "high"
+                        ? "radial-gradient(circle at top right, rgba(255,120,120,0.12), transparent 30%), linear-gradient(180deg, rgba(60,20,26,0.94), rgba(22,16,24,0.95))"
+                        : "radial-gradient(circle at top right, rgba(255,196,107,0.10), transparent 30%), linear-gradient(180deg, rgba(43,31,17,0.88), rgba(18,15,22,0.95))"),
+                    boxShadow: item.priority === "high" ? theme.shadow.critical : theme.shadow.warning,
                   }}
                 >
                   <div
                     style={{
-                      borderRadius: "18px 0 0 18px",
-                      background: item.priority === "high" ? "linear-gradient(180deg, rgba(255,120,120,0.94), rgba(255,97,97,0.54))" : "linear-gradient(180deg, rgba(255,196,107,0.94), rgba(255,178,76,0.48))",
-                      boxShadow: item.priority === "high" ? "0 0 24px rgba(255,120,120,0.18)" : "0 0 20px rgba(255,196,107,0.12)",
+                      borderRadius: "16px 0 0 16px",
+                      background: item.priority === "high" ? "linear-gradient(180deg, rgba(255,129,129,0.98), rgba(255,84,84,0.56))" : "linear-gradient(180deg, rgba(255,205,120,0.98), rgba(255,170,62,0.48))",
+                      boxShadow: item.priority === "high" ? "0 0 18px rgba(255,120,120,0.24)" : "0 0 16px rgba(255,196,107,0.16)",
                     }}
                   />
-                  <div style={{ display: "grid", gap: 12, padding: "17px 0 17px 16px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                        <StatusBadge label={item.priority === "high" ? "Action Needed" : "Warning"} tone={priorityTone(item.priority)} />
-                        <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: -0.24 }}>{item.title}</div>
+                  <div style={{ display: "grid", gap: 12, padding: "14px 0 14px 12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                      <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                          <StatusBadge label={item.priority === "high" ? "Action Needed" : "Warning"} tone={priorityTone(item.priority)} />
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              color: item.priority === "high" ? "#ffd8d8" : "#ffe2b2",
+                              fontSize: 10,
+                              fontWeight: 900,
+                              letterSpacing: 0.7,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            <Icon name={item.priority === "high" ? "warning" : "activity"} size={14} tone={item.priority === "high" ? "critical" : "warning"} />
+                            <span>{item.priority === "high" ? "Immediate Review" : "Queue Next"}</span>
+                          </div>
+                        </div>
+                        <div style={{ fontWeight: 950, fontSize: 17, lineHeight: 1.08, letterSpacing: -0.28, color: "#f7f9ff" }}>
+                          {item.title}
+                        </div>
+                        <div style={{ color: item.priority === "high" ? "rgba(255,234,234,0.84)" : "rgba(255,238,209,0.80)", lineHeight: 1.48, fontSize: 13, maxWidth: 640 }}>
+                          {item.reason}
+                        </div>
                       </div>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 900, color: "#ecf1ff" }}>
-                        <span>{item.cta}</span>
-                        <Icon name="arrow" size={15} tone={item.priority === "high" ? "critical" : "warning"} />
+                      <ActionLink href={item.href} icon="arrow" tone={item.priority === "high" ? "primary" : "secondary"}>
+                        {item.cta}
+                      </ActionLink>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto",
+                        gap: 10,
+                        alignItems: "center",
+                        paddingTop: 10,
+                        borderTop: item.priority === "high" ? "1px solid rgba(255,120,120,0.14)" : "1px solid rgba(255,196,107,0.14)",
+                      }}
+                    >
+                      <div style={{ color: theme.text.quiet, fontSize: 11, fontWeight: 800, letterSpacing: 0.24 }}>
+                        {item.priority === "high"
+                          ? "Priority path: resolve this before deeper troubleshooting."
+                          : "Next-up path: review this before it becomes blocking."}
+                      </div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          color: item.priority === "high" ? "#ffd2d2" : "#ffe7be",
+                          fontSize: 11,
+                          fontWeight: 900,
+                          letterSpacing: 0.28,
+                        }}
+                      >
+                        <span>{item.priority === "high" ? "Priority High" : "Priority Medium"}</span>
+                        <span
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 999,
+                            background: item.priority === "high" ? "#ff8e8e" : "#ffc968",
+                            boxShadow: item.priority === "high" ? "0 0 16px rgba(255,120,120,0.36)" : "0 0 14px rgba(255,196,107,0.28)",
+                          }}
+                        />
                       </div>
                     </div>
-                    <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.58 }}>{item.reason}</div>
                   </div>
-                </a>
+                </div>
               ))
             )}
           </div>

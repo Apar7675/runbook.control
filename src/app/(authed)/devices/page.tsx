@@ -3,8 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ActionLink, EmptyState, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
+import { ActionLink, ControlButton, ControlInput, ControlSelect, EmptyState, FieldLabel, MetricCard, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
 import { safeFetch } from "@/lib/http/safeFetch";
+import { theme } from "@/lib/ui/theme";
 
 type Device = {
   id: string;
@@ -176,7 +177,7 @@ export default function DevicesPage() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 22 }}>
+    <div style={{ display: "grid", gap: 16 }}>
       <PageHeader
         eyebrow="Devices"
         title="Device Center"
@@ -190,46 +191,38 @@ export default function DevicesPage() {
         }
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Active Devices" description="Devices currently allowed to operate.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.active}</div>
-        </SectionBlock>
-        <SectionBlock title="Desktop" description="Registered desktop devices.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.desktops}</div>
-        </SectionBlock>
-        <SectionBlock title="Workstation" description="Registered workstation devices.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.workstations}</div>
-        </SectionBlock>
-        <SectionBlock title="Attention Needed" description="Devices not checking in normally.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{summary.offline}</div>
-        </SectionBlock>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <MetricCard title="Active Devices" value={String(summary.active)} summary="Devices currently allowed to operate." tone="healthy" />
+        <MetricCard title="Desktop" value={String(summary.desktops)} summary="Registered desktop devices." tone="subtle" />
+        <MetricCard title="Workstation" value={String(summary.workstations)} summary="Registered workstation devices." tone="subtle" />
+        <MetricCard title="Attention Needed" value={String(summary.offline)} summary="Devices not checking in normally." tone={summary.offline > 0 ? "warning" : "subtle"} />
       </div>
 
       <SectionBlock title="Register Device" description="Use one clear workflow instead of scattering setup actions across the page.">
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(180px, 0.8fr) minmax(220px, 1fr) auto", gap: 10, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(160px, 0.8fr) minmax(200px, 1fr) auto", gap: 8, alignItems: "end" }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Device name</label>
-            <input value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Front Office PC" style={{ padding: "10px 12px", borderRadius: 12 }} />
+            <FieldLabel>Device name</FieldLabel>
+            <ControlInput value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Front Office PC" />
           </div>
           <div style={{ display: "grid", gap: 6 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Type</label>
-            <select value={createType} onChange={(event) => setCreateType(event.target.value as "desktop" | "mobile")} style={{ padding: "10px 12px", borderRadius: 12 }}>
+            <FieldLabel>Type</FieldLabel>
+            <ControlSelect value={createType} onChange={(event) => setCreateType(event.target.value as "desktop" | "mobile")}>
               <option value="desktop">Desktop</option>
               <option value="mobile">Mobile Client</option>
-            </select>
+            </ControlSelect>
           </div>
           <div style={{ display: "grid", gap: 6 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Shop</label>
-            <select value={createShopId} onChange={(event) => setCreateShopId(event.target.value)} style={{ padding: "10px 12px", borderRadius: 12 }}>
+            <FieldLabel>Shop</FieldLabel>
+            <ControlSelect value={createShopId} onChange={(event) => setCreateShopId(event.target.value)}>
               <option value="">Select shop</option>
               {shops.map((shop) => (
                 <option key={shop.id} value={shop.id}>{shop.name}</option>
               ))}
-            </select>
+            </ControlSelect>
           </div>
-          <button onClick={createDevice} disabled={creating} style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}>
+          <ControlButton onClick={createDevice} disabled={creating} tone="primary">
             {creating ? "Creating..." : "Register Device"}
-          </button>
+          </ControlButton>
         </div>
       </SectionBlock>
 
@@ -243,7 +236,7 @@ export default function DevicesPage() {
             action={<ActionLink href="/apps" tone="primary">Review App Setup</ActionLink>}
           />
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 10 }}>
             {devices.map((device) => {
               const health = healthLabel(device.last_seen_at);
               const activeTokens = (tokenMap.get(device.id) ?? []).filter((token) => !token.revoked_at).length;
@@ -252,17 +245,18 @@ export default function DevicesPage() {
                 <div
                   key={device.id}
                   style={{
+                    position: "relative",
                     display: "grid",
-                    gap: 12,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 18,
-                    background: "rgba(255,255,255,0.03)",
-                    padding: 16,
+                    gap: 10,
+                    border: health === "Offline" ? theme.border.critical : health === "Warning" ? theme.border.warning : theme.border.accentSoft,
+                    borderRadius: 16,
+                    background: theme.bg.panelSoft,
+                    padding: 14,
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                     <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ fontSize: 18, fontWeight: 900 }}>{device.name}</div>
+                      <div style={{ fontSize: 16, fontWeight: 900 }}>{device.name}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <StatusBadge label={health} tone={toneFromStatus(health)} />
                         <StatusBadge label={isActive ? "Active" : "Restricted"} tone={toneFromStatus(isActive ? "Healthy" : "Action Needed")} />
@@ -271,18 +265,12 @@ export default function DevicesPage() {
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <ActionLink href={`/devices/${device.id}`}>View Health</ActionLink>
-                      <button
-                        onClick={() => updateDevice(device.id, isActive ? "disable" : "enable")}
-                        style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}
-                      >
+                      <ControlButton onClick={() => updateDevice(device.id, isActive ? "disable" : "enable")}>
                         {isActive ? "Deactivate" : "Reactivate"}
-                      </button>
-                      <button
-                        onClick={() => updateDevice(device.id, "delete")}
-                        style={{ minHeight: 42, padding: "10px 14px", borderRadius: 14, fontWeight: 900 }}
-                      >
+                      </ControlButton>
+                      <ControlButton onClick={() => updateDevice(device.id, "delete")} tone="danger">
                         Remove
-                      </button>
+                      </ControlButton>
                     </div>
                   </div>
 
@@ -301,7 +289,7 @@ export default function DevicesPage() {
         )}
       </SectionBlock>
 
-      {status ? <div style={{ fontSize: 13, opacity: 0.82 }}>{status}</div> : null}
+      {status ? <div style={{ fontSize: 13, color: theme.text.muted }}>{status}</div> : null}
     </div>
   );
 }

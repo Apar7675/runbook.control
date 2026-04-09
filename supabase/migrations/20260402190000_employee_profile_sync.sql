@@ -218,11 +218,9 @@ BEGIN
   END IF;
 END
 $$;
-
 CREATE UNIQUE INDEX IF NOT EXISTS ix_employees_shop_source_local
   ON public.employees (shop_id, source_device_id, source_local_employee_id)
   WHERE source_device_id <> '' AND source_local_employee_id IS NOT NULL;
-
 UPDATE public.employees
 SET
   full_name = COALESCE(NULLIF(full_name, ''), display_name),

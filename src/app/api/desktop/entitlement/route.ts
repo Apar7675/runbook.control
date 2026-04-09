@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
+import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -140,6 +141,25 @@ export async function POST(req: Request) {
     if (!device_id) return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
 
     const admin = supabaseAdmin();
+    const pendingCleanup = await loadPendingCleanup({
+      shopId: shop_id,
+      authUserId: user.id,
+      deviceId: device_id,
+      targetApps: ["desktop"],
+    });
+
+    if (pendingCleanup.preferred) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Cleanup required",
+          cleanup_required: true,
+          cleanup: formatCleanupResponse(pendingCleanup.preferred),
+        },
+        { status: 410 }
+      );
+    }
+
     const { data: mem } = await admin
       .from("rb_shop_members")
       .select("role")
@@ -148,7 +168,6 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
-
     const deviceCheck = await requireActiveDevice(admin, shop_id, device_id);
     if (!deviceCheck.ok) {
       return NextResponse.json({ ok: false, error: deviceCheck.error }, { status: 403 });
@@ -197,3 +216,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }
+

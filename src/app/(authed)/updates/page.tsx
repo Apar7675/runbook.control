@@ -1,5 +1,5 @@
 import React from "react";
-import { ActionLink, EmptyState, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
+import { ActionLink, EmptyState, MetricCard, PageHeader, SectionBlock, StatusBadge, toneFromStatus } from "@/components/control/ui";
 import { getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
 
 export const dynamic = "force-dynamic";
@@ -61,14 +61,8 @@ export default async function UpdatesPage({
       </SectionBlock>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-        <SectionBlock title="Connected Devices" description="Devices that could receive updates.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.counts.devices_total}</div>
-          <div style={{ color: "rgba(230,232,239,0.82)" }}>{snapshot.counts.devices_active} active right now.</div>
-        </SectionBlock>
-        <SectionBlock title="Offline Devices" description="Devices that need review before rollout confidence is high.">
-          <div style={{ fontSize: 34, fontWeight: 900 }}>{snapshot.health.offline_devices}</div>
-          <div style={{ color: "rgba(230,232,239,0.82)" }}>{snapshot.health.stale_devices} additional devices are stale.</div>
-        </SectionBlock>
+        <MetricCard title="Connected Devices" value={String(snapshot.counts.devices_total)} summary={`${snapshot.counts.devices_active} active right now.`} tone="subtle" />
+        <MetricCard title="Offline Devices" value={String(snapshot.health.offline_devices)} summary={`${snapshot.health.stale_devices} additional devices are stale.`} tone={snapshot.health.offline_devices > 0 ? "warning" : "subtle"} />
       </div>
 
       <SectionBlock

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOnboardingState } from "@/lib/onboarding/state";
-import { resolveOnboardingPath } from "@/lib/onboarding/flow";
+import { resolveOnboardingPathForCurrentUser } from "@/lib/onboarding/flow";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     const state = await getOnboardingState(user.id);
-    const resolvedRoute = await resolveOnboardingPath(state);
+    const { path: resolvedRoute } = await resolveOnboardingPathForCurrentUser();
 
     return NextResponse.json({
       ok: true,

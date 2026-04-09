@@ -1,5 +1,4 @@
 create extension if not exists pgcrypto;
-
 create table if not exists public.rb_onboarding_state (
   user_id uuid primary key,
   full_name text not null default '',
@@ -14,7 +13,6 @@ create table if not exists public.rb_onboarding_state (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create table if not exists public.rb_onboarding_codes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null,
@@ -31,24 +29,19 @@ create table if not exists public.rb_onboarding_codes (
   updated_at timestamptz not null default now(),
   constraint rb_onboarding_codes_user_channel_key unique (user_id, channel)
 );
-
 create index if not exists rb_onboarding_codes_destination_hash_idx
   on public.rb_onboarding_codes (channel, destination_hash);
-
 alter table public.rb_onboarding_state
   add constraint rb_onboarding_state_user_id_fkey
   foreign key (user_id) references auth.users(id) on delete cascade;
-
 alter table public.rb_onboarding_codes
   add constraint rb_onboarding_codes_user_id_fkey
   foreign key (user_id) references auth.users(id) on delete cascade;
-
 alter table public.rb_shops add column if not exists trial_device_id text;
 alter table public.rb_shops add column if not exists trial_email_hash text;
 alter table public.rb_shops add column if not exists trial_phone_hash text;
 alter table public.rb_shops add column if not exists trial_restricted boolean not null default false;
 alter table public.rb_shops add column if not exists trial_restriction_reason text;
-
 create index if not exists rb_shops_trial_device_id_idx on public.rb_shops (trial_device_id);
 create index if not exists rb_shops_trial_email_hash_idx on public.rb_shops (trial_email_hash);
 create index if not exists rb_shops_trial_phone_hash_idx on public.rb_shops (trial_phone_hash);

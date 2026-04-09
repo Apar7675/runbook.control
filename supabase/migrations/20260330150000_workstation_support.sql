@@ -64,6 +64,5 @@ BEGIN
   END IF;
 END
 $$;
-
 CREATE INDEX IF NOT EXISTS ix_employees_shop_workstation_access
   ON public.employees (shop_id, workstation_access_enabled, is_active);
