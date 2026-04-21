@@ -21,7 +21,11 @@ export type ShopAccessDecision = {
 };
 
 export function describeShopAccess(entitlement: ShopEntitlement): ShopAccessDecision {
-  if (entitlement.status === "trialing" && entitlement.allowed && !entitlement.restricted) {
+  if (
+    (entitlement.status === "trialing" || entitlement.status === "trial_active" || entitlement.status === "trial_extended") &&
+    entitlement.allowed &&
+    !entitlement.restricted
+  ) {
     return {
       state: "trialing",
       display_status: "Free Trial",
@@ -37,7 +41,7 @@ export function describeShopAccess(entitlement: ShopEntitlement): ShopAccessDeci
     };
   }
 
-  if (entitlement.status === "active" && entitlement.allowed && !entitlement.restricted) {
+  if ((entitlement.status === "active" || entitlement.status === "paid_active") && entitlement.allowed && !entitlement.restricted) {
     return {
       state: "active",
       display_status: "Active",
@@ -50,6 +54,54 @@ export function describeShopAccess(entitlement: ShopEntitlement): ShopAccessDeci
       desktop_mode: "full",
       mobile_mode: "full",
       workstation_mode: "full",
+    };
+  }
+
+  if (entitlement.status === "payment_required") {
+    return {
+      state: "restricted",
+      display_status: "Payment Needed",
+      summary: "Payment is required before full shop access can continue.",
+      reason: entitlement.reason,
+      billing_status: entitlement.status,
+      allowed: entitlement.allowed,
+      restricted: entitlement.restricted,
+      grace_active: entitlement.grace_active,
+      desktop_mode: "read_only",
+      mobile_mode: "queue_only",
+      workstation_mode: "blocked",
+    };
+  }
+
+  if (entitlement.status === "trial_ended") {
+    return {
+      state: "expired",
+      display_status: "Expired",
+      summary: "The manual trial state has ended. Billing must be restored before full access returns.",
+      reason: entitlement.reason,
+      billing_status: entitlement.status,
+      allowed: entitlement.allowed,
+      restricted: entitlement.restricted,
+      grace_active: entitlement.grace_active,
+      desktop_mode: "read_only",
+      mobile_mode: "blocked",
+      workstation_mode: "blocked",
+    };
+  }
+
+  if (entitlement.status === "suspended") {
+    return {
+      state: "restricted",
+      display_status: "Restricted",
+      summary: "This shop is manually suspended until an admin restores billing access.",
+      reason: entitlement.reason,
+      billing_status: entitlement.status,
+      allowed: entitlement.allowed,
+      restricted: entitlement.restricted,
+      grace_active: entitlement.grace_active,
+      desktop_mode: "read_only",
+      mobile_mode: "queue_only",
+      workstation_mode: "blocked",
     };
   }
 
@@ -99,4 +151,3 @@ export function describeShopAccess(entitlement: ShopEntitlement): ShopAccessDeci
     workstation_mode: "blocked",
   };
 }
-

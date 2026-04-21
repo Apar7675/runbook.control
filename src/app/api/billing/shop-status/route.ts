@@ -4,36 +4,13 @@ import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { assertUuid, requireShopAccessOrAdminAal2 } from "@/lib/authz";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
 import { describeShopAccess } from "@/lib/billing/access";
+import { SHOP_BILLING_SELECT_COLUMNS, tryExtractMissingColumn } from "@/lib/billing/manual";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function tryExtractMissingColumn(msg: string): string | null {
-  const text = String(msg ?? "");
-  const relationMatch = text.match(/column\s+"([^"]+)"\s+of\s+relation/i);
-  if (relationMatch?.[1]) return relationMatch[1];
-
-  const schemaCacheMatch = text.match(/Could not find the '([^']+)' column/i);
-  if (schemaCacheMatch?.[1]) return schemaCacheMatch[1];
-
-  const qualifiedMatch = text.match(/column\s+rb_shops\.([a-zA-Z0-9_]+)\s+does\s+not\s+exist/i);
-  if (qualifiedMatch?.[1]) return qualifiedMatch[1];
-
-  return null;
-}
-
 async function loadShopWithAutoStrip(admin: any, shopId: string) {
-  const columns = [
-    "billing_status",
-    "trial_started_at",
-    "trial_ends_at",
-    "billing_current_period_end",
-    "grace_ends_at",
-    "stripe_customer_id",
-    "stripe_subscription_id",
-    "subscription_plan",
-    "entitlement_override",
-  ];
+  const columns: string[] = [...SHOP_BILLING_SELECT_COLUMNS];
 
   let working = [...columns];
 
@@ -69,7 +46,7 @@ export async function GET(req: Request) {
     if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
     assertUuid("shop_id", shopId);
 
-    await requireShopAccessOrAdminAal2(shopId);
+    const ctx = await requireShopAccessOrAdminAal2(shopId);
 
     const admin = supabaseAdmin();
     const shop = await loadShopWithAutoStrip(admin, shopId);
@@ -78,7 +55,7 @@ export async function GET(req: Request) {
 
     const entitlement = await getShopEntitlement(shopId);
     const access = describeShopAccess(entitlement);
-    return NextResponse.json({ ok: true, shop, entitlement, access });
+    return NextResponse.json({ ok: true, shop, entitlement, access, admin: { is_platform_admin: ctx.isAdmin } });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     const status =

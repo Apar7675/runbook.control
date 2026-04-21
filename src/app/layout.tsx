@@ -7,9 +7,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         style={{
           margin: 0,
+          minHeight: "100vh",
           background: theme.bg.appGlow,
-          color: "#e6e8ef",
-          fontFamily: "\"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+          color: theme.text.primary,
+          fontFamily: theme.type.family,
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+          textRendering: "optimizeLegibility",
         }}
       >
         {children}

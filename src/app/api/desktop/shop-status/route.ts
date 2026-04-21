@@ -5,38 +5,13 @@ import { assertUuid } from "@/lib/authz";
 import { getShopEntitlement } from "@/lib/billing/entitlement";
 import { describeShopAccess } from "@/lib/billing/access";
 import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
+import { SHOP_BILLING_SELECT_COLUMNS, tryExtractMissingColumn } from "@/lib/billing/manual";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function tryExtractMissingColumn(msg: string): string | null {
-  const text = String(msg ?? "");
-  const relationMatch = text.match(/column\s+"([^"]+)"\s+of\s+relation/i);
-  if (relationMatch?.[1]) return relationMatch[1];
-
-  const schemaCacheMatch = text.match(/Could not find the '([^']+)' column/i);
-  if (schemaCacheMatch?.[1]) return schemaCacheMatch[1];
-
-  const qualifiedMatch = text.match(/column\s+rb_shops\.([a-zA-Z0-9_]+)\s+does\s+not\s+exist/i);
-  if (qualifiedMatch?.[1]) return qualifiedMatch[1];
-
-  return null;
-}
-
 async function loadShopWithAutoStrip(admin: any, shopId: string) {
-  const columns = [
-    "id",
-    "name",
-    "billing_status",
-    "trial_started_at",
-    "trial_ends_at",
-    "billing_current_period_end",
-    "grace_ends_at",
-    "stripe_customer_id",
-    "stripe_subscription_id",
-    "subscription_plan",
-    "entitlement_override",
-  ];
+  const columns: string[] = [...SHOP_BILLING_SELECT_COLUMNS];
 
   let working = [...columns];
 

@@ -11,29 +11,72 @@ type ShopBilling = {
   billing_status: string | null;
   trial_started_at?: string | null;
   trial_ends_at?: string | null;
+  trial_override_reason?: string | null;
   billing_current_period_end: string | null;
+  billing_amount?: string | number | null;
+  billing_interval?: string | null;
+  next_billing_date?: string | null;
+  manual_billing_status?: string | null;
   grace_ends_at?: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   subscription_plan?: string | null;
   entitlement_override?: string | null;
+  manual_billing_override?: boolean | null;
+  billing_notes?: string | null;
 };
 
 type ShopEntitlement = {
-  status: "trialing" | "active" | "past_due" | "canceled" | "expired";
+  status:
+    | "trialing"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "expired"
+    | "trial_active"
+    | "trial_extended"
+    | "trial_ended"
+    | "payment_required"
+    | "paid_active"
+    | "suspended";
   allowed: boolean;
   restricted: boolean;
   reason: string;
   grace_active: boolean;
 };
 
-type BillingOk = { ok: true; shop: ShopBilling; entitlement: ShopEntitlement };
+type BillingOk = {
+  ok: true;
+  shop: ShopBilling;
+  entitlement: ShopEntitlement;
+  admin?: { is_platform_admin?: boolean };
+};
 type BillingErr = { ok: false; error?: string };
 type BillingResp = BillingOk | BillingErr;
+
+type AdminBillingForm = {
+  trial_ends_at: string;
+  trial_override_reason: string;
+  billing_amount: string;
+  billing_interval: string;
+  next_billing_date: string;
+  manual_billing_status: string;
+  manual_billing_override: boolean;
+  billing_notes: string;
+};
 
 const TRIAL_LABEL = "30-day free trial";
 const PRICE_LABEL = "$149 / month";
 const EMPTY_VALUE = "-";
+const MANUAL_STATUS_OPTIONS = [
+  "trial_active",
+  "trial_extended",
+  "trial_ended",
+  "payment_required",
+  "paid_active",
+  "suspended",
+] as const;
+const BILLING_INTERVAL_OPTIONS = ["month", "quarter", "year", "custom"] as const;
 
 function formatIsoToLocal(iso: string) {
   try {
@@ -46,6 +89,28 @@ function formatIsoToLocal(iso: string) {
 function displayValue(value: string | null | undefined) {
   const text = String(value ?? "").trim();
   return text.length > 0 ? text : EMPTY_VALUE;
+}
+
+function toDateTimeLocalValue(iso: string | null | undefined) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function buildAdminForm(shop: ShopBilling | null): AdminBillingForm {
+  return {
+    trial_ends_at: toDateTimeLocalValue(shop?.trial_ends_at),
+    trial_override_reason: String(shop?.trial_override_reason ?? ""),
+    billing_amount: shop?.billing_amount === null || shop?.billing_amount === undefined ? "" : String(shop.billing_amount),
+    billing_interval: String(shop?.billing_interval ?? "month"),
+    next_billing_date: toDateTimeLocalValue(shop?.next_billing_date),
+    manual_billing_status: String(shop?.manual_billing_status ?? "trial_active"),
+    manual_billing_override: Boolean(shop?.manual_billing_override),
+    billing_notes: String(shop?.billing_notes ?? ""),
+  };
 }
 
 export default function ShopBillingPage() {
@@ -62,6 +127,9 @@ export default function ShopBillingPage() {
   const [msg, setMsg] = useState("");
   const [shop, setShop] = useState<ShopBilling | null>(null);
   const [entitlement, setEntitlement] = useState<ShopEntitlement | null>(null);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [adminBusy, setAdminBusy] = useState(false);
+  const [adminForm, setAdminForm] = useState<AdminBillingForm>(() => buildAdminForm(null));
 
   const banner = useMemo(() => {
     if (statusParam === "success") return `Checkout completed. Session: ${displayValue(sessionId)}.`;
@@ -114,6 +182,7 @@ export default function ShopBillingPage() {
 
       setShop(j.shop);
       setEntitlement(j.entitlement);
+      setIsPlatformAdmin(Boolean(j.admin?.is_platform_admin));
     } catch (e: any) {
       setMsg(e?.message ?? String(e));
     } finally {
@@ -203,6 +272,10 @@ export default function ShopBillingPage() {
   }, [shopId]);
 
   useEffect(() => {
+    setAdminForm(buildAdminForm(shop));
+  }, [shop]);
+
+  useEffect(() => {
     if (statusParam !== "success") return;
     if (!shopId) return;
 
@@ -219,9 +292,61 @@ export default function ShopBillingPage() {
 
   const periodEndLabel = shop?.billing_current_period_end ? formatIsoToLocal(shop.billing_current_period_end) : EMPTY_VALUE;
   const trialEndsLabel = shop?.trial_ends_at ? formatIsoToLocal(shop.trial_ends_at) : EMPTY_VALUE;
+  const nextBillingLabel = shop?.next_billing_date ? formatIsoToLocal(shop.next_billing_date) : EMPTY_VALUE;
   const graceEndsLabel = shop?.grace_ends_at ? formatIsoToLocal(shop.grace_ends_at) : EMPTY_VALUE;
   const canManageBilling = Boolean(shop?.stripe_customer_id);
-  const alreadyInTrial = entitlement?.status === "trialing" || entitlement?.status === "active";
+  const alreadyInTrial = Boolean(entitlement && entitlement.allowed) || Boolean(shop?.stripe_subscription_id);
+
+  async function saveAdminOverrides() {
+    if (!shopId) return setMsg("Missing shopId.");
+    setMsg("");
+    setAdminBusy(true);
+
+    try {
+      const res = await fetch("/api/admin/shops/manual-billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({
+          shop_id: shopId,
+          trial_ends_at: adminForm.trial_ends_at || null,
+          trial_override_reason: adminForm.trial_override_reason || null,
+          billing_amount: adminForm.billing_amount || null,
+          billing_interval: adminForm.billing_interval || null,
+          next_billing_date: adminForm.next_billing_date || null,
+          manual_billing_status: adminForm.manual_billing_status || null,
+          manual_billing_override: adminForm.manual_billing_override,
+          billing_notes: adminForm.billing_notes || null,
+        }),
+      });
+
+      const text = await res.text();
+      let json: any = null;
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch {}
+
+      if (!res.ok) {
+        setMsg(`[${res.status}] ${json?.error ?? text ?? "Failed to save manual billing overrides"}`);
+        return;
+      }
+
+      if (!json?.ok) {
+        setMsg(json?.error ?? "Failed to save manual billing overrides");
+        return;
+      }
+
+      setShop(json.shop ?? null);
+      setEntitlement(json.entitlement ?? null);
+      setAdminForm(buildAdminForm(json.shop ?? null));
+      setMsg(json.changed ? "Manual trial/billing overrides saved." : "No manual billing changes were needed.");
+    } catch (e: any) {
+      setMsg(e?.message ?? String(e));
+    } finally {
+      setAdminBusy(false);
+    }
+  }
 
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
@@ -255,8 +380,15 @@ export default function ShopBillingPage() {
             <div>Reason: <b>{entitlement.reason}</b></div>
             <div>Grace active: <b>{String(entitlement.grace_active)}</b></div>
             <div>Trial ends: <b>{trialEndsLabel}</b></div>
+            <div>Trial override reason: <b>{displayValue(shop.trial_override_reason)}</b></div>
+            <div>Manual billing override: <b>{String(Boolean(shop.manual_billing_override))}</b></div>
+            <div>Manual billing status: <b>{displayValue(shop.manual_billing_status)}</b></div>
+            <div>Billing amount: <b>{displayValue(shop.billing_amount === null || shop.billing_amount === undefined ? null : String(shop.billing_amount))}</b></div>
+            <div>Billing interval: <b>{displayValue(shop.billing_interval)}</b></div>
+            <div>Next billing date: <b>{nextBillingLabel}</b></div>
             <div>Billing period end: <b>{periodEndLabel}</b></div>
             <div>Grace ends: <b>{graceEndsLabel}</b></div>
+            <div>Billing notes: <b>{displayValue(shop.billing_notes)}</b></div>
             <div>Entitlement override: <b>{displayValue(shop.entitlement_override ?? "none")}</b></div>
             <div>Stripe customer: <b>{displayValue(shop.stripe_customer_id)}</b></div>
             <div>Stripe subscription: <b>{displayValue(shop.stripe_subscription_id)}</b></div>
@@ -304,6 +436,123 @@ export default function ShopBillingPage() {
           )}
         </div>
       </GlassCard>
+
+      {isPlatformAdmin ? (
+        <GlassCard title="Admin Manual Overrides">
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>
+              These controls are for internal Control admins only. Changes are written to the shop activity log as <b>billing.override.updated</b>.
+            </div>
+
+            <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={adminForm.manual_billing_override}
+                onChange={(e) => setAdminForm((current) => ({ ...current, manual_billing_override: e.target.checked }))}
+              />
+              Manual billing override wins over automatic entitlement evaluation.
+            </label>
+
+            <div style={{ display: "grid", gap: 6 }}>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>Manual billing status</div>
+              <select
+                value={adminForm.manual_billing_status}
+                onChange={(e) => setAdminForm((current) => ({ ...current, manual_billing_status: e.target.value }))}
+                style={{ padding: "10px 12px", borderRadius: 12 }}
+              >
+                {MANUAL_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Trial ends</span>
+                <input
+                  type="datetime-local"
+                  value={adminForm.trial_ends_at}
+                  onChange={(e) => setAdminForm((current) => ({ ...current, trial_ends_at: e.target.value }))}
+                  style={{ padding: "10px 12px", borderRadius: 12 }}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Next billing date</span>
+                <input
+                  type="datetime-local"
+                  value={adminForm.next_billing_date}
+                  onChange={(e) => setAdminForm((current) => ({ ...current, next_billing_date: e.target.value }))}
+                  style={{ padding: "10px 12px", borderRadius: 12 }}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Billing amount</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={adminForm.billing_amount}
+                  onChange={(e) => setAdminForm((current) => ({ ...current, billing_amount: e.target.value }))}
+                  style={{ padding: "10px 12px", borderRadius: 12 }}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>Billing interval</span>
+                <select
+                  value={adminForm.billing_interval}
+                  onChange={(e) => setAdminForm((current) => ({ ...current, billing_interval: e.target.value }))}
+                  style={{ padding: "10px 12px", borderRadius: 12 }}
+                >
+                  {BILLING_INTERVAL_OPTIONS.map((interval) => (
+                    <option key={interval} value={interval}>{interval}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>Trial override reason</span>
+              <textarea
+                value={adminForm.trial_override_reason}
+                onChange={(e) => setAdminForm((current) => ({ ...current, trial_override_reason: e.target.value }))}
+                rows={3}
+                style={{ padding: "10px 12px", borderRadius: 12, resize: "vertical" }}
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>Internal billing notes</span>
+              <textarea
+                value={adminForm.billing_notes}
+                onChange={(e) => setAdminForm((current) => ({ ...current, billing_notes: e.target.value }))}
+                rows={4}
+                style={{ padding: "10px 12px", borderRadius: 12, resize: "vertical" }}
+              />
+            </label>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                onClick={saveAdminOverrides}
+                disabled={adminBusy}
+                style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
+              >
+                {adminBusy ? "Saving..." : "Save Manual Overrides"}
+              </button>
+
+              <button
+                onClick={() => setAdminForm(buildAdminForm(shop))}
+                disabled={adminBusy}
+                style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900, width: "fit-content" }}
+              >
+                Reset Form
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      ) : null}
     </div>
   );
 }

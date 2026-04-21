@@ -5,18 +5,48 @@ type Tone = "default" | "subtle" | "healthy" | "warning" | "critical";
 
 function surfaceForTone(tone: Tone) {
   if (tone === "healthy") {
-    return { background: theme.bg.panelHealthy, border: theme.border.healthy, boxShadow: theme.shadow.healthy };
+    return {
+      background: theme.bg.panelHealthy,
+      border: theme.border.healthy,
+      boxShadow: theme.shadow.healthy,
+      labelColor: "#c8f4dc",
+      glow: "rgba(86,220,154,0.12)",
+    };
   }
   if (tone === "warning") {
-    return { background: theme.bg.panelWarning, border: theme.border.warning, boxShadow: theme.shadow.warning };
+    return {
+      background: theme.bg.panelWarning,
+      border: theme.border.warning,
+      boxShadow: theme.shadow.warning,
+      labelColor: "#ffe4b3",
+      glow: "rgba(226,174,88,0.12)",
+    };
   }
   if (tone === "critical") {
-    return { background: theme.bg.panelCritical, border: theme.border.critical, boxShadow: theme.shadow.critical };
+    return {
+      background: theme.bg.panelCritical,
+      border: theme.border.critical,
+      boxShadow: theme.shadow.critical,
+      labelColor: "#ffd2d2",
+      glow: "rgba(222,118,118,0.13)",
+    };
   }
   if (tone === "subtle") {
-    return { background: theme.bg.panelSoft, border: theme.border.muted, boxShadow: "none" };
+    return {
+      background: theme.bg.panelSoft,
+      border: theme.border.muted,
+      boxShadow: "none",
+      labelColor: theme.text.accentSoft,
+      glow: "rgba(122,157,214,0.08)",
+    };
   }
-  return { background: theme.bg.panel, border: theme.border.soft, boxShadow: theme.shadow.panel };
+  return {
+    background: theme.bg.panel,
+    border: theme.border.soft,
+    boxShadow: theme.shadow.panel,
+    labelColor: theme.text.accentSoft,
+    glow: "rgba(122,157,214,0.12)",
+  };
 }
 
 export default function GlassCard({
@@ -35,15 +65,15 @@ export default function GlassCard({
   const surface = surfaceForTone(tone);
 
   return (
-    <div
+    <section
       style={{
         position: "relative",
         overflow: "hidden",
-        padding: 14,
-        borderRadius: 16,
+        padding: 18,
+        borderRadius: theme.radius.xl,
         border: surface.border,
         background: surface.background,
-        backdropFilter: "blur(14px)",
+        backdropFilter: "blur(16px)",
         boxShadow: surface.boxShadow,
         color: theme.text.primary,
       }}
@@ -52,17 +82,22 @@ export default function GlassCard({
         aria-hidden="true"
         style={{
           position: "absolute",
-          inset: 1,
-          borderRadius: 21,
+          inset: 0,
           pointerEvents: "none",
-          background:
-            tone === "critical"
-              ? "radial-gradient(circle at top right, rgba(222,118,118,0.12), transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))"
-              : tone === "warning"
-              ? "radial-gradient(circle at top right, rgba(226,174,88,0.12), transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))"
-              : "radial-gradient(circle at top right, rgba(126,171,217,0.10), transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))",
+          background: `radial-gradient(circle at top left, ${surface.glow}, transparent 28%), radial-gradient(circle at top right, rgba(255,255,255,0.035), transparent 24%)`,
         }}
       />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 1,
+          borderRadius: theme.radius.xl - 1,
+          pointerEvents: "none",
+          border: "1px solid rgba(255,255,255,0.035)",
+        }}
+      />
+
       {(title || subtitle || actions) && (
         <div
           style={{
@@ -70,34 +105,44 @@ export default function GlassCard({
             zIndex: 1,
             display: "flex",
             justifyContent: "space-between",
-            gap: 12,
+            gap: 16,
             alignItems: "flex-start",
-            marginBottom: 12,
-            paddingBottom: 10,
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            marginBottom: 16,
+            paddingBottom: 14,
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            flexWrap: "wrap",
           }}
         >
-          <div style={{ display: "grid", gap: 5, maxWidth: 760 }}>
+          <div style={{ display: "grid", gap: 6, maxWidth: 760 }}>
             {title ? (
               <div
                 style={{
-                  fontSize: 12,
-                  fontWeight: 900,
-                  letterSpacing: 0.18,
-                  color: tone === "critical" ? "#ffd3d3" : tone === "warning" ? "#ffe2b2" : theme.text.accentSoft,
-                  textTransform: "uppercase",
+                  color: surface.labelColor,
+                  ...theme.type.label,
                 }}
               >
                 {title}
               </div>
             ) : null}
-            {subtitle ? <div style={{ color: theme.text.secondary, fontSize: 11.5, lineHeight: 1.4 }}>{subtitle}</div> : null}
+            {subtitle ? (
+              <div
+                style={{
+                  color: theme.text.secondary,
+                  fontSize: 12.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                {subtitle}
+              </div>
+            ) : null}
           </div>
-          {actions ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div> : null}
+          {actions ? (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div>
+          ) : null}
         </div>
       )}
 
       <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
-    </div>
+    </section>
   );
 }

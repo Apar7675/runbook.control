@@ -1,6 +1,15 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  normalizeRuntimeBillingStatus,
+  normalizeSystemBillingStatus,
+  isFutureIso,
+  parseIsoMillis,
+  SHOP_BILLING_SELECT_COLUMNS,
+  type RuntimeBillingStatus,
+  tryExtractMissingColumn,
+} from "@/lib/billing/manual";
 
-export type BillingStatus = "trialing" | "active" | "past_due" | "canceled" | "expired";
+export type BillingStatus = RuntimeBillingStatus;
 
 export type ShopEntitlement = {
   status: BillingStatus;
@@ -17,27 +26,20 @@ type ShopBillingRow = {
   billing_status: string | null;
   trial_started_at: string | null;
   trial_ends_at: string | null;
+  trial_override_reason: string | null;
   billing_current_period_end: string | null;
+  billing_amount: string | number | null;
+  billing_interval: string | null;
+  next_billing_date: string | null;
+  manual_billing_status: string | null;
   grace_ends_at: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   subscription_plan: string | null;
   entitlement_override: string | null;
+  manual_billing_override: boolean | null;
+  billing_notes: string | null;
 };
-
-function normalizeStatus(value: string | null | undefined): BillingStatus {
-  const status = String(value ?? "").trim().toLowerCase();
-  if (status === "trialing" || status === "active" || status === "past_due" || status === "canceled" || status === "expired") {
-    return status;
-  }
-  return "expired";
-}
-
-function parseMillis(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const ms = Date.parse(value);
-  return Number.isFinite(ms) ? ms : null;
-}
 
 function normalizeOverride(value: string | null | undefined): EntitlementOverride {
   const override = String(value ?? "").trim().toLowerCase();
@@ -45,39 +47,9 @@ function normalizeOverride(value: string | null | undefined): EntitlementOverrid
   return null;
 }
 
-function isFuture(value: string | null | undefined, now = Date.now()): boolean {
-  const ms = parseMillis(value);
-  return ms !== null && ms > now;
-}
-
-function tryExtractMissingColumn(msg: string): string | null {
-  const text = String(msg ?? "");
-  const relationMatch = text.match(/column\s+"([^"]+)"\s+of\s+relation/i);
-  if (relationMatch?.[1]) return relationMatch[1];
-
-  const schemaCacheMatch = text.match(/Could not find the '([^']+)' column/i);
-  if (schemaCacheMatch?.[1]) return schemaCacheMatch[1];
-
-  const qualifiedMatch = text.match(/column\s+rb_shops\.([a-zA-Z0-9_]+)\s+does\s+not\s+exist/i);
-  if (qualifiedMatch?.[1]) return qualifiedMatch[1];
-
-  return null;
-}
-
 async function loadShop(shopId: string): Promise<ShopBillingRow> {
   const admin = supabaseAdmin();
-  const columns = [
-    "id",
-    "billing_status",
-    "trial_started_at",
-    "trial_ends_at",
-    "billing_current_period_end",
-    "grace_ends_at",
-    "stripe_customer_id",
-    "stripe_subscription_id",
-    "subscription_plan",
-    "entitlement_override",
-  ];
+  const columns: string[] = [...SHOP_BILLING_SELECT_COLUMNS];
 
   let working = [...columns];
 
@@ -96,12 +68,19 @@ async function loadShop(shopId: string): Promise<ShopBillingRow> {
         billing_status: row.billing_status ?? null,
         trial_started_at: row.trial_started_at ?? null,
         trial_ends_at: row.trial_ends_at ?? null,
+        trial_override_reason: row.trial_override_reason ?? null,
         billing_current_period_end: row.billing_current_period_end ?? null,
+        billing_amount: row.billing_amount ?? null,
+        billing_interval: row.billing_interval ?? null,
+        next_billing_date: row.next_billing_date ?? null,
+        manual_billing_status: row.manual_billing_status ?? null,
         grace_ends_at: row.grace_ends_at ?? null,
         stripe_customer_id: row.stripe_customer_id ?? null,
         stripe_subscription_id: row.stripe_subscription_id ?? null,
         subscription_plan: row.subscription_plan ?? null,
         entitlement_override: row.entitlement_override ?? null,
+        manual_billing_override: row.manual_billing_override ?? null,
+        billing_notes: row.billing_notes ?? null,
       };
     }
 
@@ -121,16 +100,22 @@ async function loadShop(shopId: string): Promise<ShopBillingRow> {
 export async function getShopEntitlement(shopId: string): Promise<ShopEntitlement> {
   const now = Date.now();
   const shop = await loadShop(shopId);
-  let status = normalizeStatus(shop.billing_status);
+  let status = normalizeSystemBillingStatus(shop.billing_status);
   const override = normalizeOverride(shop.entitlement_override);
 
-  if (status === "trialing" && shop.trial_ends_at && now > (parseMillis(shop.trial_ends_at) ?? Number.MAX_SAFE_INTEGER)) {
+  if (shop.manual_billing_override) {
+    const manualStatus = normalizeRuntimeBillingStatus(shop.manual_billing_status);
+    const manualEntitlement = getManualEntitlement(manualStatus);
+    return applyEntitlementOverride(manualEntitlement, override);
+  }
+
+  if (status === "trialing" && shop.trial_ends_at && now > (parseIsoMillis(shop.trial_ends_at) ?? Number.MAX_SAFE_INTEGER)) {
     status = "expired";
   }
 
   const graceActive =
     (status === "past_due" || status === "canceled") &&
-    isFuture(shop.grace_ends_at, now);
+    isFutureIso(shop.grace_ends_at, now);
 
   let entitlement: ShopEntitlement;
 
@@ -176,6 +161,70 @@ export async function getShopEntitlement(shopId: string): Promise<ShopEntitlemen
     };
   }
 
+  return applyEntitlementOverride(entitlement, override);
+}
+
+function getManualEntitlement(status: RuntimeBillingStatus): ShopEntitlement {
+  if (status === "trial_active" || status === "trial_extended") {
+    return {
+      status,
+      allowed: true,
+      restricted: false,
+      reason: `manual_override:${status}`,
+      grace_active: false,
+    };
+  }
+
+  if (status === "paid_active") {
+    return {
+      status,
+      allowed: true,
+      restricted: false,
+      reason: "manual_override:paid_active",
+      grace_active: false,
+    };
+  }
+
+  if (status === "trial_ended") {
+    return {
+      status,
+      allowed: false,
+      restricted: true,
+      reason: "manual_override:trial_ended",
+      grace_active: false,
+    };
+  }
+
+  if (status === "payment_required") {
+    return {
+      status,
+      allowed: false,
+      restricted: true,
+      reason: "manual_override:payment_required",
+      grace_active: false,
+    };
+  }
+
+  if (status === "suspended") {
+    return {
+      status,
+      allowed: false,
+      restricted: true,
+      reason: "manual_override:suspended",
+      grace_active: false,
+    };
+  }
+
+  return {
+    status,
+    allowed: false,
+    restricted: true,
+    reason: `manual_override:${status}`,
+    grace_active: false,
+  };
+}
+
+function applyEntitlementOverride(entitlement: ShopEntitlement, override: EntitlementOverride): ShopEntitlement {
   if (override === "allow") {
     return {
       ...entitlement,

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { theme } from "@/lib/ui/theme";
 
 export default function SignOutButton() {
   const router = useRouter();
@@ -19,7 +20,6 @@ export default function SignOutButton() {
         console.error("[signout] error", error);
       }
     } finally {
-      // Always go back to login; refresh to re-evaluate authed layout/middleware
       router.replace("/login");
       router.refresh();
       setBusy(false);
@@ -32,15 +32,22 @@ export default function SignOutButton() {
       onClick={signOut}
       disabled={busy}
       style={{
-        padding: "8px 12px",
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.18)",
-        background: busy ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)",
+        minHeight: 40,
+        padding: "9px 14px",
+        borderRadius: theme.radius.md,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: busy
+          ? "linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.05))"
+          : "linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04))",
+        color: theme.text.primary,
+        boxShadow: theme.shadow.button,
         cursor: busy ? "not-allowed" : "pointer",
-        fontWeight: 600,
+        fontWeight: 800,
+        letterSpacing: 0.14,
+        opacity: busy ? 0.84 : 1,
       }}
     >
-      {busy ? "Signing out…" : "Sign out"}
+      {busy ? "Signing out..." : "Sign out"}
     </button>
   );
 }

@@ -34,7 +34,11 @@ async function isTrustedDevice(supabase: any, userId: string) {
   }
 }
 
-function StatusPill({ status }: { status: ReturnType<typeof buildControlHeaderStatuses>[number] }) {
+function StatusPill({
+  status,
+}: {
+  status: ReturnType<typeof buildControlHeaderStatuses>[number];
+}) {
   const tone = toneForHealth(status.health);
   return (
     <span
@@ -42,17 +46,17 @@ function StatusPill({ status }: { status: ReturnType<typeof buildControlHeaderSt
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 7,
-        minHeight: 30,
+        gap: 8,
+        minHeight: 32,
         padding: "6px 11px",
-        borderRadius: 999,
+        borderRadius: theme.radius.pill,
         border: `1px solid ${tone.borderColor}`,
-        background: "rgba(10,16,25,0.84)",
-        boxShadow: `0 0 0 1px ${tone.borderColor} inset, 0 0 16px ${tone.borderColor.replace("0.34", "0.14")}`,
+        background: "linear-gradient(180deg, rgba(10,16,25,0.90), rgba(8,12,20,0.88))",
+        boxShadow: `0 0 0 1px ${tone.borderColor} inset, 0 0 18px ${tone.borderColor.replace("0.34", "0.12")}`,
         color: "#eef3fa",
-        fontSize: 11,
-        fontWeight: 800,
-        letterSpacing: 0.45,
+        fontSize: 10.5,
+        fontWeight: 900,
+        letterSpacing: 0.5,
         textTransform: "uppercase",
       }}
     >
@@ -60,7 +64,7 @@ function StatusPill({ status }: { status: ReturnType<typeof buildControlHeaderSt
         style={{
           width: 8,
           height: 8,
-          borderRadius: 999,
+          borderRadius: theme.radius.pill,
           background: tone.dot,
         }}
       />
@@ -68,6 +72,11 @@ function StatusPill({ status }: { status: ReturnType<typeof buildControlHeaderSt
     </span>
   );
 }
+
+const mobileBreak: React.CSSProperties = {
+  paddingLeft: 16,
+  paddingRight: 16,
+};
 
 export default async function AuthedLayout({
   children,
@@ -130,64 +139,110 @@ export default async function AuthedLayout({
           position: "sticky",
           top: 0,
           zIndex: 20,
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "linear-gradient(180deg, rgba(10,16,24,0.96), rgba(8,12,19,0.90))",
-          backdropFilter: "blur(16px)",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.22)",
+          borderBottom: theme.border.accentSoft,
+          background: theme.bg.headerGlass,
+          backdropFilter: "blur(18px)",
+          boxShadow: "0 18px 40px rgba(0, 0, 0, 0.22)",
         }}
       >
         <div
           style={{
             height: 3,
-            background: "linear-gradient(90deg, rgba(126,171,217,0.92), rgba(94,132,198,0.76), rgba(226,174,88,0.30))",
+            background:
+              "linear-gradient(90deg, rgba(126,171,217,0.92), rgba(94,132,198,0.76), rgba(153,123,255,0.58))",
           }}
         />
         <div
           style={{
-            maxWidth: 1580,
+            maxWidth: theme.spacing.contentWidth,
             width: "100%",
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: 14,
+            gap: 18,
             flexWrap: "wrap",
-            padding: "12px 18px",
+            padding: `16px ${theme.spacing.shellX}px`,
           }}
         >
-          <div style={{ display: "grid", gap: 6 }}>
-            <Link href="/dashboard" style={{ textDecoration: "none", color: theme.text.primary }}>
-              <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: -0.18 }}>RunBook Control</div>
-            </Link>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ color: theme.text.muted, fontSize: 13 }}>{email}</span>
+          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <span
                 style={{
                   display: "inline-flex",
+                  alignItems: "center",
                   padding: "6px 10px",
-                  borderRadius: 999,
-                  border: theme.border.accentSoft,
-                  background: "rgba(126, 171, 217, 0.12)",
+                  borderRadius: theme.radius.pill,
+                  border: "1px solid rgba(146, 163, 255, 0.22)",
+                  background: "rgba(92, 108, 255, 0.13)",
                   color: theme.text.accentSoft,
+                  fontSize: 10,
                   fontWeight: 900,
-                  fontSize: 11,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.7,
                   textTransform: "uppercase",
                 }}
               >
                 {isPlatformAdmin ? "Platform Admin" : "Shop Admin"}
               </span>
+              <span style={{ color: theme.text.muted, fontSize: 12.5 }}>{email}</span>
+            </div>
+            <Link
+              href="/dashboard"
+              style={{
+                color: theme.text.primary,
+                textDecoration: "none",
+                fontSize: 25,
+                fontWeight: 800,
+                letterSpacing: -0.5,
+                lineHeight: 1.02,
+              }}
+            >
+              RunBook Control
+            </Link>
+            <div
+              style={{
+                color: theme.text.secondary,
+                fontSize: 13,
+                lineHeight: 1.55,
+                maxWidth: 720,
+              }}
+            >
+              Premium command visibility across health, people, devices, billing,
+              and connectivity.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+              }}
+            >
               {headerStatuses.map((status) => (
                 <StatusPill key={status.key} status={status} />
               ))}
             </div>
             <HeaderDateTime />
-            <Link href="/status" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+            <Link
+              href="/status"
+              style={{
+                color: theme.text.secondary,
+                textDecoration: "none",
+                fontWeight: 800,
+                padding: "0 2px",
+              }}
+            >
               Status
             </Link>
             <SignOutButton />
@@ -198,31 +253,54 @@ export default async function AuthedLayout({
       <div
         style={{
           flex: 1,
-          display: "grid",
-          gridTemplateColumns: "280px minmax(0, 1fr)",
-          gap: 16,
-          padding: 16,
-          maxWidth: 1480,
           width: "100%",
+          maxWidth: theme.spacing.contentWidth,
           margin: "0 auto",
+          padding: `${theme.spacing.shellY}px ${theme.spacing.shellX}px ${theme.spacing.xxl}px`,
+          display: "grid",
+          gridTemplateColumns: `${theme.spacing.navWidth}px minmax(0, 1fr)`,
+          gap: 20,
+          alignItems: "start",
         }}
       >
         <aside
           style={{
-            border: theme.border.accentSoft,
-            borderRadius: 18,
-            background: theme.bg.nav,
-            padding: 14,
-            height: "fit-content",
             position: "sticky",
-            top: 82,
-            boxShadow: theme.shadow.glowSoft,
+            top: 108,
+            padding: "20px 18px 18px",
+            borderRadius: theme.radius.xl,
+            border: theme.border.nav,
+            background: theme.bg.nav,
+            boxShadow: theme.shadow.nav,
+            height: "fit-content",
+            overflow: "hidden",
           }}
         >
-          <SideNav isPlatformAdmin={isPlatformAdmin} mode="platform" />
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(circle at top left, rgba(122,157,214,0.12), transparent 28%), radial-gradient(circle at bottom left, rgba(120,105,255,0.08), transparent 24%)",
+            }}
+          />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <SideNav isPlatformAdmin={isPlatformAdmin} mode="platform" />
+          </div>
         </aside>
 
-        <main style={{ minWidth: 0, display: "grid", gap: 16, alignContent: "start" }}>{children}</main>
+        <main
+          style={{
+            minWidth: 0,
+            display: "grid",
+            gap: 18,
+            alignContent: "start",
+          }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

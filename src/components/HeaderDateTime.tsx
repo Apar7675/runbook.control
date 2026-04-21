@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { formatDateHeader, formatTime } from "@/lib/ui/dates";
 import { useIsMounted } from "@/lib/ui/useIsMounted";
+import { theme } from "@/lib/ui/theme";
 
 function formatDateTime(date: Date) {
   return {
@@ -32,20 +33,21 @@ export default function HeaderDateTime() {
         flexDirection: "column",
         alignItems: "flex-end",
         justifyContent: "center",
-        minHeight: 30,
-        minWidth: 164,
-        padding: "6px 12px",
-        borderRadius: 999,
-        border: "1px solid rgba(79,100,124,0.55)",
-        background: "rgba(10,16,25,0.95)",
-        boxShadow: "0 0 0 1px rgba(79,100,124,0.24) inset, 0 0 16px rgba(121,153,214,0.1)",
+        minHeight: 40,
+        minWidth: 176,
+        padding: "7px 13px",
+        borderRadius: theme.radius.pill,
+        border: "1px solid rgba(110,132,164,0.34)",
+        background: "linear-gradient(180deg, rgba(10,16,27,0.95), rgba(7,11,20,0.92))",
+        boxShadow:
+          "0 0 0 1px rgba(79,100,124,0.18) inset, 0 0 18px rgba(121,153,214,0.08)",
       }}
     >
       <span
         style={{
-          color: "#dde6f3",
+          color: theme.text.muted,
           fontSize: 11,
-          fontWeight: 600,
+          fontWeight: 700,
           lineHeight: 1.1,
           textAlign: "right",
         }}
@@ -54,12 +56,13 @@ export default function HeaderDateTime() {
       </span>
       <span
         style={{
-          color: "#f5f8fd",
-          fontSize: 15,
-          fontWeight: 700,
+          color: theme.text.primary,
+          fontSize: 16,
+          fontWeight: 800,
           lineHeight: 1.15,
           textAlign: "right",
-          marginTop: 2,
+          marginTop: 3,
+          letterSpacing: -0.18,
         }}
       >
         {formatted.time}

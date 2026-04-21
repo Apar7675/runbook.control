@@ -48,7 +48,7 @@ async function createAvatarDisplayUrl(admin: any, path: string) {
   if (!cleanPath) return "";
   if (looksLikeUrl(cleanPath)) return cleanPath;
 
-  const { data, error } = await admin.storage.from("avatars").createSignedUrl(cleanPath, 60 * 60);
+  const { data, error } = await admin.storage.from("avatars").createSignedUrl(cleanPath, 60 * 60 * 24 * 30);
   if (error) return "";
 
   return text(data?.signedUrl);

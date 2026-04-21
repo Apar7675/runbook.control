@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
-import { getShopEntitlement } from "@/lib/billing/entitlement";
+import { getShopEntitlement, type BillingStatus } from "@/lib/billing/entitlement";
 import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-type BillingStatus = "trialing" | "active" | "past_due" | "canceled" | "expired";
 
 function env(name: string) {
   const v = process.env[name];

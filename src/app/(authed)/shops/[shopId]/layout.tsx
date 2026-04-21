@@ -88,66 +88,106 @@ export default async function ShopLayout({ params, children }: Props) {
   const unlockShopsCsv = (process.env.RUNBOOK_BILLING_UNLOCK_SHOPS ?? "").trim();
 
   const requestHeaders: any = await headers();
-  const path = requestHeaders?.get?.("x-url") ?? requestHeaders?.get?.("x-original-url") ?? requestHeaders?.get?.("next-url") ?? "";
+  const path =
+    requestHeaders?.get?.("x-url") ??
+    requestHeaders?.get?.("x-original-url") ??
+    requestHeaders?.get?.("next-url") ??
+    "";
   const isBillingPath = String(path).includes(`/shops/${shopId}/billing`);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: theme.bg.appGlow, color: theme.text.primary }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: theme.bg.appGlow,
+        color: theme.text.primary,
+      }}
+    >
       <DeviceIdBootstrap />
 
       <header
         style={{
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          background: "linear-gradient(180deg, rgba(8,11,18,0.94), rgba(8,11,18,0.86))",
+          borderBottom: theme.border.accentSoft,
+          background: theme.bg.headerGlass,
           backdropFilter: "blur(16px)",
+          boxShadow: "0 18px 38px rgba(0, 0, 0, 0.2)",
         }}
       >
         <div
           style={{
             height: 3,
-            background: "linear-gradient(90deg, rgba(79,102,255,0.9), rgba(68,177,255,0.72), rgba(167,188,255,0.24))",
+            background:
+              "linear-gradient(90deg, rgba(79,102,255,0.9), rgba(68,177,255,0.72), rgba(167,188,255,0.30))",
           }}
         />
         <div
           style={{
+            maxWidth: theme.spacing.contentWidth,
+            width: "100%",
+            margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-end",
+            alignItems: "center",
             gap: 18,
             flexWrap: "wrap",
-            padding: "16px 22px",
+            padding: `16px ${theme.spacing.shellX}px`,
           }}
         >
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 9 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <Link href="/shops" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+              <Link
+                href="/shops"
+                style={{ color: theme.text.secondary, textDecoration: "none", fontWeight: 800 }}
+              >
                 Back to Shop List
               </Link>
               <span
                 style={{
                   display: "inline-flex",
                   padding: "6px 10px",
-                  borderRadius: 999,
+                  borderRadius: theme.radius.pill,
                   border: "1px solid rgba(146, 163, 255, 0.22)",
                   background: "rgba(92, 108, 255, 0.15)",
-                  color: "#d6ddff",
+                  color: theme.text.accentSoft,
                   fontWeight: 900,
-                  fontSize: 11,
-                  letterSpacing: 0.6,
+                  fontSize: 10,
+                  letterSpacing: 0.7,
                   textTransform: "uppercase",
                 }}
               >
                 Shop Workspace
               </span>
             </div>
-            <div style={{ fontWeight: 900, fontSize: 28, lineHeight: 1.06 }}>{shopName}</div>
-            <div style={{ color: theme.text.secondary, fontSize: 13 }}>
-              {email} - Manage the health, access, and setup of this shop without exposing platform internals.
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                lineHeight: 1.04,
+                letterSpacing: -0.56,
+              }}
+            >
+              {shopName}
+            </div>
+            <div
+              style={{
+                color: theme.text.secondary,
+                fontSize: 13,
+                lineHeight: 1.55,
+                maxWidth: 760,
+              }}
+            >
+              {email} - Manage health, access, billing, and setup for this shop without
+              exposing platform internals.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <Link href="/status" style={{ textDecoration: "none", color: theme.text.secondary, fontWeight: 700 }}>
+            <Link
+              href="/status"
+              style={{ color: theme.text.secondary, textDecoration: "none", fontWeight: 800 }}
+            >
               Status
             </Link>
             <SignOutButton />
@@ -158,25 +198,47 @@ export default async function ShopLayout({ params, children }: Props) {
       <div
         style={{
           flex: 1,
+          width: "100%",
+          maxWidth: theme.spacing.contentWidth,
+          margin: "0 auto",
+          padding: `${theme.spacing.shellY}px ${theme.spacing.shellX}px ${theme.spacing.xxl}px`,
           display: "grid",
-          gridTemplateColumns: "320px minmax(0, 1fr)",
+          gridTemplateColumns: `${theme.spacing.navWidth}px minmax(0, 1fr)`,
           gap: 22,
-          padding: 22,
+          alignItems: "start",
         }}
       >
         <aside
           style={{
-            border: theme.border.soft,
-            borderRadius: 22,
-            background: theme.bg.panel,
-            padding: 18,
-            height: "fit-content",
             position: "sticky",
             top: 24,
-            boxShadow: theme.shadow.panel,
+            padding: "20px 18px 18px",
+            borderRadius: theme.radius.xl,
+            border: theme.border.nav,
+            background: theme.bg.nav,
+            boxShadow: theme.shadow.nav,
+            height: "fit-content",
+            overflow: "hidden",
           }}
         >
-          <SideNav isPlatformAdmin={isPlatformAdmin} mode="shop" shopId={shopId} shopName={shopName} />
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(circle at top left, rgba(122,157,214,0.12), transparent 28%), radial-gradient(circle at bottom left, rgba(120,105,255,0.08), transparent 24%)",
+            }}
+          />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <SideNav
+              isPlatformAdmin={isPlatformAdmin}
+              mode="shop"
+              shopId={shopId}
+              shopName={shopName}
+            />
+          </div>
         </aside>
 
         <main style={{ minWidth: 0, display: "grid", gap: 22 }}>
