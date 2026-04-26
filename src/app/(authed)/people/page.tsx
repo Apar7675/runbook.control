@@ -1,15 +1,10 @@
 import React from "react";
-import {
-  ActionLink,
-  DataList,
-  EmptyState,
-  MetricCard,
-  PageHeader,
-  SectionBlock,
-  StatusBadge,
-  toneFromStatus,
-} from "@/components/control/ui";
-import { getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
+import { redirect } from "next/navigation";
+import ControlPanelV2 from "@/components/control/v2/ControlPanelV2";
+import { ControlActionLinkV2 } from "@/components/control/v2/ControlActionButtonV2";
+import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
+import PeopleDirectoryWorkspaceV2 from "@/components/people/PeopleDirectoryWorkspaceV2";
+import { getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
 
 export const dynamic = "force-dynamic";
 
@@ -23,78 +18,34 @@ export default async function PeoplePage({
   const returnTo = typeof params.return_to === "string" ? params.return_to : "";
   const context = await getViewerContext();
   const primaryShop = selectPrimaryShop(context.shops, requestedShopId);
-  const snapshot = primaryShop ? await getShopSnapshot(primaryShop) : null;
 
-  if (!primaryShop || !snapshot) {
+  if (!primaryShop) {
     return (
-      <div style={{ display: "grid", gap: 20 }}>
-        <PageHeader
-          eyebrow="People"
-          title="People Center"
-          description="Add a shop first so employee provisioning, app access, and workstation eligibility have somewhere to live."
-          actions={returnTo ? <ActionLink href={returnTo}>Return to Setup</ActionLink> : undefined}
-        />
-        <EmptyState
+      <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "grid", gap: 4 }}>
+          <div style={{ color: t.color.textQuiet, ...t.type.label }}>People</div>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Shop People</h1>
+          <div style={{ fontSize: 13, color: t.color.textQuiet }}>Add a shop first so employee provisioning and access review have somewhere to live.</div>
+        </div>
+        <ControlPanelV2
           title="No shop available"
           description="The People area becomes useful after shop setup is complete."
-          action={<ActionLink href="/shops" tone="primary">Open Shop Setup</ActionLink>}
-        />
+          actions={
+            <>
+              {returnTo ? <ControlActionLinkV2 href={returnTo}>Return to setup</ControlActionLinkV2> : null}
+              <ControlActionLinkV2 href="/shops" tone="primary">Open shop setup</ControlActionLinkV2>
+            </>
+          }
+        >
+          <div style={{ fontSize: 12.5, color: t.color.textMuted }}>This account does not currently have a shop workspace available for people management.</div>
+        </ControlPanelV2>
       </div>
     );
   }
 
-  const accessReady = snapshot.counts.employees_mobile_ready + snapshot.counts.employees_workstation_ready;
-  const syncHealth =
-    snapshot.counts.employees_total === 0 ? "Pending" : accessReady === 0 ? "Action Needed" : "Healthy";
+  if (!requestedShopId && context.shops.length === 1) {
+    redirect(`/people?shop=${encodeURIComponent(primaryShop.id)}`);
+  }
 
-  return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <PageHeader
-        eyebrow="People"
-        title={`People for ${snapshot.name}`}
-        description="This is the employee center: who is active, who has app access, and who still needs provisioning review."
-        actions={
-          <>
-            {returnTo ? <ActionLink href={returnTo}>Return to Setup</ActionLink> : null}
-            <ActionLink href={`/shops/${snapshot.id}`} tone="primary">Review Shop</ActionLink>
-            <ActionLink href={`/shops/${snapshot.id}/billing`}>Review Access Impact</ActionLink>
-          </>
-        }
-      />
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-        <MetricCard title="Employees" value={String(snapshot.counts.employees_total)} summary={`${snapshot.counts.employees_active} currently active employees.`} tone={snapshot.counts.employees_total === 0 ? "subtle" : "healthy"} />
-        <MetricCard title="Mobile Access" value={String(snapshot.counts.employees_mobile_ready)} summary="Ready to sign in and use Mobile." tone="subtle" />
-        <MetricCard title="Workstation Access" value={String(snapshot.counts.employees_workstation_ready)} summary="Ready for passcode-based workstation access." tone="subtle" />
-        <MetricCard title="Sync Status" value={syncHealth} summary={snapshot.counts.employees_total === 0
-          ? "No employees are connected yet."
-          : accessReady === 0
-          ? "Employees exist, but app access still needs setup."
-          : "Employees are synced well enough to continue with access setup and review."} badge={<StatusBadge label={syncHealth} tone={toneFromStatus(syncHealth)} />} tone={toneFromStatus(syncHealth) === "critical" ? "critical" : toneFromStatus(syncHealth) === "warning" ? "warning" : "subtle"} />
-      </div>
-
-      <SectionBlock
-        title="Admin Guidance"
-        description="Turn raw provisioning mechanics into clear workflows."
-      >
-        <DataList
-          items={[
-            { label: "Start", value: "Add or import employees from Desktop HR." },
-            { label: "Review", value: "Decide which employees should have Mobile and Workstation access." },
-            { label: "Confirm", value: "Check billing before assuming access setup is broken." },
-          ]}
-        />
-      </SectionBlock>
-
-      <SectionBlock
-        title="Advanced Controls"
-        description="The deeper employee provisioning workflow still lives in the shop workspace until the dedicated editor is consolidated."
-        actions={<ActionLink href={`/shops/${snapshot.id}`}>Open Shop Workspace</ActionLink>}
-      >
-        <div style={{ color: "rgba(230,232,239,0.82)", lineHeight: 1.55 }}>
-          Control still uses existing Desktop employee sync and workstation policy routes behind the scenes. This page keeps the explanation simple while preserving those working flows.
-        </div>
-      </SectionBlock>
-    </div>
-  );
+  return <PeopleDirectoryWorkspaceV2 shopId={primaryShop.id} shopName={primaryShop.name} />;
 }
