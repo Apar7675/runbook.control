@@ -38,14 +38,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: memberError.message }, { status: 500 });
       }
 
-      authorized = !!member?.id && String(member.role ?? "").trim().toLowerCase() === "admin";
+      const role = String(member?.role ?? "").trim().toLowerCase();
+      authorized = !!member?.id && (role === "owner" || role === "admin");
     }
 
     if (!authorized) {
       return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
     }
 
-    const { data, error } = await admin.rpc("rb_remove_employee_authoritative", {
+    const { data, error } = await admin.rpc("rb_disable_employee_authoritative", {
       p_shop_id: shopId,
       p_employee_id: employeeId,
       p_actor_user_id: user.id,

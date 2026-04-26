@@ -16,7 +16,7 @@ export default function SetupLaunchButton({
 
   async function launch() {
     if (disabled) {
-      setStatus("Finish the required setup checks before launching into the dashboard.");
+      setStatus("Finish the required setup checks before launching into shops.");
       return;
     }
 
@@ -34,7 +34,7 @@ export default function SetupLaunchButton({
         return;
       }
 
-      router.push(data?.redirect_to ?? "/dashboard");
+      router.push(data?.redirect_to ?? "/shops");
     } finally {
       setBusy(false);
     }

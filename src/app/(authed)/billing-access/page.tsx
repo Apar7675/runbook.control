@@ -1,100 +1,33 @@
 import React from "react";
-import {
-  ActionLink,
-  EmptyState,
-  MetricCard,
-  PageHeader,
-  SectionBlock,
-  StatusBadge,
-  toneFromStatus,
-} from "@/components/control/ui";
-import { getShopSnapshot, getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
-import { formatDateTime } from "@/lib/ui/dates";
+import ControlPanelV2 from "@/components/control/v2/ControlPanelV2";
+import { ControlActionLinkV2 } from "@/components/control/v2/ControlActionButtonV2";
+import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
+import BillingAccessDirectoryWorkspaceV2 from "@/components/billing/BillingAccessDirectoryWorkspaceV2";
+import { getViewerContext } from "@/lib/control/summary";
 
 export const dynamic = "force-dynamic";
 
-function formatDate(value?: string | null) {
-  if (!value) return "Not set";
-  try {
-    return formatDateTime(value);
-  } catch {
-    return value;
-  }
-}
-
-export default async function BillingAccessPage({
-  searchParams,
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = (await searchParams) ?? {};
-  const requestedShopId = typeof params.shop === "string" ? params.shop : "";
+export default async function BillingAccessPage() {
   const context = await getViewerContext();
-  const primaryShop = selectPrimaryShop(context.shops, requestedShopId);
-  const snapshot = primaryShop ? await getShopSnapshot(primaryShop) : null;
 
-  if (!primaryShop || !snapshot) {
+  if (!context.isPlatformAdmin) {
     return (
-      <div style={{ display: "grid", gap: 20 }}>
-        <PageHeader eyebrow="Billing & Access" title="Billing & Access" description="Billing drives real access outcomes across Desktop, Workstation, and Mobile." />
-        <EmptyState
-          title="No shop available"
-          description="Set up a shop first so Control can explain plan state and access impact."
-          action={<ActionLink href="/shops" tone="primary">Open Shop Setup</ActionLink>}
-        />
+      <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "grid", gap: 4 }}>
+          <div style={{ color: t.color.textQuiet, ...t.type.label }}>Billing & Access</div>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Billing access directory</h1>
+          <div style={{ fontSize: 13, color: t.color.textQuiet }}>This directory is reserved for platform admins managing billing and entitlement across shops.</div>
+        </div>
+        <ControlPanelV2
+          title="Platform admin access required"
+          description="Open a specific shop workspace instead if you only need to review billing for one shop."
+          actions={<ControlActionLinkV2 href="/shops" tone="primary">Open shops</ControlActionLinkV2>}
+        >
+          <div style={{ fontSize: 12.5, color: t.color.textMuted }}>Cross-shop billing and entitlement controls stay restricted to platform admins.</div>
+        </ControlPanelV2>
       </div>
     );
   }
 
-  return (
-    <div style={{ display: "grid", gap: 22 }}>
-      <PageHeader
-        eyebrow="Billing & Access"
-        title={`Billing & Access for ${snapshot.name}`}
-        description="This page explains access outcomes in plain English instead of exposing raw Stripe or entitlement mechanics."
-        actions={
-          <>
-            <ActionLink href={`/shops/${snapshot.id}/billing`} tone="primary">Manage Subscription</ActionLink>
-            <ActionLink href="/apps">Review App Access</ActionLink>
-          </>
-        }
-      />
-
-      <SectionBlock title="Current Outcome" description="Start with what the current billing state means operationally.">
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <StatusBadge label={snapshot.access.display_status} tone={toneFromStatus(snapshot.access.display_status)} />
-            <StatusBadge label={snapshot.access.billing_status} tone={toneFromStatus(snapshot.access.display_status)} />
-          </div>
-          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>{snapshot.access.summary}</div>
-        </div>
-      </SectionBlock>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-        <MetricCard title="Desktop" value={snapshot.access.desktop_mode === "full" ? "Full Access" : "Read-Only"} summary="How billing affects Desktop." tone={snapshot.access.desktop_mode === "full" ? "healthy" : "warning"} />
-        <MetricCard title="Workstation" value={snapshot.access.workstation_mode === "full" ? "Full Access" : "Blocked"} summary="How billing affects Workstation." tone={snapshot.access.workstation_mode === "full" ? "healthy" : "critical"} />
-        <MetricCard title="Mobile" value={snapshot.access.mobile_mode === "full" ? "Full Access" : snapshot.access.mobile_mode === "queue_only" ? "Queue-Only" : "Blocked"} summary="How billing affects Mobile." tone={snapshot.access.mobile_mode === "full" ? "healthy" : snapshot.access.mobile_mode === "queue_only" ? "warning" : "critical"} />
-      </div>
-
-      <SectionBlock title="Billing Timeline" description="Show the important dates, not raw backend fields first.">
-        <div style={{ display: "grid", gap: 10, color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
-          <div>Trial ends: {formatDate(snapshot.trial_ends_at)}</div>
-          <div>Current period end: {formatDate(snapshot.billing_current_period_end)}</div>
-          <div>Grace ends: {formatDate(snapshot.grace_ends_at)}</div>
-        </div>
-      </SectionBlock>
-
-      <SectionBlock title="Admin Guidance" description="Keep the actions small, clear, and not duplicated across the app.">
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ color: "rgba(230,232,239,0.84)", lineHeight: 1.55 }}>
-            If access looks wrong, first review the billing state here, then confirm the affected app status in Apps, and only then move into device or employee troubleshooting.
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <ActionLink href={`/shops/${snapshot.id}/billing`} tone="primary">Open Billing</ActionLink>
-            <ActionLink href="/apps">Review Access Impact</ActionLink>
-          </div>
-        </div>
-      </SectionBlock>
-    </div>
-  );
+  return <BillingAccessDirectoryWorkspaceV2 />;
 }

@@ -1,15 +1,12 @@
-// REPLACE ENTIRE FILE: src/lib/audit/writeAudit.ts
-
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type AuditEvent = {
   actor_user_id?: string | null;
   actor_email?: string | null;
-
+  actor_kind?: "user" | "device" | "system" | null;
   action: string;
   target_type?: string | null;
   target_id?: string | null;
-
   shop_id?: string | null;
   meta?: Record<string, any>;
 };
@@ -20,6 +17,7 @@ export async function writeAudit(event: AuditEvent) {
   const payload = {
     actor_user_id: event.actor_user_id ?? null,
     actor_email: event.actor_email ?? null,
+    actor_kind: event.actor_kind ?? "user",
     action: event.action,
     target_type: event.target_type ?? null,
     target_id: event.target_id ?? null,

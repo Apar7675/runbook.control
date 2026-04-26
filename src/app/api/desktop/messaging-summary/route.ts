@@ -20,6 +20,7 @@ async function ensureMembership(admin: any, shopId: string, userId: string) {
     .select("shop_id, user_id, role")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

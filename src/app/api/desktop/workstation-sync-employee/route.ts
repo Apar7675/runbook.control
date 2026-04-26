@@ -28,10 +28,10 @@ function n(v: any, def: number, min: number, max: number) {
   return value;
 }
 
-function toSharedRole(input: string) {
+function toEmployeeRole(input: string) {
   const role = s(input).toLowerCase();
   if (!role) return "employee";
-  if (["owner", "admin", "manager", "foreman", "viewer"].includes(role)) return role;
+  if (["owner", "admin", "manager", "foreman"].includes(role)) return "foreman";
   return "employee";
 }
 
@@ -41,6 +41,7 @@ async function getShopMembership(admin: any, shopId: string, userId: string) {
     .select("id")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
       : null;
     const employeeCode = s((body as any).employee_code);
     const displayName = s((body as any).display_name);
-    const role = toSharedRole((body as any).role);
+    const role = toEmployeeRole((body as any).role);
     const status = s((body as any).status) || "Active";
 
     if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });

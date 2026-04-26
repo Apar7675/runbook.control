@@ -20,6 +20,7 @@ async function ensureMembership(admin: any, shopId: string, userId: string) {
     .select("shop_id, user_id, role")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -30,7 +31,7 @@ async function ensureMembership(admin: any, shopId: string, userId: string) {
 async function getEmployee(admin: any, shopId: string, employeeId: string) {
   const { data, error } = await admin
     .from("employees")
-    .select("id, shop_id, auth_user_id, display_name, role, is_active, avatar_url_256")
+    .select("id, shop_id, auth_user_id, display_name, role, status, is_active, avatar_url_256")
     .eq("shop_id", shopId)
     .eq("id", employeeId)
     .maybeSingle();
@@ -38,6 +39,10 @@ async function getEmployee(admin: any, shopId: string, employeeId: string) {
   if (error) throw new Error(error.message);
   if (!data?.id) throw new Error("Employee not found in this shop.");
   return data;
+}
+
+function employeeIsActive(employee: any) {
+  return !!employee?.id && !!employee?.is_active;
 }
 
 async function authorizeDesktop(req: Request, admin: any, shopId: string, senderEmployeeId: string) {
@@ -55,7 +60,7 @@ async function authorizeDesktop(req: Request, admin: any, shopId: string, sender
   }
 }
 
-async function resolveDirectMessageConversation(admin: any, shopId: string, senderEmployeeId: string, recipientEmployeeId: string) {
+async function findDirectMessageConversation(admin: any, shopId: string, senderEmployeeId: string, recipientEmployeeId: string) {
   const pair = [senderEmployeeId, recipientEmployeeId].sort();
   const a = pair[0];
   const b = pair[1];
@@ -99,6 +104,19 @@ async function resolveDirectMessageConversation(admin: any, shopId: string, send
     }
   }
 
+  return "";
+}
+
+async function resolveDirectMessageConversation(admin: any, shopId: string, senderEmployeeId: string, recipientEmployeeId: string) {
+  const existingConversationId = await findDirectMessageConversation(admin, shopId, senderEmployeeId, recipientEmployeeId);
+  if (existingConversationId) {
+    return existingConversationId;
+  }
+
+  const pair = [senderEmployeeId, recipientEmployeeId].sort();
+  const a = pair[0];
+  const b = pair[1];
+
   const { data: insertedConversation, error: insertConversationError } = await admin
     .from("conversations")
     .insert({
@@ -127,8 +145,13 @@ async function resolveDirectMessageConversation(admin: any, shopId: string, send
   return conversationId;
 }
 
-async function loadThread(admin: any, shopId: string, senderEmployeeId: string, recipientEmployeeId: string) {
-  const conversationId = await resolveDirectMessageConversation(admin, shopId, senderEmployeeId, recipientEmployeeId);
+async function loadThread(admin: any, shopId: string, conversationId: string) {
+  if (!conversationId) {
+    return {
+      conversation_id: "",
+      messages: [],
+    };
+  }
 
   const { data: messages, error: messageError } = await admin
     .from("messages")
@@ -187,8 +210,14 @@ export async function GET(req: NextRequest) {
       getEmployee(admin, shopId, senderEmployeeId),
       getEmployee(admin, shopId, recipientEmployeeId),
     ]);
+    if (!employeeIsActive(sender)) {
+      return NextResponse.json({ ok: false, error: "Sender employee is inactive." }, { status: 403 });
+    }
 
-    const thread = await loadThread(admin, shopId, senderEmployeeId, recipientEmployeeId);
+    const conversationId = employeeIsActive(recipient)
+      ? await resolveDirectMessageConversation(admin, shopId, senderEmployeeId, recipientEmployeeId)
+      : await findDirectMessageConversation(admin, shopId, senderEmployeeId, recipientEmployeeId);
+    const thread = await loadThread(admin, shopId, conversationId);
 
     return NextResponse.json({
       ok: true,
@@ -220,10 +249,16 @@ export async function POST(req: Request) {
     if (!messageBody) return NextResponse.json({ ok: false, error: "body required" }, { status: 400 });
 
     const auth = await authorizeDesktop(req, admin, shopId, senderEmployeeId);
-    await Promise.all([
+    const [sender, recipient] = await Promise.all([
       getEmployee(admin, shopId, senderEmployeeId),
       getEmployee(admin, shopId, recipientEmployeeId),
     ]);
+    if (!employeeIsActive(sender)) {
+      return NextResponse.json({ ok: false, error: "Sender employee is inactive." }, { status: 403 });
+    }
+    if (!employeeIsActive(recipient)) {
+      return NextResponse.json({ ok: false, error: "Recipient employee is inactive." }, { status: 403 });
+    }
 
     const conversationId = await resolveDirectMessageConversation(admin, shopId, senderEmployeeId, recipientEmployeeId);
 
@@ -236,7 +271,7 @@ export async function POST(req: Request) {
 
     if (insertError) throw new Error(insertError.message);
 
-    const thread = await loadThread(admin, shopId, senderEmployeeId, recipientEmployeeId);
+    const thread = await loadThread(admin, shopId, conversationId);
 
     return NextResponse.json({
       ok: true,

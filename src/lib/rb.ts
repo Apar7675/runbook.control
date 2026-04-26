@@ -109,6 +109,7 @@ export async function rbGetShop(shopId: string): Promise<RBShop | null> {
       .select("id")
       .eq("shop_id", shopId)
       .eq("user_id", userId)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (memberErr) throw new Error(memberErr.message);

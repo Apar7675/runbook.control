@@ -4,6 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 const PUBLIC_PATHS = [
   "/",
   "/login",
+  "/auth/callback",
+  "/reset-password",
   "/signup",
 
   // Stripe return pages MUST be public

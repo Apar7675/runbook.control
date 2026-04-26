@@ -26,8 +26,8 @@ export default async function MfaLayout({ children }: { children: React.ReactNod
 
   const isPlatformAdmin = !!row;
 
-  if (!isPlatformAdmin) redirect("/dashboard");
-  if (aal === "aal2") redirect("/dashboard");
+  if (!isPlatformAdmin) redirect("/shops");
+  if (aal === "aal2") redirect("/shops");
 
   return <>{children}</>;
 }

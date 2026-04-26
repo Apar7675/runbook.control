@@ -290,7 +290,7 @@ export async function POST(req: Request) {
           trial_restricted: Boolean(existingShop.trial_restricted),
           trial_restriction_reason: existingShop.trial_restriction_reason ?? null,
           message:
-            resolvedPath === "/dashboard"
+            resolvedPath === "/shops"
               ? "This shop is already set up."
               : "Your shop is already created. Resume onboarding from where you left off.",
         });

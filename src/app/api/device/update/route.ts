@@ -17,6 +17,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { sha256Hex } from "@/lib/crypto";
 import crypto from "crypto";
+import { writeAudit } from "@/lib/audit/writeAudit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -130,16 +131,16 @@ export async function POST(req: Request) {
     const { data: signed, error: e3 } = await admin.storage.from("rb-updates").createSignedUrl(pkg.file_path, 60);
     if (e3) return NextResponse.json({ ok: false, error: e3.message }, { status: 500 });
 
-    // Best-effort audit (do not fail update response)
     try {
-      await admin.from("rb_audit").insert({
-        shop_id: device.shop_id,
-        actor_kind: "device",
+      await writeAudit({
         actor_user_id: null,
+        actor_email: null,
+        actor_kind: "device",
         action: "device.update.check",
-        entity_type: "device",
-        entity_id: device.id,
-        details: {
+        target_type: "device",
+        target_id: String(device.id),
+        shop_id: String(device.shop_id),
+        meta: {
           device_name: device.name ?? null,
           device_type: device.device_type ?? null,
           currentVersion,

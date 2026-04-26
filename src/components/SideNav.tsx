@@ -41,7 +41,7 @@ function NavItem({
       <span className="rbNavItemGlow" />
       <span className="rbNavIconWrap">
         <span className="rbNavIcon">
-          <Icon name={icon} size={17} tone={selected ? "accent" : "neutral"} />
+          <Icon name={icon} size={14} tone={selected ? "accent" : "neutral"} />
         </span>
       </span>
       <span className="rbNavCopy">
@@ -57,7 +57,6 @@ function ModePill({ children }: { children: React.ReactNode }) {
 }
 
 function isSelected(pathname: string, href: string) {
-  if (href === "/dashboard") return pathname === "/dashboard";
   if (href === "/shops") return pathname === "/shops";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -93,6 +92,13 @@ export default function SideNav(props: {
               selected={isSelected(pathname, `/shops/${shopId}`)}
             />
             <NavItem
+              href={`/shops/${shopId}/members`}
+              label="Users"
+              detail="Membership, access, and employee review."
+              icon="people"
+              selected={isSelected(pathname, `/shops/${shopId}/members`)}
+            />
+            <NavItem
               href={`/shops/${shopId}/billing`}
               label="Billing & Access"
               detail="Plan, restrictions, and app impact."
@@ -124,13 +130,6 @@ export default function SideNav(props: {
 
           <NavGroup title="Platform">
             <NavItem
-              href="/dashboard"
-              label="Dashboard"
-              detail="Return to the command center."
-              icon="spark"
-              selected={isSelected(pathname, "/dashboard")}
-            />
-            <NavItem
               href="/shops"
               label="Shop List"
               detail="Switch shops or review ownership."
@@ -148,22 +147,19 @@ export default function SideNav(props: {
     <>
       <nav className="rbNavShell">
         <div className="rbNavIntro">
-          <ModePill>{isPlatformAdmin ? "Platform Command Center" : "Admin Workspace"}</ModePill>
-          <div className="rbNavHeading">RunBook Control</div>
-          <div className="rbNavSummary">
-            Monitor health, manage people, review devices, and fix access with a
-            calmer command surface.
+          <div className="rbBrandRow">
+            <span className="rbBrandIcon">
+              <Icon name="shop" size={14} tone="accent" />
+            </span>
+            <div className="rbBrandCopy">
+              <div className="rbNavHeading">RunBook Control</div>
+              <div className="rbBrandSub">{isPlatformAdmin ? "Platform command center" : "Admin workspace"}</div>
+            </div>
           </div>
+          <ModePill>{isPlatformAdmin ? "Platform" : "Shop Admin"}</ModePill>
         </div>
 
         <NavGroup title="Command Center">
-          <NavItem
-            href="/dashboard"
-            label="Dashboard"
-            detail="Alerts, health, and next actions."
-            icon="spark"
-            selected={isSelected(pathname, "/dashboard")}
-          />
           <NavItem
             href="/shops"
             label="Shop"
@@ -259,151 +255,178 @@ export default function SideNav(props: {
 const styles = `
   .rbNavShell {
     display: grid;
-    gap: 18px;
+    gap: 14px;
+    width: 100%;
   }
 
   .rbNavIntro {
     display: grid;
     gap: 10px;
-    padding: 2px 4px 6px;
+    padding: 0 0 8px;
+    borderBottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .rbBrandRow {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+  }
+
+  .rbBrandIcon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(145,165,255,0.18);
+    background: rgba(111,128,255,0.10);
+  }
+
+  .rbBrandCopy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
   }
 
   .rbModePill {
     display: inline-flex;
     width: fit-content;
     align-items: center;
-    padding: 7px 11px;
+    padding: 5px 9px;
     border-radius: ${theme.radius.pill}px;
     border: 1px solid rgba(146, 163, 255, 0.24);
     background: linear-gradient(180deg, rgba(92, 108, 255, 0.16), rgba(75, 133, 255, 0.11));
     color: #dce3ff;
-    font-size: 10px;
+    font-size: 9.5px;
+    font-weight: 900;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  .rbNavHeading {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -0.26px;
+    color: ${theme.text.primary};
+  }
+
+  .rbBrandSub {
+    color: ${theme.text.quiet};
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+
+  .rbNavSummary {
+    color: ${theme.text.muted};
+    font-size: 11.5px;
+    line-height: 1.42;
+    max-width: 26ch;
+  }
+
+  .rbNavGroup {
+    display: grid;
+    gap: 7px;
+  }
+
+  .rbNavGroupTitle {
+    padding-left: 0;
+    color: ${theme.text.quiet};
+    font-size: 9.5px;
     font-weight: 900;
     letter-spacing: 0.82px;
     text-transform: uppercase;
   }
 
-  .rbNavHeading {
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1.06;
-    letter-spacing: -0.4px;
-    color: ${theme.text.primary};
-  }
-
-  .rbNavSummary {
-    color: ${theme.text.muted};
-    font-size: 12.5px;
-    line-height: 1.58;
-    max-width: 28ch;
-  }
-
-  .rbNavGroup {
-    display: grid;
-    gap: 10px;
-  }
-
-  .rbNavGroupTitle {
-    padding-left: 4px;
-    color: ${theme.text.quiet};
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
   .rbNavGroupItems {
     display: grid;
-    gap: 8px;
-    padding: 10px;
-    border-radius: ${theme.radius.lg}px;
-    border: ${theme.border.nav};
-    background: ${theme.bg.navSection};
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    gap: 4px;
+    padding: 0;
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .rbNavItem {
     position: relative;
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
-    gap: 12px;
-    align-items: start;
-    padding: 12px 12px 12px 10px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.05);
-    background: ${theme.bg.navIdle};
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 9px;
+    align-items: center;
+    padding: 8px 8px 8px 6px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
     color: ${theme.text.primary};
     text-decoration: none;
-    transition: transform 150ms ease, border-color 170ms ease, background 170ms ease, box-shadow 180ms ease;
+    transition: border-color 150ms ease, background 150ms ease;
     overflow: hidden;
   }
 
   .rbNavItem:hover {
-    transform: translateX(1px);
-    border-color: rgba(122,157,214,0.16);
-    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
-    box-shadow: 0 16px 28px rgba(0,0,0,0.18);
+    border-color: rgba(122,157,214,0.12);
+    background: rgba(255,255,255,0.03);
   }
 
   .rbNavItemSelected {
-    border-color: rgba(137,160,255,0.28);
-    background: ${theme.bg.navActive};
-    box-shadow: 0 18px 36px rgba(10,18,32,0.30);
+    border-color: rgba(137,160,255,0.18);
+    background: rgba(102,128,255,0.10);
+    box-shadow: none;
   }
 
   .rbNavItemGlow {
     position: absolute;
     inset: 0 auto 0 0;
-    width: 3px;
+    width: 2px;
     background: transparent;
   }
 
   .rbNavItemSelected .rbNavItemGlow {
     background: linear-gradient(180deg, #7ea8ff, #6d82ff 50%, #9a75ff);
-    box-shadow: 0 0 22px rgba(110,130,255,0.46);
   }
 
   .rbNavIconWrap {
     display: flex;
     justify-content: center;
-    padding-top: 1px;
   }
 
   .rbNavIcon {
-    width: 38px;
-    height: 38px;
+    width: 24px;
+    height: 24px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
   }
 
   .rbNavItemSelected .rbNavIcon {
-    border-color: rgba(145,165,255,0.24);
-    background: linear-gradient(180deg, rgba(111,128,255,0.15), rgba(73,160,255,0.08));
-    box-shadow: 0 10px 26px rgba(23,39,110,0.20), inset 0 1px 0 rgba(255,255,255,0.06);
+    border-color: rgba(145,165,255,0.14);
+    background: rgba(111,128,255,0.10);
+    box-shadow: none;
   }
 
   .rbNavCopy {
     display: grid;
-    gap: 4px;
+    gap: 1px;
     min-width: 0;
   }
 
   .rbNavLabel {
-    font-size: 14px;
+    font-size: 12.5px;
     font-weight: 800;
     line-height: 1.15;
-    letter-spacing: -0.14px;
+    letter-spacing: -0.08px;
     color: ${theme.text.primary};
   }
 
   .rbNavDetail {
-    font-size: 11.5px;
-    line-height: 1.45;
+    font-size: 10.5px;
+    line-height: 1.3;
     color: ${theme.text.quiet};
   }
 

@@ -21,7 +21,7 @@ export type ShopEntitlement = {
 
 type EntitlementOverride = "allow" | "restricted" | null;
 
-type ShopBillingRow = {
+export type ShopBillingRow = {
   id: string;
   billing_status: string | null;
   trial_started_at: string | null;
@@ -39,6 +39,8 @@ type ShopBillingRow = {
   entitlement_override: string | null;
   manual_billing_override: boolean | null;
   billing_notes: string | null;
+  deletion_status: string | null;
+  deletion_started_at: string | null;
 };
 
 function normalizeOverride(value: string | null | undefined): EntitlementOverride {
@@ -81,6 +83,8 @@ async function loadShop(shopId: string): Promise<ShopBillingRow> {
         entitlement_override: row.entitlement_override ?? null,
         manual_billing_override: row.manual_billing_override ?? null,
         billing_notes: row.billing_notes ?? null,
+        deletion_status: row.deletion_status ?? null,
+        deletion_started_at: row.deletion_started_at ?? null,
       };
     }
 
@@ -98,8 +102,20 @@ async function loadShop(shopId: string): Promise<ShopBillingRow> {
 }
 
 export async function getShopEntitlement(shopId: string): Promise<ShopEntitlement> {
-  const now = Date.now();
   const shop = await loadShop(shopId);
+  return getShopEntitlementFromRow(shop);
+}
+
+export function getShopEntitlementFromRow(shop: ShopBillingRow, now = Date.now()): ShopEntitlement {
+  if (String(shop.deletion_status ?? "").trim().toLowerCase() === "deleting" || shop.deletion_started_at) {
+    return {
+      status: "expired",
+      allowed: false,
+      restricted: true,
+      reason: "shop_deleting",
+      grace_active: false,
+    };
+  }
   let status = normalizeSystemBillingStatus(shop.billing_status);
   const override = normalizeOverride(shop.entitlement_override);
 

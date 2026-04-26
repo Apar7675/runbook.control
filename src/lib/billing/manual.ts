@@ -28,6 +28,8 @@ export const SHOP_BILLING_SELECT_COLUMNS = [
   "entitlement_override",
   "manual_billing_override",
   "billing_notes",
+  "deletion_status",
+  "deletion_started_at",
 ] as const;
 
 export function tryExtractMissingColumn(msg: string): string | null {

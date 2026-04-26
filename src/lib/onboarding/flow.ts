@@ -158,7 +158,7 @@ export async function loadSetupStatus(preferredShopId?: string | null): Promise<
 
 export function requireOnboardingRoute(state: OnboardingState | null, expectedPath: string) {
   const resolved = getResolvedOnboardingPath(state);
-  if (resolved === "/dashboard") return resolved;
+  if (resolved === "/shops") return resolved;
   if (resolved !== expectedPath) return resolved;
   return null;
 }
@@ -172,10 +172,10 @@ export async function resolveOnboardingPath(state: OnboardingState | null) {
       result: { basePath },
     });
   }
-  if (basePath !== "/dashboard") {
+  if (basePath !== "/shops") {
     if (process.env.NODE_ENV === "development") {
       console.log("[Onboarding]", {
-        action: "resolve_path:non_dashboard",
+        action: "resolve_path:non_shops",
         state,
         result: { path: basePath },
       });
@@ -213,21 +213,21 @@ export async function resolveOnboardingPath(state: OnboardingState | null) {
     console.log("[Onboarding]", {
       action: "resolve_path:complete",
       state,
-      result: { path: "/dashboard", validation: setupValidation, checklist },
+      result: { path: "/shops", validation: setupValidation, checklist },
     });
   }
-  return "/dashboard";
+  return "/shops";
 }
 
 export async function resolveOnboardingPathForCurrentUser() {
   const { context, state } = await loadOnboardingStateForCurrentUser();
-  const path = context.isPlatformAdmin ? "/dashboard" : await resolveOnboardingPath(state);
+  const path = context.isPlatformAdmin ? "/shops" : await resolveOnboardingPath(state);
   return { context, state, path };
 }
 
 export async function requireOnboardingRouteForCurrentUser(expectedPath: string) {
   const { context, state, path } = await resolveOnboardingPathForCurrentUser();
-  if (path === "/dashboard") return { context, state, redirectTo: path };
+  if (path === "/shops") return { context, state, redirectTo: path };
   if (path !== expectedPath) return { context, state, redirectTo: path };
   return { context, state, redirectTo: null as string | null };
 }
@@ -235,7 +235,7 @@ export async function requireOnboardingRouteForCurrentUser(expectedPath: string)
 export async function completeOnboardingForCurrentUser() {
   const { context, state, path } = await resolveOnboardingPathForCurrentUser();
 
-  if (path === "/dashboard" && state?.completed_at) {
+  if (path === "/shops" && state?.completed_at) {
     if (process.env.NODE_ENV === "development") {
       console.log("[Onboarding]", {
         action: "complete:idempotent",
@@ -259,10 +259,10 @@ export async function completeOnboardingForCurrentUser() {
       console.log("[Onboarding]", {
         action: "complete:blocked",
         state,
-        result: { ok: false, error: status.reasons[0] ?? "Finish setup before launching into the dashboard." },
+        result: { ok: false, error: status.reasons[0] ?? "Finish setup before launching into shops." },
       });
     }
-    return { ok: false as const, error: status.reasons[0] ?? "Finish setup before launching into the dashboard." };
+    return { ok: false as const, error: status.reasons[0] ?? "Finish setup before launching into shops." };
   }
 
   const next = await markOnboardingComplete({ userId: context.userId, shopId: status.shopId });

@@ -57,6 +57,7 @@ export async function GET(req: Request) {
       .select("id,role")
       .eq("shop_id", shop_id)
       .eq("user_id", user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (memberError) return NextResponse.json({ ok: false, error: memberError.message }, { status: 500 });

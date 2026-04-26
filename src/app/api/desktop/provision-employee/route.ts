@@ -27,7 +27,7 @@ function b(v: any, def = false) {
   return x === "1" || x === "true" || x === "yes" || x === "y";
 }
 
-function toSharedRole(input: string) {
+function normalizeRequestedRole(input: string) {
   const role = s(input).toLowerCase();
   if (!role) return "employee";
   if (role === "owner") return "owner";
@@ -39,10 +39,16 @@ function toSharedRole(input: string) {
   return "employee";
 }
 
-function toShopMemberRole(sharedRole: string) {
-  return sharedRole === "owner" || sharedRole === "admin" || sharedRole === "manager" || sharedRole === "foreman"
-    ? "admin"
-    : "member";
+function toShopMemberRole(requestedRole: string) {
+  if (requestedRole === "owner") return "owner";
+  if (requestedRole === "admin" || requestedRole === "manager" || requestedRole === "foreman") return "admin";
+  return "member";
+}
+
+function toEmployeeRole(requestedRole: string) {
+  return requestedRole === "owner" || requestedRole === "admin" || requestedRole === "manager" || requestedRole === "foreman"
+    ? "foreman"
+    : "employee";
 }
 
 function toActiveStatus(input: string) {
@@ -346,7 +352,7 @@ export async function POST(req: Request) {
     const homeState = s((body as any).home_state);
     const homePostalCode = s((body as any).home_postal_code);
     const socialSecurityNumber = s((body as any).social_security_number);
-    const role = toSharedRole((body as any).role);
+    const requestedRole = normalizeRequestedRole((body as any).role);
     const status = s((body as any).status) || "Active";
     const runBookAccessEnabled = b((body as any).runbook_access_enabled, true);
     const mobileAccessEnabled = b((body as any).mobile_access_enabled, true);
@@ -567,7 +573,7 @@ export async function POST(req: Request) {
       await upsertShopMember(admin, {
         shopId,
         userId: desiredAuthUserId,
-        role,
+        role: requestedRole,
       });
     }
 
@@ -592,7 +598,7 @@ export async function POST(req: Request) {
       home_state: homeState,
       home_postal_code: homePostalCode,
       social_security_number: socialSecurityNumber,
-      role,
+      role: toEmployeeRole(requestedRole),
       is_active: desiredActive,
       runbook_access_enabled: runBookAccessEnabled,
       mobile_access_enabled: mobileAccessEnabled,

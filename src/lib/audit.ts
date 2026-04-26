@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { writeAudit } from "@/lib/audit/writeAudit";
 
 export type AuditAction =
   | "shop.created"
@@ -27,17 +28,14 @@ export async function auditLog(args: {
   const supabase = await supabaseServer();
   const { data: me } = await supabase.auth.getUser();
 
-  const actor_user_id = args.actor_user_id ?? me.user?.id ?? null;
-
-  const { error } = await supabase.from("rb_audit").insert({
-    shop_id: args.shop_id ?? null,
-    actor_user_id,
+  await writeAudit({
+    actor_user_id: args.actor_user_id ?? me.user?.id ?? null,
+    actor_email: me.user?.email ?? null,
     actor_kind: args.actor_kind ?? "user",
     action: args.action,
-    entity_type: args.entity_type ?? null,
-    entity_id: args.entity_id ?? null,
-    details: args.details ?? {},
+    target_type: args.entity_type ?? null,
+    target_id: args.entity_id ?? null,
+    shop_id: args.shop_id ?? null,
+    meta: args.details ?? {},
   });
-
-  if (error) console.error("[audit] insert failed:", error.message);
 }

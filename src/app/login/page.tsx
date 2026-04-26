@@ -27,6 +27,7 @@ function LoginInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const next = sanitizeNext(sp.get("next"));
+  const callbackError = (sp.get("message") ?? sp.get("error") ?? "").trim();
 
   // SINGLE browser client instance
   const supabase = useMemo(() => getBrowserSupabase(), []);
@@ -114,12 +115,51 @@ function LoginInner() {
     }
   }
 
+  async function sendPasswordReset() {
+    setStatus("");
+    setBusy(true);
+
+    try {
+      const e = email.trim();
+      if (!e) {
+        setStatus("Enter email.");
+        return;
+      }
+
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent("/reset-password")}&type=recovery`
+          : undefined;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(e, {
+        redirectTo,
+      });
+
+      if (error) {
+        setStatus(error.message);
+        return;
+      }
+
+      setStatus("Password reset link sent. Check your email.");
+    } catch (err: any) {
+      setStatus(err?.message ?? "Failed to send password reset email");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ display: "grid", gap: 18, maxWidth: 520 }}>
       <h1 style={{ margin: 0, fontSize: 28 }}>Login</h1>
 
       <GlassCard title="Sign in">
         <div style={{ display: "grid", gap: 12 }}>
+          {callbackError ? (
+            <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>
+              {callbackError}
+            </div>
+          ) : null}
+
           <input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -162,6 +202,17 @@ function LoginInner() {
               }}
             >
               Send magic link
+            </button>
+
+            <button
+              onClick={sendPasswordReset}
+              disabled={busy}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 12,
+              }}
+            >
+              Forgot password
             </button>
           </div>
 

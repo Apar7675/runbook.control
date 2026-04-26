@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { assertUuid, requireShopAccessOrAdminAal2 } from "@/lib/authz";
-import { getShopEntitlement } from "@/lib/billing/entitlement";
+import { getShopEntitlementFromRow, type ShopBillingRow } from "@/lib/billing/entitlement";
 import { describeShopAccess } from "@/lib/billing/access";
 import { SHOP_BILLING_SELECT_COLUMNS, tryExtractMissingColumn } from "@/lib/billing/manual";
 
@@ -36,6 +36,30 @@ async function loadShopWithAutoStrip(admin: any, shopId: string) {
   throw new Error("Select failed after stripping missing columns");
 }
 
+function normalizeShopRow(shop: any): ShopBillingRow {
+  return {
+    id: shop.id,
+    billing_status: shop.billing_status ?? null,
+    trial_started_at: shop.trial_started_at ?? null,
+    trial_ends_at: shop.trial_ends_at ?? null,
+    trial_override_reason: shop.trial_override_reason ?? null,
+    billing_current_period_end: shop.billing_current_period_end ?? null,
+    billing_amount: shop.billing_amount ?? null,
+    billing_interval: shop.billing_interval ?? null,
+    next_billing_date: shop.next_billing_date ?? null,
+    manual_billing_status: shop.manual_billing_status ?? null,
+    grace_ends_at: shop.grace_ends_at ?? null,
+    stripe_customer_id: shop.stripe_customer_id ?? null,
+    stripe_subscription_id: shop.stripe_subscription_id ?? null,
+    subscription_plan: shop.subscription_plan ?? null,
+    entitlement_override: shop.entitlement_override ?? null,
+    manual_billing_override: shop.manual_billing_override ?? null,
+    billing_notes: shop.billing_notes ?? null,
+    deletion_status: shop.deletion_status ?? null,
+    deletion_started_at: shop.deletion_started_at ?? null,
+  };
+}
+
 export async function GET(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "local";
@@ -53,7 +77,7 @@ export async function GET(req: Request) {
 
     if (!shop) return NextResponse.json({ ok: false, error: "Shop not found" }, { status: 404 });
 
-    const entitlement = await getShopEntitlement(shopId);
+    const entitlement = getShopEntitlementFromRow(normalizeShopRow(shop));
     const access = describeShopAccess(entitlement);
     return NextResponse.json({ ok: true, shop, entitlement, access, admin: { is_platform_admin: ctx.isAdmin } });
   } catch (e: any) {

@@ -110,7 +110,7 @@ function mapStateRow(data: any): OnboardingState {
 export function getResolvedOnboardingPath(state: OnboardingState | null) {
   if (!state) return "/onboarding/profile";
   const validation = validateOnboardingState(state);
-  if (state.completed_at && validation.valid && hasValidCompletionPrerequisites(state)) return "/dashboard";
+  if (state.completed_at && validation.valid && hasValidCompletionPrerequisites(state)) return "/shops";
   if (state.current_step === "company") return "/onboarding/company";
   if (state.current_step === "setup") return "/onboarding/setup";
   return "/onboarding/profile";

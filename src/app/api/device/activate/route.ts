@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { sha256Hex } from "@/lib/crypto";
+import { writeAudit } from "@/lib/audit/writeAudit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -72,20 +73,19 @@ export async function POST(req: Request) {
     rbAssertUuid("device.id", String(device.id));
     rbAssertUuid("device.shop_id", String(device.shop_id));
 
-    // Write audit (service role bypasses RLS)
-    const { error: auditErr } = await admin.from("rb_audit").insert({
-      shop_id: device.shop_id,
-      actor_kind: "device",
-      actor_user_id: null,
-      action: "device.activated",
-      entity_type: "device",
-      entity_id: device.id,
-      details: { device_name: device.name, activated_at: nowIso },
-    });
-
-    if (auditErr) {
-      // Don't fail activation if audit fails, but log it.
-      console.warn("device activate: audit insert failed:", auditErr.message);
+    try {
+      await writeAudit({
+        actor_user_id: null,
+        actor_email: null,
+        actor_kind: "device",
+        action: "device.activated",
+        target_type: "device",
+        target_id: String(device.id),
+        shop_id: String(device.shop_id),
+        meta: { device_name: device.name, activated_at: nowIso },
+      });
+    } catch (auditErr: any) {
+      console.warn("device activate: audit insert failed:", auditErr?.message ?? auditErr);
     }
 
     return NextResponse.json({ ok: true, device }, { status: 200 });

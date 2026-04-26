@@ -286,27 +286,27 @@ export function StatusBadge({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
-        minHeight: 28,
-        padding: "4px 10px",
+        gap: 6,
+        minHeight: 24,
+        padding: "3px 8px",
         borderRadius: theme.radius.pill,
         border: `1px solid ${styles.borderColor}`,
         background: styles.background,
         color: styles.color,
-        fontSize: 10,
+        fontSize: 9.5,
         fontWeight: 900,
-        letterSpacing: 0.62,
+        letterSpacing: 0.52,
         textTransform: "uppercase",
         whiteSpace: "nowrap",
       }}
     >
       <span
         style={{
-          width: 7,
-          height: 7,
+          width: 6,
+          height: 6,
           borderRadius: theme.radius.pill,
           background: styles.color,
-          boxShadow: `0 0 14px ${styles.glow}`,
+          boxShadow: `0 0 10px ${styles.glow}`,
         }}
       />
       {label}
@@ -331,11 +331,11 @@ export function PageHeader({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "flex-end",
-        gap: 20,
+        gap: 14,
         flexWrap: "wrap",
       }}
     >
-      <div style={{ display: "grid", gap: 10, maxWidth: 840 }}>
+      <div style={{ display: "grid", gap: 6, maxWidth: 840 }}>
         {eyebrow ? (
           <div style={{ color: theme.text.accentSoft, ...theme.type.label }}>
             {eyebrow}
@@ -346,8 +346,8 @@ export function PageHeader({
           <div
             style={{
               color: theme.text.muted,
-              fontSize: 14,
-              lineHeight: 1.62,
+              fontSize: 13,
+              lineHeight: 1.52,
               maxWidth: 780,
             }}
           >
@@ -360,7 +360,7 @@ export function PageHeader({
         <div
           style={{
             display: "flex",
-            gap: 10,
+            gap: 8,
             flexWrap: "wrap",
             alignItems: "center",
           }}
@@ -392,9 +392,9 @@ export function ActionLink({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 9,
-        minHeight: 42,
-        padding: primary ? "10px 15px" : "10px 14px",
+        gap: 7,
+        minHeight: 36,
+        padding: primary ? "8px 12px" : "8px 11px",
         borderRadius: theme.radius.md,
         textDecoration: "none",
         fontWeight: 900,
@@ -405,12 +405,12 @@ export function ActionLink({
           ? "linear-gradient(135deg, rgba(88,107,255,0.78), rgba(70,170,255,0.34) 60%, rgba(116,108,255,0.32))"
           : "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
         boxShadow: primary
-          ? "0 14px 32px rgba(27,52,138,0.34)"
+          ? "0 8px 16px rgba(27,52,138,0.18)"
           : theme.shadow.button,
         whiteSpace: "nowrap",
       }}
     >
-      {icon ? <Icon name={icon} size={15} tone={primary ? "accent" : "neutral"} /> : null}
+      {icon ? <Icon name={icon} size={13} tone={primary ? "accent" : "neutral"} /> : null}
       <span>{children}</span>
     </Link>
   );
@@ -507,11 +507,11 @@ export function MetricCard({
         borderRadius: theme.radius.lg,
         border: toneStyles.border,
         background: toneStyles.background,
-        padding: "16px 16px 14px",
-        minHeight: 148,
+        padding: "11px 12px 10px",
+        minHeight: 112,
         display: "grid",
         alignContent: "space-between",
-        gap: 14,
+        gap: 10,
         boxShadow: toneStyles.boxShadow,
       }}
     >
@@ -525,34 +525,33 @@ export function MetricCard({
           pointerEvents: "none",
         }}
       />
-      <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 14 }}>
+      <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 10 }}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 12,
+            gap: 10,
             alignItems: "flex-start",
           }}
         >
-          <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span
                 style={{
-                  width: 34,
-                  height: 34,
+                  width: 28,
+                  height: 28,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: 12,
+                  borderRadius: 10,
                   border: "1px solid rgba(255,255,255,0.08)",
                   background: "rgba(255,255,255,0.04)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
                   flexShrink: 0,
                 }}
               >
                 <Icon
                   name={icon ?? "spark"}
-                  size={16}
+                  size={13}
                   tone={toneStyles.iconTone}
                 />
               </span>
@@ -567,10 +566,10 @@ export function MetricCard({
             </div>
             <div
               style={{
-                fontSize: 28,
+                fontSize: 23,
                 fontWeight: 900,
                 lineHeight: 1.02,
-                letterSpacing: -0.56,
+                letterSpacing: -0.42,
                 color: toneStyles.valueColor,
               }}
             >
@@ -579,7 +578,7 @@ export function MetricCard({
           </div>
           {badge ? <div style={{ display: "flex", justifyContent: "flex-end" }}>{badge}</div> : null}
         </div>
-        <div style={{ color: theme.text.secondary, lineHeight: 1.55, fontSize: 13 }}>
+        <div style={{ color: theme.text.secondary, lineHeight: 1.42, fontSize: 12 }}>
           {summary}
         </div>
       </div>
@@ -604,14 +603,14 @@ export function DataList({
   items: Array<{ label: string; value: React.ReactNode }>;
 }) {
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div style={{ display: "grid", gap: 10 }}>
       {items.map((item) => (
         <div
           key={item.label}
           style={{
             display: "grid",
-            gridTemplateColumns: "140px minmax(0, 1fr)",
-            gap: 14,
+            gridTemplateColumns: "120px minmax(0, 1fr)",
+            gap: 10,
             alignItems: "start",
           }}
         >
@@ -619,9 +618,9 @@ export function DataList({
           <div
             style={{
               color: theme.text.primary,
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: 800,
-              lineHeight: 1.5,
+              lineHeight: 1.4,
             }}
           >
             {item.value}
@@ -634,14 +633,14 @@ export function DataList({
 
 const fieldBaseStyle: React.CSSProperties = {
   width: "100%",
-  minHeight: 42,
+  minHeight: 36,
   borderRadius: theme.radius.md,
   border: theme.border.accentSoft,
   background: theme.bg.panelInset,
   color: theme.text.primary,
-  padding: "10px 12px",
+  padding: "7px 10px",
   boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 24px rgba(0,0,0,0.18)",
+    "inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 14px rgba(0,0,0,0.12)",
 };
 
 export function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -672,7 +671,7 @@ export function ControlButton({
           background:
             "linear-gradient(135deg, rgba(96,134,198,0.82), rgba(90,130,214,0.38) 60%, rgba(109,130,255,0.24))",
           color: "#f7f9ff",
-          boxShadow: "0 14px 28px rgba(27, 52, 138, 0.30)",
+          boxShadow: "0 8px 16px rgba(27, 52, 138, 0.20)",
         }
       : tone === "danger"
         ? {
@@ -693,9 +692,9 @@ export function ControlButton({
     <button
       {...props}
       style={{
-        minHeight: 40,
+        minHeight: 34,
         borderRadius: theme.radius.md,
-        padding: "9px 13px",
+        padding: "7px 11px",
         fontWeight: 900,
         letterSpacing: 0.12,
         cursor: props.disabled ? "not-allowed" : "pointer",
@@ -729,35 +728,35 @@ export function EmptyState({
         border: "1px dashed rgba(255,255,255,0.14)",
         background:
           "radial-gradient(circle at top left, rgba(122,157,214,0.10), transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
-        padding: 30,
+        padding: 20,
         display: "grid",
-        gap: 12,
+        gap: 10,
       }}
     >
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span
           style={{
-            width: 36,
-            height: 36,
+            width: 30,
+            height: 30,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 12,
+            borderRadius: 10,
             border: "1px solid rgba(122,157,214,0.18)",
             background: "rgba(122,157,214,0.08)",
           }}
         >
-          <Icon name="spark" size={18} tone="accent" />
+          <Icon name="spark" size={15} tone="accent" />
         </span>
-        <div style={{ fontWeight: 900, fontSize: 24, letterSpacing: -0.32 }}>
+        <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: -0.24 }}>
           {title}
         </div>
       </div>
-      <div style={{ color: theme.text.secondary, lineHeight: 1.62, maxWidth: 640 }}>
+      <div style={{ color: theme.text.secondary, lineHeight: 1.5, maxWidth: 640 }}>
         {description}
       </div>
       {action ? (
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{action}</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{action}</div>
       ) : null}
     </div>
   );

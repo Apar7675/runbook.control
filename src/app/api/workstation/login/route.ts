@@ -46,6 +46,7 @@ async function getShopMembership(admin: any, shopId: string, userId: string) {
     .select("id")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

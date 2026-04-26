@@ -59,6 +59,7 @@ export async function requireShopAccessAal2(shopId: string) {
     .select("id")
     .eq("shop_id", shopId)
     .eq("user_id", user.id)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -78,6 +79,7 @@ export async function requireShopAccessOrAdminAal2(shopId: string) {
     .select("id")
     .eq("shop_id", shopId)
     .eq("user_id", user.id)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

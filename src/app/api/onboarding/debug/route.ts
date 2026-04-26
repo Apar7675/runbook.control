@@ -18,7 +18,7 @@ export async function GET() {
     return NextResponse.json({
       onboarding_state: state,
       resolved_step: path,
-      is_complete: path === "/dashboard",
+      is_complete: path === "/shops",
       validation_result: validation,
     });
   } catch (e: any) {

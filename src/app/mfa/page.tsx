@@ -83,7 +83,7 @@ export default function MFAPage() {
         await fetch("/api/user/trust-device", { method: "POST", credentials: "include" }).catch(() => {});
       }
 
-      window.location.href = "/dashboard";
+      window.location.href = "/shops";
     } catch (e: any) {
       setStatus(e?.message ?? "Verification failed.");
       setLoading(false);

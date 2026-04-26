@@ -6,7 +6,7 @@ type Props = {
   params: Promise<{ shopId: string }>;
 };
 
-export default async function ShopMembersRedirect({ params }: Props) {
+export default async function ShopMembersPage({ params }: Props) {
   const { shopId } = await params;
-  redirect(`/shops/${shopId}`);
+  redirect(`/shops/${shopId}?tab=users`);
 }

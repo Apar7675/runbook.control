@@ -1,361 +1,502 @@
 import React from "react";
-import { MetricCard, PageHeader, SectionBlock, StatusBadge } from "@/components/control/ui";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { ControlActionButtonV2, ControlActionLinkV2 } from "@/components/control/v2/ControlActionButtonV2";
+import ControlBadgeV2 from "@/components/control/v2/ControlBadgeV2";
+import { ControlInputV2, ControlSelectV2 } from "@/components/control/v2/ControlFieldV2";
+import { ControlTableCellV2, ControlTableHeadCellV2, ControlTableV2, ControlTableWrapV2 } from "@/components/control/v2/ControlTableV2";
+import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 import { requirePlatformAdminAal2 } from "@/lib/authz";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/ui/dates";
 
 export const dynamic = "force-dynamic";
 
-function iso(ts?: string | null) {
-  if (!ts) return "-";
+type StatusScope = "access" | "config" | "database" | "devices" | "audit" | "billing";
+type StatusSeverity = "ok" | "warn" | "critical" | "neutral";
+
+type StatusRow = {
+  id: string;
+  scope: StatusScope;
+  component: string;
+  severity: StatusSeverity;
+  status: string;
+  signal: string;
+  detail: string;
+  observed_at: string | null;
+  source: string;
+};
+
+function firstParam(value: string | string[] | undefined) {
+  return typeof value === "string" ? value : Array.isArray(value) ? value[0] ?? "" : "";
+}
+
+function badgeTone(severity: StatusSeverity): "success" | "warning" | "danger" | "neutral" {
+  if (severity === "ok") return "success";
+  if (severity === "warn") return "warning";
+  if (severity === "critical") return "danger";
+  return "neutral";
+}
+
+function severityLabel(severity: StatusSeverity) {
+  if (severity === "ok") return "OK";
+  if (severity === "warn") return "Warning";
+  if (severity === "critical") return "Critical";
+  return "Info";
+}
+
+function severityRank(severity: StatusSeverity) {
+  if (severity === "critical") return 0;
+  if (severity === "warn") return 1;
+  if (severity === "neutral") return 2;
+  return 3;
+}
+
+function observedAtRank(value: string | null) {
+  if (!value) return Number.NEGATIVE_INFINITY;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : Number.NEGATIVE_INFINITY;
+}
+
+function formatObservedAt(value: string | null) {
+  if (!value) return "-";
   try {
-    return formatDateTime(ts);
+    return formatDateTime(value);
   } catch {
-    return ts;
+    return value;
   }
 }
 
-function shortId(id?: string | null) {
-  if (!id) return "-";
-  return id.length > 10 ? `${id.slice(0, 8)}...` : id;
-}
-
-function msToAge(ms: number) {
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 14) return `${d}d`;
-  const w = Math.floor(d / 7);
-  return `${w}w`;
-}
-
-function ageFromIso(ts?: string | null) {
-  if (!ts) return "-";
-  const t = Date.parse(ts);
-  if (!Number.isFinite(t)) return "-";
-  const age = Date.now() - t;
-  if (age < 0) return "-";
-  return msToAge(age);
-}
-
-function pill(text: string, tone: "ok" | "warn" | "bad" | "info" = "info") {
-  const style: React.CSSProperties =
-    tone === "ok"
-      ? { background: "rgba(80,220,140,0.16)", color: "#bff5d2" }
-      : tone === "warn"
-      ? { background: "rgba(255,180,80,0.16)", color: "#ffe4c6" }
-      : tone === "bad"
-      ? { background: "rgba(255,120,120,0.16)", color: "#ffd0d0" }
-      : { background: "rgba(126,171,217,0.16)", color: "#d7e6ff" };
-
-  return (
-    <span
-      style={{
-        padding: "4px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 900,
-        border: "1px solid rgba(255,255,255,0.14)",
-        ...style,
-      }}
-    >
-      {text}
-    </span>
-  );
-}
-
-function boolChip(label: string, ok: boolean) {
-  return pill(label, ok ? "ok" : "bad");
+function shortAge(value: string | null) {
+  if (!value) return "";
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return "";
+  const delta = Date.now() - time;
+  if (delta < 0) return "";
+  const seconds = Math.floor(delta / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 function safeEnv(name: string) {
-  const v = process.env[name];
-  return !!(v && String(v).trim().length);
+  const value = process.env[name];
+  return Boolean(value && String(value).trim().length);
 }
 
-function isMissingColumnError(msg: string) {
-  const m = (msg || "").toLowerCase();
-  return m.includes("does not exist") && m.includes("column");
+function isMissingColumnError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("does not exist") && normalized.includes("column");
 }
 
-export default async function StatusPage() {
+function auditSeverity(action: string): StatusSeverity {
+  const normalized = action.toLowerCase();
+  if (normalized.includes("failed") || normalized.includes("error")) return "critical";
+  if (normalized.includes("warning")) return "warn";
+  return "neutral";
+}
+
+export default async function StatusPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const scopeFilter = firstParam(params.scope).trim().toLowerCase();
+  const severityFilter = firstParam(params.severity).trim().toLowerCase();
+  const query = firstParam(params.q).trim().toLowerCase();
+
   const { user } = await requirePlatformAdminAal2();
   const admin = supabaseAdmin();
 
-  const health: { ok: boolean; error?: string } = { ok: true };
   let shopsCount = 0;
   let devicesCount = 0;
   let tokensCount = 0;
-
-  type DevRow = {
-    id: string;
-    shop_id: string | null;
-    status: string | null;
-    last_seen_at?: string | null;
-    reported_version?: string | null;
-  };
-  type TokRow = { id: string; device_id: string; revoked_at: string | null; last_seen_at: string | null };
-
-  let devices: DevRow[] = [];
-  let tokens: TokRow[] = [];
-
   let stale24h = 0;
   let offline7d = 0;
   let activeDevices = 0;
   let disabledDevices = 0;
-
-  const versions = new Map<string, number>();
+  let recentAudit: Array<{ id: string; created_at: string | null; action: string | null; shop_id: string | null; target_id: string | null; actor_email: string | null }> = [];
+  let statusRows: StatusRow[] = [];
+  let loadError = "";
 
   try {
-    {
-      const r = await admin.from("rb_shops").select("id", { count: "exact", head: true });
-      shopsCount = r.count ?? 0;
+    type DeviceRow = {
+      id: string;
+      shop_id: string | null;
+      status: string | null;
+      last_seen_at?: string | null;
+      reported_version?: string | null;
+    };
+    type TokenRow = {
+      device_id: string;
+      last_seen_at: string | null;
+    };
+
+    let devices: DeviceRow[] = [];
+    let tokens: TokenRow[] = [];
+
+    const shopsResult = await admin.from("rb_shops").select("id", { count: "exact", head: true });
+    if (shopsResult.error) throw new Error(shopsResult.error.message);
+    shopsCount = shopsResult.count ?? 0;
+
+    const recentDeviceSelect = "id,shop_id,status,last_seen_at,reported_version";
+    const fallbackDeviceSelect = "id,shop_id,status";
+    const deviceResult = await admin.from("rb_devices").select(recentDeviceSelect).order("created_at", { ascending: false }).limit(500);
+    if (!deviceResult.error) {
+      devices = (deviceResult.data ?? []) as DeviceRow[];
+    } else if (isMissingColumnError(deviceResult.error.message)) {
+      const fallbackDeviceResult = await admin.from("rb_devices").select(fallbackDeviceSelect).order("created_at", { ascending: false }).limit(500);
+      if (fallbackDeviceResult.error) throw new Error(fallbackDeviceResult.error.message);
+      devices = (fallbackDeviceResult.data ?? []) as DeviceRow[];
+    } else {
+      throw new Error(deviceResult.error.message);
     }
 
-    {
-      const selectNew = "id,shop_id,status,last_seen_at,reported_version";
-      const selectOld = "id,shop_id,status";
-      const r = await admin.from("rb_devices").select(selectNew).order("created_at", { ascending: false }).limit(500);
-      if (!r.error) {
-        devices = (r.data ?? []) as any;
-      } else if (isMissingColumnError(r.error.message)) {
-        const r2 = await admin.from("rb_devices").select(selectOld).order("created_at", { ascending: false }).limit(500);
-        if (r2.error) throw new Error(r2.error.message);
-        devices = (r2.data ?? []) as any;
-      } else {
-        throw new Error(r.error.message);
-      }
+    devicesCount = devices.length;
 
-      devicesCount = devices.length;
+    const deviceIds = devices.map((device) => device.id).filter(Boolean);
+    if (deviceIds.length > 0) {
+      const tokenResult = await admin.from("rb_device_tokens").select("device_id,last_seen_at").in("device_id", deviceIds);
+      if (tokenResult.error) throw new Error(tokenResult.error.message);
+      tokens = (tokenResult.data ?? []) as TokenRow[];
+    }
+    tokensCount = tokens.length;
 
-      for (const d of devices) {
-        const st = String(d.status ?? "").toLowerCase();
-        if (st === "active") activeDevices++;
-        else if (st === "disabled") disabledDevices++;
-
-        const v = (d.reported_version ?? null) as any;
-        if (v) versions.set(String(v), (versions.get(String(v)) ?? 0) + 1);
-      }
+    const latestTokenSeenByDevice = new Map<string, string>();
+    for (const token of tokens) {
+      if (!token.last_seen_at) continue;
+      const previous = latestTokenSeenByDevice.get(token.device_id);
+      if (!previous || token.last_seen_at > previous) latestTokenSeenByDevice.set(token.device_id, token.last_seen_at);
     }
 
-    {
-      const ids = devices.map((d) => d.id).filter(Boolean);
-      if (ids.length) {
-        const r = await admin
-          .from("rb_device_tokens")
-          .select("id,device_id,revoked_at,last_seen_at")
-          .in("device_id", ids);
-        if (r.error) throw new Error(r.error.message);
-        tokens = (r.data ?? []) as any;
-      }
-      tokensCount = tokens.length;
-    }
-
-    const tokLastByDevice = new Map<string, string>();
-    for (const t of tokens) {
-      if (!t.last_seen_at) continue;
-      const prev = tokLastByDevice.get(t.device_id);
-      if (!prev || String(t.last_seen_at) > prev) tokLastByDevice.set(t.device_id, String(t.last_seen_at));
-    }
-
-    const day = 24 * 60 * 60 * 1000;
     const now = Date.now();
-    for (const d of devices) {
-      const a = String(d.status ?? "").toLowerCase();
-      if (a !== "active") continue;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    for (const device of devices) {
+      const normalizedStatus = String(device.status ?? "").toLowerCase();
+      if (normalizedStatus === "active") activeDevices++;
+      if (normalizedStatus === "disabled") disabledDevices++;
+      if (normalizedStatus !== "active") continue;
 
-      const tokTs = tokLastByDevice.get(d.id) ?? null;
-      const devTs = (d.last_seen_at ?? null) as any;
-      const best = tokTs ?? devTs ?? null;
-
-      if (!best) {
+      const bestSeenAt = latestTokenSeenByDevice.get(device.id) ?? device.last_seen_at ?? null;
+      if (!bestSeenAt) {
         offline7d++;
         continue;
       }
-      const t = Date.parse(best);
-      if (!Number.isFinite(t)) {
+
+      const seenAtMs = Date.parse(bestSeenAt);
+      if (!Number.isFinite(seenAtMs)) {
         offline7d++;
         continue;
       }
-      const age = now - t;
-      if (age > 7 * day) offline7d++;
-      else if (age > day) stale24h++;
+
+      const age = now - seenAtMs;
+      if (age > 7 * oneDayMs) offline7d++;
+      else if (age > oneDayMs) stale24h++;
     }
-  } catch (e: any) {
-    health.ok = false;
-    health.error = e?.message ?? String(e);
-  }
 
-  let lastAuditAt: string | null = null;
-  let lastAuditAction: string | null = null;
-  let recentAudit: any[] = [];
-  try {
-    const r = await admin
+    const auditResult = await admin
       .from("rb_audit_log")
       .select("id,created_at,action,shop_id,target_id,actor_email")
       .order("created_at", { ascending: false })
-      .limit(20);
-    if (!r.error) {
-      recentAudit = r.data ?? [];
-      const first = recentAudit[0];
-      if (first) {
-        lastAuditAt = first.created_at ?? null;
-        lastAuditAction = first.action ?? null;
-      }
-    }
-  } catch {
-    // best effort
+      .limit(12);
+    if (auditResult.error) throw new Error(auditResult.error.message);
+    recentAudit = (auditResult.data ?? []) as typeof recentAudit;
+
+    const latestAudit = recentAudit[0] ?? null;
+    const gateMode = process.env.RUNBOOK_BILLING_GATE_MODE ?? "hybrid";
+
+    statusRows = [
+      {
+        id: "session-platform-admin",
+        scope: "access",
+        component: "Platform admin session",
+        severity: "ok",
+        status: "Verified",
+        signal: user.email ?? user.id ?? "Signed in",
+        detail: "AAL2 platform-admin access is required and was verified on the server.",
+        observed_at: null,
+        source: "requirePlatformAdminAal2()",
+      },
+      {
+        id: "config-supabase-url",
+        scope: "config",
+        component: "SUPABASE_URL",
+        severity: safeEnv("NEXT_PUBLIC_SUPABASE_URL") ? "ok" : "critical",
+        status: safeEnv("NEXT_PUBLIC_SUPABASE_URL") ? "Present" : "Missing",
+        signal: "Environment",
+        detail: "Control depends on the public Supabase URL for authenticated application paths.",
+        observed_at: null,
+        source: "process.env.NEXT_PUBLIC_SUPABASE_URL",
+      },
+      {
+        id: "config-supabase-anon",
+        scope: "config",
+        component: "SUPABASE_ANON_KEY",
+        severity: safeEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ? "ok" : "critical",
+        status: safeEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ? "Present" : "Missing",
+        signal: "Environment",
+        detail: "The public anon key is required for browser-authenticated Supabase access.",
+        observed_at: null,
+        source: "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      },
+      {
+        id: "config-supabase-service",
+        scope: "config",
+        component: "SUPABASE_SERVICE_ROLE_KEY",
+        severity: safeEnv("SUPABASE_SERVICE_ROLE_KEY") ? "ok" : "critical",
+        status: safeEnv("SUPABASE_SERVICE_ROLE_KEY") ? "Present" : "Missing",
+        signal: "Environment",
+        detail: "Server-authoritative admin routes require the Supabase service role key.",
+        observed_at: null,
+        source: "process.env.SUPABASE_SERVICE_ROLE_KEY",
+      },
+      {
+        id: "config-stripe-secret",
+        scope: "billing",
+        component: "STRIPE_SECRET_KEY",
+        severity: safeEnv("STRIPE_SECRET_KEY") ? "ok" : "critical",
+        status: safeEnv("STRIPE_SECRET_KEY") ? "Present" : "Missing",
+        signal: "Environment",
+        detail: "Stripe sync and checkout operations depend on the secret key.",
+        observed_at: null,
+        source: "process.env.STRIPE_SECRET_KEY",
+      },
+      {
+        id: "config-stripe-price",
+        scope: "billing",
+        component: "STRIPE_PRICE_ID",
+        severity: safeEnv("STRIPE_PRICE_ID") ? "ok" : "warn",
+        status: safeEnv("STRIPE_PRICE_ID") ? "Present" : "Missing",
+        signal: `Gate ${gateMode}`,
+        detail: "Billing checkout flows expect a configured Stripe price id.",
+        observed_at: null,
+        source: "process.env.STRIPE_PRICE_ID",
+      },
+      {
+        id: "config-stripe-webhook",
+        scope: "billing",
+        component: "STRIPE_WEBHOOK_SECRET",
+        severity: safeEnv("STRIPE_WEBHOOK_SECRET") ? "ok" : "warn",
+        status: safeEnv("STRIPE_WEBHOOK_SECRET") ? "Present" : "Missing",
+        signal: "Environment",
+        detail: "Webhook handling requires a configured Stripe webhook secret.",
+        observed_at: null,
+        source: "process.env.STRIPE_WEBHOOK_SECRET",
+      },
+      {
+        id: "database-shops",
+        scope: "database",
+        component: "rb_shops",
+        severity: "ok",
+        status: "Reachable",
+        signal: `${shopsCount} shop${shopsCount === 1 ? "" : "s"}`,
+        detail: "Exact shop count from the current Control authority view.",
+        observed_at: null,
+        source: "supabaseAdmin().from('rb_shops').select(...count...)",
+      },
+      {
+        id: "devices-sample",
+        scope: "devices",
+        component: "rb_devices recent slice",
+        severity: "ok",
+        status: "Reachable",
+        signal: `${devicesCount} sampled / 500 max`,
+        detail: `${activeDevices} active, ${disabledDevices} disabled devices in the recent status slice.`,
+        observed_at: null,
+        source: "supabaseAdmin().from('rb_devices').select(...).limit(500)",
+      },
+      {
+        id: "devices-tokens",
+        scope: "devices",
+        component: "rb_device_tokens",
+        severity: "ok",
+        status: "Reachable",
+        signal: `${tokensCount} token${tokensCount === 1 ? "" : "s"}`,
+        detail: "Recent device token heartbeat rows for the sampled devices.",
+        observed_at: null,
+        source: "supabaseAdmin().from('rb_device_tokens').select(...).in(...)",
+      },
+      {
+        id: "devices-stale",
+        scope: "devices",
+        component: "Active devices stale >24h",
+        severity: stale24h > 0 ? "warn" : "ok",
+        status: stale24h > 0 ? "Review needed" : "No stale devices",
+        signal: `${stale24h} device${stale24h === 1 ? "" : "s"}`,
+        detail: "Active devices older than 24 hours since the most recent token or device heartbeat.",
+        observed_at: null,
+        source: "Derived from rb_devices + rb_device_tokens recent slice",
+      },
+      {
+        id: "devices-offline",
+        scope: "devices",
+        component: "Active devices offline >7d",
+        severity: offline7d > 0 ? "critical" : "ok",
+        status: offline7d > 0 ? "Action needed" : "No offline devices",
+        signal: `${offline7d} device${offline7d === 1 ? "" : "s"}`,
+        detail: "Active devices with no recent heartbeat inside the seven-day window.",
+        observed_at: null,
+        source: "Derived from rb_devices + rb_device_tokens recent slice",
+      },
+      {
+        id: "audit-recency",
+        scope: "audit",
+        component: "Recent audit activity",
+        severity: latestAudit ? "ok" : "warn",
+        status: latestAudit ? "Observed" : "No recent rows",
+        signal: latestAudit?.action ?? "No recent audit event",
+        detail: latestAudit
+          ? `Latest audit row from ${latestAudit.actor_email ?? "system"} ${shortAge(latestAudit.created_at) || ""}`.trim()
+          : "No recent audit rows were returned from rb_audit_log.",
+        observed_at: latestAudit?.created_at ?? null,
+        source: "supabaseAdmin().from('rb_audit_log').select(...).limit(12)",
+      },
+      ...recentAudit.map((entry) => ({
+        id: `audit-${entry.id}`,
+        scope: "audit" as const,
+        component: entry.action ?? "Audit event",
+        severity: auditSeverity(entry.action ?? ""),
+        status: entry.actor_email ? "User event" : "System event",
+        signal: [entry.actor_email ?? "system", entry.shop_id ?? "-", entry.target_id ?? "-"].join(" | "),
+        detail: `shop ${entry.shop_id ?? "-"} target ${entry.target_id ?? "-"} actor ${entry.actor_email ?? "system"}`,
+        observed_at: entry.created_at ?? null,
+        source: "supabaseAdmin().from('rb_audit_log').select(...).limit(12)",
+      })),
+    ];
+  } catch (error: any) {
+    loadError = error?.message ?? "Unable to load Control status.";
+    statusRows = [
+      {
+        id: "status-load-failure",
+        scope: "database",
+        component: "Status load",
+        severity: "critical",
+        status: "Failed",
+        signal: "Server error",
+        detail: loadError,
+        observed_at: new Date().toISOString(),
+        source: "Status page server load",
+      },
+    ];
   }
 
-  const supaUrlOk = safeEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const supaAnonOk = safeEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  const supaSvcOk = safeEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-  const stripeKeyOk = safeEnv("STRIPE_SECRET_KEY");
-  const stripePriceOk = safeEnv("STRIPE_PRICE_ID");
-  const stripeWhOk = safeEnv("STRIPE_WEBHOOK_SECRET");
-
-  const gateMode = process.env.RUNBOOK_BILLING_GATE_MODE ?? "hybrid";
+  const filteredRows = statusRows
+    .filter((row) => {
+      if (scopeFilter && scopeFilter !== "all" && row.scope !== scopeFilter) return false;
+      if (severityFilter && severityFilter !== "all" && row.severity !== severityFilter) return false;
+      if (!query) return true;
+      return [row.component, row.status, row.signal, row.detail, row.scope, row.source]
+        .some((value) => value.toLowerCase().includes(query));
+    })
+    .sort((a, b) => {
+      const severityDelta = severityRank(a.severity) - severityRank(b.severity);
+      if (severityDelta !== 0) return severityDelta;
+      const observedDelta = observedAtRank(b.observed_at) - observedAtRank(a.observed_at);
+      if (observedDelta !== 0) return observedDelta;
+      const scopeDelta = a.scope.localeCompare(b.scope);
+      if (scopeDelta !== 0) return scopeDelta;
+      return a.component.localeCompare(b.component);
+    });
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1380 }}>
-      <PageHeader
-        eyebrow="Platform Status"
-        title="Control Status"
-        description="This page answers the platform-admin version of one question: is Control healthy enough to trust right now?"
-        actions={
-          <>
-            <StatusBadge label={health.ok ? "Healthy" : "Problem"} tone={health.ok ? "healthy" : "critical"} />
-            <StatusBadge label={`Gate ${gateMode}`} tone="neutral" />
-          </>
-        }
-      />
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
-        <MetricCard title="Shops" value={String(shopsCount)} summary="Shops currently visible to the platform." tone="subtle" />
-        <MetricCard title="Devices" value={String(devicesCount)} summary={`${activeDevices} active and ${disabledDevices} disabled devices in the recent slice.`} tone="subtle" />
-        <MetricCard title="Stale >24h" value={String(stale24h)} summary="Active devices that may need review soon." tone={stale24h > 0 ? "warning" : "healthy"} />
-        <MetricCard title="Offline >7d" value={String(offline7d)} summary="Active devices that are no longer checking in." tone={offline7d > 0 ? "critical" : "healthy"} />
+    <div style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ display: "grid", gap: 4 }}>
+          <div style={{ color: t.color.textQuiet, ...t.type.label }}>Status / Audit</div>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Control status log</h1>
+          <div style={{ fontSize: 13, color: t.color.textQuiet }}>
+            Server-rendered operator log for Control state, configuration, billing gates, device freshness, and recent audit activity.
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <ControlActionLinkV2 href="/audit">Open audit</ControlActionLinkV2>
+          <ControlActionLinkV2 href="/billing-access" tone="primary">Open billing access</ControlActionLinkV2>
+        </div>
       </div>
 
-      <SectionBlock title="Session" description="Who is currently using this platform-admin view.">
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>
-            user: <b>{user?.email ?? user?.id ?? "-"}</b>
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {pill("platform admin: yes", "ok")}
-            {pill("AAL2: yes", "ok")}
+      <form method="get" style={{ display: "grid", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 2fr) repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          <ControlInputV2 name="q" defaultValue={firstParam(params.q)} placeholder="Search component, signal, detail" />
+          <ControlSelectV2 name="scope" defaultValue={scopeFilter || "all"}>
+            <option value="all">All scopes</option>
+            <option value="access">Access</option>
+            <option value="config">Config</option>
+            <option value="billing">Billing</option>
+            <option value="database">Database</option>
+            <option value="devices">Devices</option>
+            <option value="audit">Audit</option>
+          </ControlSelectV2>
+          <ControlSelectV2 name="severity" defaultValue={severityFilter || "all"}>
+            <option value="all">All severities</option>
+            <option value="ok">OK</option>
+            <option value="warn">Warning</option>
+            <option value="critical">Critical</option>
+            <option value="neutral">Info</option>
+          </ControlSelectV2>
+          <div style={{ display: "flex", gap: 8 }}>
+            <ControlActionButtonV2 type="submit" tone="primary">
+              Apply
+            </ControlActionButtonV2>
+            <ControlActionLinkV2 href="/status">Clear</ControlActionLinkV2>
           </div>
         </div>
-      </SectionBlock>
-
-      <SectionBlock title="Configuration" description="Check the environment pieces that Control depends on.">
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {boolChip("SUPABASE_URL", supaUrlOk)}
-            {boolChip("SUPABASE_ANON", supaAnonOk)}
-            {boolChip("SUPABASE_SERVICE", supaSvcOk)}
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {boolChip("STRIPE_SECRET", stripeKeyOk)}
-            {boolChip("STRIPE_PRICE", stripePriceOk)}
-            {boolChip("STRIPE_WEBHOOK", stripeWhOk)}
-          </div>
+        <div style={{ fontSize: 12, color: t.color.textQuiet }}>
+          {filteredRows.length} row{filteredRows.length === 1 ? "" : "s"} shown from {statusRows.length}.
+          {loadError ? ` Load error: ${loadError}` : ""}
         </div>
-      </SectionBlock>
+      </form>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-        <SectionBlock title="Supabase Health" description="Live counts and device-health signals from the current backend state.">
-          {!health.ok ? (
-            <div style={{ fontSize: 12, opacity: 0.85 }}>
-              {pill("ERROR", "bad")} <span style={{ marginLeft: 8 }}>{health.error}</span>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-                {pill(`Shops: ${shopsCount}`, "info")}
-                {pill(`Devices: ${devicesCount}`, "info")}
-                {pill(`Tokens: ${tokensCount}`, "info")}
-              </div>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-                {pill(`Active devices: ${activeDevices}`, "ok")}
-                {pill(`Disabled devices: ${disabledDevices}`, "warn")}
-                {pill(`Stale >24h: ${stale24h}`, stale24h ? "warn" : "ok")}
-                {pill(`Offline >7d: ${offline7d}`, offline7d ? "bad" : "ok")}
-              </div>
-
-              <div style={{ fontSize: 12, opacity: 0.75 }}>
-                Version samples (last 500 devices):{" "}
-                {versions.size === 0 ? (
-                  <b>-</b>
-                ) : (
-                  <span>
-                    {[...versions.entries()]
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 6)
-                      .map(([v, n]) => `${v} (${n})`)
-                      .join(", ")}
-                    {versions.size > 6 ? " ..." : ""}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </SectionBlock>
-
-        <SectionBlock title="Audit Health" description="Recent platform activity so you can tell if the system is still moving.">
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              {pill(`Last event: ${lastAuditAction ?? "-"}`, "info")}
-              {pill(`At: ${iso(lastAuditAt)}`, "info")}
-              <span style={{ fontSize: 12, opacity: 0.75 }}>(~{ageFromIso(lastAuditAt)} ago)</span>
-            </div>
-
-            {recentAudit.length === 0 ? (
-              <div style={{ fontSize: 12, opacity: 0.75 }}>No recent audit events.</div>
+      <ControlTableWrapV2>
+        <ControlTableV2 minWidth={1120}>
+          <thead>
+            <tr>
+              <ControlTableHeadCellV2>Observed</ControlTableHeadCellV2>
+              <ControlTableHeadCellV2>Scope</ControlTableHeadCellV2>
+              <ControlTableHeadCellV2>Component</ControlTableHeadCellV2>
+              <ControlTableHeadCellV2>Status</ControlTableHeadCellV2>
+              <ControlTableHeadCellV2>Signal</ControlTableHeadCellV2>
+              <ControlTableHeadCellV2>Detail</ControlTableHeadCellV2>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: 16, color: t.color.textMuted }}>
+                  No status rows matched the current filters.
+                </td>
+              </tr>
             ) : (
-              <div style={{ display: "grid", gap: 8 }}>
-                {recentAudit.slice(0, 8).map((a: any) => (
-                  <div
-                    key={a.id}
-                    style={{
-                      padding: 12,
-                      borderRadius: 14,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.02)",
-                      display: "grid",
-                      gap: 4,
-                    }}
-                  >
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                      <div style={{ fontWeight: 900 }}>{a.action}</div>
-                      <div style={{ fontSize: 12, opacity: 0.75 }}>
-                        shop: {shortId(a.shop_id)} | target: {shortId(a.target_id)} | actor: {a.actor_email ?? "-"}
-                      </div>
+              filteredRows.map((row) => (
+                <tr key={row.id}>
+                  <ControlTableCellV2>
+                    <div style={{ display: "grid", gap: 2 }}>
+                      <div style={{ color: t.color.text }}>{formatObservedAt(row.observed_at)}</div>
+                      <div style={{ fontSize: 11.5, color: t.color.textQuiet }}>{shortAge(row.observed_at) || "-"}</div>
                     </div>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>
-                      {iso(a.created_at)} <span style={{ opacity: 0.6 }}>({ageFromIso(a.created_at)} ago)</span>
+                  </ControlTableCellV2>
+                  <ControlTableCellV2>
+                    <div style={{ textTransform: "capitalize", color: t.color.text }}>{row.scope}</div>
+                  </ControlTableCellV2>
+                  <ControlTableCellV2>
+                    <div style={{ fontWeight: 700, color: t.color.text }}>{row.component}</div>
+                  </ControlTableCellV2>
+                  <ControlTableCellV2>
+                    <div style={{ display: "grid", gap: 4 }}>
+                      <ControlBadgeV2 label={severityLabel(row.severity)} tone={badgeTone(row.severity)} />
+                      <div style={{ color: t.color.text }}>{row.status}</div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  </ControlTableCellV2>
+                  <ControlTableCellV2>{row.signal}</ControlTableCellV2>
+                  <ControlTableCellV2>{row.detail}</ControlTableCellV2>
+                </tr>
+              ))
             )}
-          </div>
-        </SectionBlock>
-      </div>
-
-      <SectionBlock title="Notes" description="Short plain-English rules for reading this page.">
-        <div style={{ fontSize: 12, opacity: 0.8, display: "grid", gap: 8 }}>
-          <div>This page is server-rendered and queries Supabase directly for reliable platform truth.</div>
-          <div>If Supabase is down or keys are wrong, you should see it here immediately.</div>
-          <div>"Stale" and "Offline" only count active devices. Disabled devices are intentionally ignored.</div>
-        </div>
-      </SectionBlock>
+          </tbody>
+        </ControlTableV2>
+      </ControlTableWrapV2>
     </div>
   );
 }

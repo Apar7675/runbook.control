@@ -69,11 +69,11 @@ export default function GlassCard({
       style={{
         position: "relative",
         overflow: "hidden",
-        padding: 18,
+        padding: 12,
         borderRadius: theme.radius.xl,
         border: surface.border,
         background: surface.background,
-        backdropFilter: "blur(16px)",
+        backdropFilter: "blur(12px)",
         boxShadow: surface.boxShadow,
         color: theme.text.primary,
       }}
@@ -84,7 +84,7 @@ export default function GlassCard({
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background: `radial-gradient(circle at top left, ${surface.glow}, transparent 28%), radial-gradient(circle at top right, rgba(255,255,255,0.035), transparent 24%)`,
+          background: `radial-gradient(circle at top left, ${surface.glow}, transparent 22%), radial-gradient(circle at top right, rgba(255,255,255,0.025), transparent 18%)`,
         }}
       />
       <div
@@ -105,15 +105,15 @@ export default function GlassCard({
             zIndex: 1,
             display: "flex",
             justifyContent: "space-between",
-            gap: 16,
+            gap: 12,
             alignItems: "flex-start",
-            marginBottom: 16,
-            paddingBottom: 14,
+            marginBottom: 12,
+            paddingBottom: 10,
             borderBottom: "1px solid rgba(255,255,255,0.07)",
             flexWrap: "wrap",
           }}
         >
-          <div style={{ display: "grid", gap: 6, maxWidth: 760 }}>
+          <div style={{ display: "grid", gap: 4, maxWidth: 760 }}>
             {title ? (
               <div
                 style={{
@@ -128,8 +128,8 @@ export default function GlassCard({
               <div
                 style={{
                   color: theme.text.secondary,
-                  fontSize: 12.5,
-                  lineHeight: 1.5,
+                  fontSize: 12,
+                  lineHeight: 1.42,
                 }}
               >
                 {subtitle}
@@ -137,7 +137,7 @@ export default function GlassCard({
             ) : null}
           </div>
           {actions ? (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{actions}</div>
           ) : null}
         </div>
       )}

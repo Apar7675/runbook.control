@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { theme } from "@/lib/ui/theme";
+import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 
 export default function SignOutButton() {
   const router = useRouter();
@@ -32,18 +32,15 @@ export default function SignOutButton() {
       onClick={signOut}
       disabled={busy}
       style={{
-        minHeight: 40,
-        padding: "9px 14px",
-        borderRadius: theme.radius.md,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: busy
-          ? "linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.05))"
-          : "linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04))",
-        color: theme.text.primary,
-        boxShadow: theme.shadow.button,
+        minHeight: 30,
+        padding: "5px 10px",
+        borderRadius: t.radius.sm,
+        border: `1px solid ${t.color.border}`,
+        background: busy ? t.color.surfaceMuted : t.color.surfaceAlt,
+        color: t.color.text,
         cursor: busy ? "not-allowed" : "pointer",
-        fontWeight: 800,
-        letterSpacing: 0.14,
+        fontWeight: 700,
+        fontSize: 12,
         opacity: busy ? 0.84 : 1,
       }}
     >
