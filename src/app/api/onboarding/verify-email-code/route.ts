@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 import { normalizeEmail } from "@/lib/onboarding/identity";
+import { isTwilioVerifyConfigured, verifyOnboardingEmailCode } from "@/lib/onboarding/messaging";
 import { getOnboardingState, upsertOnboardingState, verifyStoredCode } from "@/lib/onboarding/state";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getRouteUser } from "@/lib/supabase/routeAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const supabase = await supabaseServer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getRouteUser(req);
     if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
@@ -26,18 +24,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Request an email code first." }, { status: 400 });
     }
 
-    const result = await verifyStoredCode({
-      userId: user.id,
-      channel: "email",
-      destination: email,
-      code,
-    });
+    const result = isTwilioVerifyConfigured()
+      ? await verifyOnboardingEmailCode({ email, code })
+      : await verifyStoredCode({
+          userId: user.id,
+          channel: "email",
+          destination: email,
+          code,
+        });
 
     if (!result.ok) {
       return NextResponse.json(
         {
           ok: false,
-          error: result.error,
+          error: (result as any).error ?? "That code does not match. Double-check the 6 digits and try again.",
           reason: (result as any).reason ?? null,
           attempts_remaining: (result as any).attempts_remaining ?? null,
         },
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       email_verified: Boolean(updated.email_verified),
-      message: result.alreadyVerified ? "Email is already verified." : "Email verified. You can move on once your phone is verified too.",
+      message: (result as any).alreadyVerified ? "Email is already verified." : "Email verified. You can move on once your phone is verified too.",
     });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message ?? "Server error" }, { status: 500 });

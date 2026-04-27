@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,21 +35,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ msg: "Password must be at least 8 characters." }, { status: 400 });
     }
 
-    const supabase = createPublicClient();
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      return NextResponse.json({ msg: error.message }, { status: 400 });
+    const admin = supabaseAdmin();
+    const created = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (created.error) {
+      return NextResponse.json({ msg: created.error.message }, { status: 400 });
     }
 
-    const session = data.session;
+    const supabase = createPublicClient();
+    const signedIn = await supabase.auth.signInWithPassword({ email, password });
+    if (signedIn.error || !signedIn.data.session) {
+      return NextResponse.json(
+        { msg: signedIn.error?.message ?? "Account was created, but session login failed." },
+        { status: 401 }
+      );
+    }
+
+    const session = signedIn.data.session;
     const expiresAtUtc = session?.expires_at
       ? new Date(session.expires_at * 1000).toISOString()
       : null;
 
     return NextResponse.json({
       user: {
-        id: data.user?.id ?? null,
-        email: data.user?.email ?? email,
+        id: created.data.user?.id ?? signedIn.data.user?.id ?? null,
+        email: created.data.user?.email ?? signedIn.data.user?.email ?? email,
       },
       session: session
         ? {

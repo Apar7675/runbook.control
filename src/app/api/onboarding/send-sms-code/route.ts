@@ -7,19 +7,16 @@ import {
   normalizeEmail,
   normalizePhone,
 } from "@/lib/onboarding/identity";
-import { sendOnboardingSmsCode } from "@/lib/onboarding/messaging";
+import { isTwilioVerifyConfigured, sendOnboardingSmsCode } from "@/lib/onboarding/messaging";
 import { issueVerificationCode, upsertOnboardingState } from "@/lib/onboarding/state";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getRouteUser } from "@/lib/supabase/routeAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const supabase = await supabaseServer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getRouteUser(req);
     if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
@@ -33,7 +30,6 @@ export async function POST(req: Request) {
     if (!full_name) return NextResponse.json({ ok: false, error: "Full name required." }, { status: 400 });
     if (!email) return NextResponse.json({ ok: false, error: "Email required." }, { status: 400 });
     if (!phone) return NextResponse.json({ ok: false, error: "Phone number required." }, { status: 400 });
-    if (!shop_name) return NextResponse.json({ ok: false, error: "Shop name required." }, { status: 400 });
     if (isDisposableEmail(email)) {
       return NextResponse.json({ ok: false, error: "Disposable email addresses are not allowed." }, { status: 400 });
     }
@@ -46,18 +42,27 @@ export async function POST(req: Request) {
 
     await upsertOnboardingState(user.id, { full_name, email, phone, shop_name, device_id });
 
-    const code = generateSixDigitCode();
-    const issue = await issueVerificationCode({
-      userId: user.id,
-      channel: "sms",
-      destination: phone,
-      code,
-    });
-    const delivery = await sendOnboardingSmsCode({ phone, code });
+    let expires_at: string | null = null;
+    let resend_available_in = 45;
+    let delivery;
+    if (isTwilioVerifyConfigured()) {
+      delivery = await sendOnboardingSmsCode({ phone });
+    } else {
+      const code = generateSixDigitCode();
+      const issue = await issueVerificationCode({
+        userId: user.id,
+        channel: "sms",
+        destination: phone,
+        code,
+      });
+      expires_at = issue.expires_at;
+      resend_available_in = issue.resend_available_in;
+      delivery = await sendOnboardingSmsCode({ phone, code });
+    }
 
     return NextResponse.json({
-      expires_at: issue.expires_at,
-      resend_available_in: issue.resend_available_in,
+      expires_at,
+      resend_available_in,
       message: "SMS code sent. Use it to confirm this phone number before continuing.",
       ...delivery,
     });
