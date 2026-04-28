@@ -40,6 +40,11 @@ export function isTwilioVerifyConfigured() {
   return Boolean(accountSid && authToken && serviceSid);
 }
 
+export function isDirectEmailProviderConfigured() {
+  const fromEmail = env("RUNBOOK_ONBOARDING_EMAIL_FROM") || env("RUNBOOK_EMAIL_FROM") || env("SENDGRID_FROM_EMAIL");
+  return Boolean(fromEmail && (env("SENDGRID_API_KEY") || env("RESEND_API_KEY")));
+}
+
 async function postTwilioVerify(path: string, form: URLSearchParams) {
   const { accountSid, authToken, serviceSid } = twilioVerifyConfig();
   if (!accountSid || !authToken || !serviceSid) {
@@ -106,17 +111,18 @@ async function checkTwilioVerification(to: string, code: string) {
 
 export async function sendOnboardingEmailCode(args: SendEmailArgs) {
   const maskedEmail = args.email.replace(/(^.).+(@.*$)/, "$1***$2");
-  if (isTwilioVerifyConfigured()) {
+  if (isTwilioVerifyConfigured() && !isDirectEmailProviderConfigured()) {
     return sendTwilioVerification(args.email, "email");
   }
 
   if (!args.code) throw new Error("Email verification code is required.");
 
+  const sendGridApiKey = env("SENDGRID_API_KEY");
   const resendApiKey = env("RESEND_API_KEY");
-  const fromEmail = env("RUNBOOK_ONBOARDING_EMAIL_FROM") || env("RUNBOOK_EMAIL_FROM");
+  const fromEmail = env("RUNBOOK_ONBOARDING_EMAIL_FROM") || env("RUNBOOK_EMAIL_FROM") || env("SENDGRID_FROM_EMAIL");
 
-  if (!resendApiKey || !fromEmail) {
-    throw new Error("Email verification is not configured. Add TWILIO_VERIFY_SERVICE_SID with TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN, or configure RESEND_API_KEY and RUNBOOK_ONBOARDING_EMAIL_FROM.");
+  if (!fromEmail || (!sendGridApiKey && !resendApiKey)) {
+    throw new Error("Email verification is not configured. Add TWILIO_VERIFY_SERVICE_SID with TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN, or configure SENDGRID_API_KEY/RESEND_API_KEY and RUNBOOK_ONBOARDING_EMAIL_FROM.");
   }
 
   const name = (args.fullName ?? "").trim();
@@ -129,6 +135,53 @@ export async function sendOnboardingEmailCode(args: SendEmailArgs) {
     "",
     "If you did not request this code, you can ignore this email.",
   ].join("\n");
+
+  if (sendGridApiKey) {
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${sendGridApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        personalizations: [
+          {
+            to: [{ email: args.email }],
+            subject,
+          },
+        ],
+        from: { email: fromEmail },
+        content: [{ type: "text/plain", value: text }],
+      }),
+    });
+
+    const body = await response.text();
+    let payload: any = {};
+    try {
+      payload = body ? JSON.parse(body) : {};
+    } catch {
+      payload = {};
+    }
+
+    if (!response.ok) {
+      const errors = Array.isArray(payload?.errors)
+        ? payload.errors.map((entry: any) => entry?.message).filter(Boolean).join("; ")
+        : "";
+      const detail = errors || payload?.message || `Email verification send failed (${response.status}).`;
+      if (response.status === 401 || /authorization grant/i.test(detail)) {
+        throw new Error("SendGrid rejected the API key. Create or paste a valid SendGrid API key with Mail Send permission, then restart Control.");
+      }
+
+      throw new Error(detail);
+    }
+
+    return {
+      ok: true as const,
+      delivery: "sendgrid_email",
+      masked: maskedEmail,
+      provider_message_id: response.headers.get("x-message-id") ?? "",
+    };
+  }
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",

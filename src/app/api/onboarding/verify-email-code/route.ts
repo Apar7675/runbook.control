@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeEmail } from "@/lib/onboarding/identity";
-import { isTwilioVerifyConfigured, verifyOnboardingEmailCode } from "@/lib/onboarding/messaging";
+import { isDirectEmailProviderConfigured, isTwilioVerifyConfigured, verifyOnboardingEmailCode } from "@/lib/onboarding/messaging";
 import { getOnboardingState, upsertOnboardingState, verifyStoredCode } from "@/lib/onboarding/state";
 import { getRouteUser } from "@/lib/supabase/routeAuth";
 
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Request an email code first." }, { status: 400 });
     }
 
-    const result = isTwilioVerifyConfigured()
+    const result = isTwilioVerifyConfigured() && !isDirectEmailProviderConfigured()
       ? await verifyOnboardingEmailCode({ email, code })
       : await verifyStoredCode({
           userId: user.id,

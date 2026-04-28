@@ -6,7 +6,7 @@ import {
   normalizeEmail,
   normalizePhone,
 } from "@/lib/onboarding/identity";
-import { isTwilioVerifyConfigured, sendOnboardingEmailCode } from "@/lib/onboarding/messaging";
+import { isDirectEmailProviderConfigured, isTwilioVerifyConfigured, sendOnboardingEmailCode } from "@/lib/onboarding/messaging";
 import { issueVerificationCode, upsertOnboardingState } from "@/lib/onboarding/state";
 import { getRouteUser } from "@/lib/supabase/routeAuth";
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     let expires_at: string | null = null;
     let resend_available_in = 45;
     let delivery;
-    if (isTwilioVerifyConfigured()) {
+    if (isTwilioVerifyConfigured() && !isDirectEmailProviderConfigured()) {
       delivery = await sendOnboardingEmailCode({ email, fullName: full_name });
     } else {
       const code = generateSixDigitCode();

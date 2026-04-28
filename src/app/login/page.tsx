@@ -17,7 +17,7 @@ function sanitizeNext(raw: string | null) {
   if (next.startsWith("/login")) return fallback;
   if (next.startsWith("/signup")) return fallback;
 
-  // You previously used /dashboard as fallback, but that route doesn't exist in your project.
+  // Keep old dashboard links from becoming the post-auth landing path.
   if (next === "/dashboard") return fallback;
 
   return next;

@@ -76,7 +76,7 @@ export async function loadSetupChecklist(preferredShopId?: string | null): Promi
 
   const reasons: string[] = [];
   if (!systemReady) {
-    reasons.push("Review billing, app access, and device health before launching into the dashboard.");
+    reasons.push("Review billing, app access, and device health before opening your shops.");
   }
 
   return {

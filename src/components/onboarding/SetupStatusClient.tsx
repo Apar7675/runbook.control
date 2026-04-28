@@ -151,7 +151,7 @@ export default function SetupStatusClient({ initialStatus }: SetupStatusClientPr
   return (
     <RunbookCard
       title="Finish setup"
-      subtitle="Complete this final checklist to launch into the dashboard."
+      subtitle="Complete this final checklist to open your shops."
       tone="default"
     >
       <div style={{ display: "grid", gap: 0 }}>
@@ -183,7 +183,7 @@ export default function SetupStatusClient({ initialStatus }: SetupStatusClientPr
           </div>
         ) : (
           <div style={{ color: runbookTheme.colors.muted, fontSize: 12, lineHeight: 1.5 }}>
-            Everything is in place. Launch into the dashboard when you&apos;re ready.
+            Everything is in place. Open your shops when you&apos;re ready.
           </div>
         )}
 

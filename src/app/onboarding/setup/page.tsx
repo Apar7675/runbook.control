@@ -18,7 +18,7 @@ export default async function OnboardingSetupPage() {
       <RunbookSectionHeader
         eyebrow="Welcome to RunBook"
         title="Finish setup"
-        subtitle="You are on the final step. Add your first employee, register a workstation, and confirm the system is ready before launching into the dashboard."
+        subtitle="You are on the final step. Add your first employee, register a workstation, and confirm the system is ready before opening your shops."
         actions={
           <>
             <span

@@ -64,7 +64,7 @@ function getSubscriptionPlan(sub: any): string | null {
 }
 
 async function updateShopWithAutoStrip(admin: any, shopId: string, patch: Record<string, any>) {
-  let working: Record<string, any> = { ...patch };
+  const working: Record<string, any> = { ...patch };
 
   for (let attempt = 0; attempt < 12; attempt++) {
     const { error } = await admin.from("rb_shops").update(working).eq("id", shopId);

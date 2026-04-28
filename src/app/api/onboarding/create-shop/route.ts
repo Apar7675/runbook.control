@@ -38,7 +38,7 @@ function tryExtractMissingColumn(msg: string) {
 }
 
 async function insertWithAutoStrip(admin: any, table: string, payload: Record<string, any>, selectCols: string) {
-  let working: Record<string, any> = { ...payload };
+  const working: Record<string, any> = { ...payload };
 
   for (let attempt = 0; attempt < 16; attempt++) {
     const { data, error } = await admin.from(table).insert(working).select(selectCols).single();
