@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     let employees: any[] = [];
     const modern = await admin
       .from("employees")
-      .select("id, shop_id, auth_user_id, source_device_id, source_local_employee_id, employee_code, display_name, full_name, preferred_name, username, email, phone, department, job_title, company_name, status, home_address_1, home_address_2, home_city, home_state, home_postal_code, social_security_number, avatar_url_256, avatar_url_512, role, is_active, runbook_access_enabled, mobile_access_enabled, workstation_access_enabled, can_dashboard, can_po_entry, can_components, can_ballooning, can_inspection, can_gcoding, can_routing_db, can_work_orders, can_messaging, can_library, can_hr_department, can_settings, can_timeclock, can_dashboard_view, can_jobs_module, can_inspection_entry, can_camera_view, workstation_session_timeout_minutes, mobile_pin_salt_base64, mobile_pin_hash_base64")
+      .select("id, shop_id, auth_user_id, source_device_id, source_local_employee_id, employee_code, display_name, full_name, preferred_name, username, email, phone, department, job_title, company_name, status, home_address_1, home_address_2, home_city, home_state, home_postal_code, social_security_number, avatar_url_256, avatar_url_512, role, is_active, runbook_access_enabled, mobile_access_enabled, mobile_timeclock_enabled, mobile_timeclock_requires_review, workstation_access_enabled, can_dashboard, can_po_entry, can_components, can_ballooning, can_inspection, can_gcoding, can_routing_db, can_work_orders, can_messaging, can_library, can_hr_department, can_settings, can_timeclock, can_dashboard_view, can_jobs_module, can_inspection_entry, can_camera_view, workstation_session_timeout_minutes, mobile_pin_salt_base64, mobile_pin_hash_base64")
       .eq("shop_id", shopId)
       .order("display_name", { ascending: true });
 
@@ -106,6 +106,8 @@ export async function GET(req: NextRequest) {
         avatar_url_512: "",
         runbook_access_enabled: !!employee.is_active,
         mobile_access_enabled: !!employee.is_active,
+        mobile_timeclock_enabled: false,
+        mobile_timeclock_requires_review: false,
         workstation_access_enabled: true,
         can_dashboard: false,
         can_po_entry: false,
@@ -170,6 +172,8 @@ export async function GET(req: NextRequest) {
           is_active: !!employee.is_active,
           runbook_access_enabled: !!employee.runbook_access_enabled,
           mobile_access_enabled: !!employee.mobile_access_enabled,
+          mobile_timeclock_enabled: !!employee.mobile_timeclock_enabled,
+          mobile_timeclock_requires_review: !!employee.mobile_timeclock_requires_review,
           workstation_access_enabled: !!employee.workstation_access_enabled,
           can_dashboard: !!employee.can_dashboard,
           can_po_entry: !!employee.can_po_entry,

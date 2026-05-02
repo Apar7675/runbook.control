@@ -24,6 +24,8 @@ type DirectoryUser = {
   status: string | null;
   is_active: boolean;
   mobile_access_enabled: boolean;
+  mobile_timeclock_enabled: boolean;
+  mobile_timeclock_requires_review: boolean;
   workstation_access_enabled: boolean;
   runbook_access_enabled: boolean;
   created_at: string | null;
@@ -49,7 +51,7 @@ export async function GET(req: Request) {
     const [{ data: employeesRaw, error: employeeError }, { data: membersRaw, error: memberError }] = await Promise.all([
       admin
         .from("employees")
-        .select("id,auth_user_id,employee_code,display_name,full_name,email,phone,role,status,is_active,mobile_access_enabled,workstation_access_enabled,runbook_access_enabled,created_at")
+        .select("id,auth_user_id,employee_code,display_name,full_name,email,phone,role,status,is_active,mobile_access_enabled,mobile_timeclock_enabled,mobile_timeclock_requires_review,workstation_access_enabled,runbook_access_enabled,created_at")
         .eq("shop_id", shopId)
         .order("display_name", { ascending: true }),
       admin
@@ -116,6 +118,8 @@ export async function GET(req: Request) {
         status: text(employee?.status) || null,
         is_active: Boolean(employee?.is_active),
         mobile_access_enabled: Boolean(employee?.mobile_access_enabled),
+        mobile_timeclock_enabled: Boolean(employee?.mobile_timeclock_enabled),
+        mobile_timeclock_requires_review: Boolean(employee?.mobile_timeclock_requires_review),
         workstation_access_enabled: Boolean(employee?.workstation_access_enabled),
         runbook_access_enabled: Boolean(employee?.runbook_access_enabled),
         created_at: employee?.created_at ?? null,
@@ -146,6 +150,8 @@ export async function GET(req: Request) {
         status: null,
         is_active: false,
         mobile_access_enabled: false,
+        mobile_timeclock_enabled: false,
+        mobile_timeclock_requires_review: false,
         workstation_access_enabled: false,
         runbook_access_enabled: false,
         created_at: null,

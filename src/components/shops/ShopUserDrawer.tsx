@@ -22,6 +22,8 @@ export type ShopUserRow = {
   status: string | null;
   is_active: boolean;
   mobile_access_enabled: boolean;
+  mobile_timeclock_enabled: boolean;
+  mobile_timeclock_requires_review: boolean;
   workstation_access_enabled: boolean;
   runbook_access_enabled: boolean;
   created_at: string | null;
@@ -54,14 +56,20 @@ export default function ShopUserDrawer({
   onRemoved: () => void;
 }) {
   const [busy, setBusy] = React.useState(false);
+  const [timeclockBusy, setTimeclockBusy] = React.useState(false);
   const [status, setStatus] = React.useState("");
+  const [mobileTimeclockEnabled, setMobileTimeclockEnabled] = React.useState(false);
+  const [mobileTimeclockRequiresReview, setMobileTimeclockRequiresReview] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) {
       setBusy(false);
+      setTimeclockBusy(false);
       setStatus("");
     }
-  }, [open, user?.employee_id]);
+    setMobileTimeclockEnabled(Boolean(user?.mobile_timeclock_enabled));
+    setMobileTimeclockRequiresReview(Boolean(user?.mobile_timeclock_requires_review));
+  }, [open, user?.employee_id, user?.mobile_timeclock_enabled, user?.mobile_timeclock_requires_review]);
 
   if (!open || !user) return null;
 
@@ -92,6 +100,44 @@ export default function ShopUserDrawer({
     setBusy(false);
     onRemoved();
     onClose();
+  }
+
+  async function saveMobileTimeclockAccess() {
+    if (!activeUser.employee_id) return;
+    setTimeclockBusy(true);
+    setStatus("");
+
+    const response = await safeFetch<{
+      ok?: boolean;
+      error?: string;
+      employee?: {
+        mobile_timeclock_enabled?: boolean;
+        mobile_timeclock_requires_review?: boolean;
+      };
+    }>("/api/admin/users/mobile-timeclock", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        shop_id: shopId,
+        employee_id: activeUser.employee_id,
+        mobile_timeclock_enabled: mobileTimeclockEnabled,
+        mobile_timeclock_requires_review: mobileTimeclockRequiresReview,
+      }),
+    });
+
+    if (!response.ok || !response.data?.ok) {
+      setStatus(response.ok ? response.data?.error ?? "Could not save Mobile Time Clock access." : `${response.status}: ${response.error}`);
+      setTimeclockBusy(false);
+      return;
+    }
+
+    setMobileTimeclockEnabled(Boolean(response.data.employee?.mobile_timeclock_enabled));
+    setMobileTimeclockRequiresReview(Boolean(response.data.employee?.mobile_timeclock_requires_review));
+    setStatus("Mobile Time Clock access saved.");
+    setTimeclockBusy(false);
+    onRemoved();
   }
 
   return (
@@ -141,9 +187,58 @@ export default function ShopUserDrawer({
           <DetailRow label="Source" value={activeUser.source === "employee" ? "Employee record" : "Membership only"} />
           <DetailRow label="RunBook Access" value={activeUser.runbook_access_enabled ? "Enabled" : "Not enabled"} />
           <DetailRow label="Mobile" value={activeUser.mobile_access_enabled ? "Ready" : "Not ready"} />
+          <DetailRow label="Mobile Time Clock" value={mobileTimeclockEnabled ? "Phone punching allowed" : "Phone punching not allowed"} />
           <DetailRow label="Workstation" value={activeUser.workstation_access_enabled ? "Ready" : "Not ready"} />
           <DetailRow label="Created" value={activeUser.created_at ? formatDateTime(activeUser.created_at) : activeUser.membership_created_at ? formatDateTime(activeUser.membership_created_at) : "Unknown"} />
           <DetailRow label="Auth User" value={activeUser.auth_user_id ?? "Not linked"} />
+        </ControlPanelV2>
+
+        <ControlPanelV2 title="Mobile Time Clock" description="Phone punching requires both general Mobile access and this employee-specific permission. Control still evaluates each submitted punch.">
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: activeUser.employee_id ? "pointer" : "not-allowed" }}>
+              <input
+                type="checkbox"
+                checked={mobileTimeclockEnabled}
+                disabled={!activeUser.employee_id || timeclockBusy}
+                onChange={(event) => setMobileTimeclockEnabled(event.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span style={{ display: "grid", gap: 3 }}>
+                <span style={{ color: t.color.text, fontSize: 13, fontWeight: 700 }}>Allow this employee to punch from phone</span>
+                <span style={{ color: t.color.textQuiet, fontSize: 12, lineHeight: 1.45 }}>
+                  This is separate from general Mobile app access.
+                </span>
+              </span>
+            </label>
+
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: activeUser.employee_id ? "pointer" : "not-allowed" }}>
+              <input
+                type="checkbox"
+                checked={mobileTimeclockRequiresReview}
+                disabled={!activeUser.employee_id || timeclockBusy}
+                onChange={(event) => setMobileTimeclockRequiresReview(event.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span style={{ display: "grid", gap: 3 }}>
+                <span style={{ color: t.color.text, fontSize: 13, fontWeight: 700 }}>Always send this employee&apos;s mobile punches for review</span>
+                <span style={{ color: t.color.textQuiet, fontSize: 12, lineHeight: 1.45 }}>
+                  Approved policy checks will still land as pending review for this employee.
+                </span>
+              </span>
+            </label>
+
+            {!activeUser.mobile_access_enabled ? (
+              <div style={{ color: t.color.warning, fontSize: 12 }}>
+                General Mobile access is not enabled, so this employee still cannot punch from phone.
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <ControlActionButtonV2 tone="primary" disabled={timeclockBusy || !activeUser.employee_id} onClick={saveMobileTimeclockAccess}>
+                {timeclockBusy ? "Saving..." : "Save Mobile Time Clock"}
+              </ControlActionButtonV2>
+            </div>
+          </div>
         </ControlPanelV2>
 
         <ControlPanelV2 title="Access actions" description="Disabling an employee uses the authoritative server route, removes active access, and preserves historical records.">
