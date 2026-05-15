@@ -21,6 +21,19 @@ coverage/
 out/
 /out/
 
+# Build output and local tooling
+bin/
+obj/
+**/bin/
+**/obj/
+artifacts/
+artifacts/**
+.expo/
+temp-*/
+temp_*/
+tmp_build_verify/
+buildverify/
+
 # production
 dist/
 build/
