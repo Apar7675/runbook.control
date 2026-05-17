@@ -1,36 +1,20 @@
 import React from "react";
-import { ControlActionButtonV2, ControlActionLinkV2 } from "@/components/control/v2/ControlActionButtonV2";
-import { ControlInputV2, ControlSelectV2 } from "@/components/control/v2/ControlFieldV2";
-import { ControlTableCellV2, ControlTableHeadCellV2, ControlTableV2, ControlTableWrapV2 } from "@/components/control/v2/ControlTableV2";
-import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
-import { getViewerContext, selectPrimaryShop } from "@/lib/control/summary";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { ControlActionLink } from "@/components/control/ControlActionButton";
+import ControlEmptyState from "@/components/control/ControlEmptyState";
+import ControlMetricCard from "@/components/control/ControlMetricCard";
+import ControlPageHeader from "@/components/control/ControlPageHeader";
+import ControlPanel from "@/components/control/ControlPanel";
+import ControlStatusChip, { type ControlStatusTone } from "@/components/control/ControlStatusChip";
+import { ControlTable, ControlTableCell, ControlTableHeadCell, ControlTableWrap } from "@/components/control/ControlTable";
+import { controlTheme as t } from "@/components/control/controlTheme";
+import { loadSupportViews, type CapabilitySupportRow, type DeleteOperationViewRow, type SupportBundleViewRow } from "@/lib/control/supportViews";
 import { formatDateTime } from "@/lib/ui/dates";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-type SupportBundleRow = {
-  id: string;
-  shop_id: string;
-  file_path: string | null;
-  notes: string | null;
-  uploaded_by: string | null;
-  created_at: string | null;
-};
-
-function firstParam(value: string | string[] | undefined) {
-  return typeof value === "string" ? value : Array.isArray(value) ? value[0] ?? "" : "";
-}
-
-function fileName(path: string | null) {
-  const text = String(path ?? "").trim();
-  if (!text) return "No file path";
-  const parts = text.split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? text;
-}
-
-function formatMaybeDate(value: string | null) {
-  if (!value) return "Unknown";
+function formatMaybeDate(value: string | null | undefined) {
+  if (!value) return "Not surfaced";
   try {
     return formatDateTime(value);
   } catch {
@@ -38,161 +22,258 @@ function formatMaybeDate(value: string | null) {
   }
 }
 
-export default async function SupportPage({
-  searchParams,
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = (await searchParams) ?? {};
-  const requestedShopId = firstParam(params.shop);
-  const query = firstParam(params.q).trim().toLowerCase();
-  const hasPathFilter = firstParam(params.has_path).trim().toLowerCase() || "all";
-  const context = await getViewerContext();
-  const primaryShop = selectPrimaryShop(context.shops, requestedShopId);
+function fileName(path: string | null | undefined) {
+  const text = String(path ?? "").trim();
+  if (!text) return "No stored path";
+  const parts = text.split("/").filter(Boolean);
+  return parts[parts.length - 1] ?? text;
+}
 
-  if (!primaryShop) {
+function capabilityTone(row: CapabilitySupportRow): ControlStatusTone {
+  const value = String(row.requirements_status ?? "").trim().toLowerCase();
+  if (value === "fail" || value === "failed") return "danger";
+  if (value === "warning") return "warning";
+  if (value === "pass" || value === "passed") return "success";
+  return "neutral";
+}
+
+function deleteTone(row: DeleteOperationViewRow): ControlStatusTone {
+  const value = String(row.status ?? "").trim().toLowerCase();
+  if (value === "completed") return "success";
+  if (value === "running" || value === "pending") return "warning";
+  if (value === "failed" || value === "partial_failed") return "danger";
+  return "neutral";
+}
+
+export default async function SupportPage() {
+  const data = await loadSupportViews();
+
+  if (!data.context.isPlatformAdmin) {
     return (
-      <div style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gap: 4 }}>
-          <div style={{ color: t.color.textQuiet, ...t.type.label }}>Support</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Support bundles</h1>
-          <div style={{ fontSize: 13, color: t.color.textQuiet }}>
-            Support bundle review stays tied to an authorized shop. No shop means there is no support-bundle directory to inspect yet.
-          </div>
-        </div>
-        <ControlTableWrapV2>
-          <ControlTableV2 minWidth={720}>
-            <thead>
-              <tr>
-                <ControlTableHeadCellV2>State</ControlTableHeadCellV2>
-                <ControlTableHeadCellV2>Authority</ControlTableHeadCellV2>
-                <ControlTableHeadCellV2>Next</ControlTableHeadCellV2>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <ControlTableCellV2>No shop is available for support-bundle review.</ControlTableCellV2>
-                <ControlTableCellV2>rb_shops and rb_shop_members scope</ControlTableCellV2>
-                <ControlTableCellV2><ControlActionLinkV2 href="/shops" tone="primary">Open shops</ControlActionLinkV2></ControlTableCellV2>
-              </tr>
-            </tbody>
-          </ControlTableV2>
-        </ControlTableWrapV2>
+      <div style={{ display: "grid", gap: 18 }}>
+        <ControlPageHeader
+          eyebrow="Support"
+          title="Support"
+          description="This area stays restricted to platform-admin sessions because it exposes cross-shop support metadata, delete-operation state, and schema visibility."
+          actions={<ControlActionLink href="/shops">Open shops</ControlActionLink>}
+        />
+        <ControlPanel>
+          <ControlEmptyState
+            title="Platform admin access required"
+            description="Open a specific shop support tab if you only need one shop. Cross-shop support and cleanup visibility remains platform-admin only."
+          />
+        </ControlPanel>
       </div>
     );
   }
 
-  const admin = supabaseAdmin();
-  const bundleResult = await admin
-    .from("rb_support_bundles")
-    .select("id,shop_id,file_path,notes,uploaded_by,created_at")
-    .eq("shop_id", primaryShop.id)
-    .order("created_at", { ascending: false });
-
-  const loadError = bundleResult.error?.message ?? "";
-  const rows = ((bundleResult.data ?? []) as SupportBundleRow[])
-    .filter((row) => {
-      if (hasPathFilter === "with_path") return Boolean(String(row.file_path ?? "").trim());
-      if (hasPathFilter === "missing_path") return !String(row.file_path ?? "").trim();
-      return true;
-    })
-    .filter((row) => {
-      if (!query) return true;
-      return [
-        row.file_path,
-        row.notes,
-        row.uploaded_by,
-        row.id,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query));
-    });
-
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-        <div style={{ display: "grid", gap: 4 }}>
-          <div style={{ color: t.color.textQuiet, ...t.type.label }}>Support</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Support bundles</h1>
-          <div style={{ fontSize: 13, color: t.color.textQuiet }}>
-            Selected-shop support-bundle directory. This table shows Control metadata for bundles recorded in `rb_support_bundles`; it does not imply storage-file validation or bundle contents review.
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <ControlActionLinkV2 href="/shops">Open shops</ControlActionLinkV2>
-          <ControlActionLinkV2 href="/support/bundle" tone="primary">Upload bundle</ControlActionLinkV2>
-        </div>
+    <div style={{ display: "grid", gap: 18 }}>
+      <ControlPageHeader
+        eyebrow="Support"
+        title="Support"
+        description="Admin and support surface for bundle metadata, capability diagnostics, schema visibility, and cleanup or delete-operation tracking across Control."
+        actions={<ControlActionLink href="/support/bundle" tone="primary">Upload bundle</ControlActionLink>}
+      />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <ControlMetricCard label="Support Bundles" value={String(data.summary.supportBundles)} meta="Support-bundle metadata rows recorded in Control." tone={data.summary.supportBundles > 0 ? "info" : "neutral"} />
+        <ControlMetricCard label="Shops With Issues" value={String(data.summary.shopsWithIssues)} meta="Billing restrictions, stale/offline device health, capability warnings, or delete-operation attention." tone={data.summary.shopsWithIssues > 0 ? "warning" : "success"} />
+        <ControlMetricCard label="Capability Warnings" value={String(data.summary.devicesWithCapabilityWarnings)} meta="Latest surfaced capability snapshots reporting warning or fail status." tone={data.summary.devicesWithCapabilityWarnings > 0 ? "warning" : "success"} />
+        <ControlMetricCard label="Cleanup / Delete Operations" value={String(data.summary.cleanupOperations)} meta="Pending, running, failed, or partially failed cleanup workflows." tone={data.summary.cleanupOperations > 0 ? "danger" : "success"} />
+        <ControlMetricCard label="Recent Support Activity" value={String(data.summary.recentSupportActivity)} meta="Bundles, capability snapshots, and delete-operation timestamps seen within the last 7 days." tone={data.summary.recentSupportActivity > 0 ? "info" : "neutral"} />
       </div>
 
-      <form method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <ControlSelectV2 name="shop" defaultValue={primaryShop.id} style={{ minWidth: 220 }}>
-          {context.shops.map((shop) => (
-            <option key={shop.id} value={shop.id}>{shop.name}</option>
-          ))}
-        </ControlSelectV2>
-        <ControlInputV2 name="q" defaultValue={firstParam(params.q)} placeholder="Search path, notes, uploader" style={{ minWidth: 240 }} />
-        <ControlSelectV2 name="has_path" defaultValue={hasPathFilter} style={{ minWidth: 160 }}>
-          <option value="all">All rows</option>
-          <option value="with_path">With path</option>
-          <option value="missing_path">Missing path</option>
-        </ControlSelectV2>
-        <ControlActionButtonV2 type="submit" tone="primary">
-          Apply
-        </ControlActionButtonV2>
-        <ControlActionLinkV2 href={`/support?shop=${encodeURIComponent(primaryShop.id)}`}>Clear</ControlActionLinkV2>
-      </form>
-
-      <div style={{ fontSize: 12, color: t.color.textQuiet }}>
-        {rows.length} support bundle row{rows.length === 1 ? "" : "s"} shown for {primaryShop.name}. Authority: `rb_support_bundles` metadata for the selected authorized shop only.
-      </div>
-
-      {loadError ? <div style={{ fontSize: 12.5, color: t.color.textMuted }}>Could not load support bundles: {loadError}</div> : null}
-
-      <ControlTableWrapV2>
-        <ControlTableV2 minWidth={1080}>
-          <thead>
-            <tr>
-              <ControlTableHeadCellV2>Bundle</ControlTableHeadCellV2>
-              <ControlTableHeadCellV2>Path</ControlTableHeadCellV2>
-              <ControlTableHeadCellV2>Notes</ControlTableHeadCellV2>
-              <ControlTableHeadCellV2>Uploaded By</ControlTableHeadCellV2>
-              <ControlTableHeadCellV2>Created</ControlTableHeadCellV2>
-              <ControlTableHeadCellV2>Authority</ControlTableHeadCellV2>
-            </tr>
-          </thead>
-          <tbody>
-            {loadError ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 16, color: t.color.textMuted }}>
-                  Support bundle metadata is unavailable for the selected shop right now.
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 16, color: t.color.textMuted }}>
-                  No support bundles matched the current filters.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <ControlTableCellV2>
-                    <div style={{ display: "grid", gap: 3 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: t.color.text }}>{fileName(row.file_path)}</div>
-                      <div style={{ color: t.color.textQuiet, fontSize: 11.5 }}>{row.id}</div>
-                    </div>
-                  </ControlTableCellV2>
-                  <ControlTableCellV2>{row.file_path ?? "No stored path"}</ControlTableCellV2>
-                  <ControlTableCellV2>{row.notes ?? "No notes"}</ControlTableCellV2>
-                  <ControlTableCellV2>{row.uploaded_by ?? "Unknown"}</ControlTableCellV2>
-                  <ControlTableCellV2>{formatMaybeDate(row.created_at)}</ControlTableCellV2>
-                  <ControlTableCellV2>rb_support_bundles metadata</ControlTableCellV2>
+      <ControlPanel
+        title="Support Bundles"
+        description="Control stores support-bundle metadata and routing context here. This does not make Control the owner of Desktop company files."
+        actions={<ControlActionLink href="/support/bundle">Open uploader</ControlActionLink>}
+      >
+        {data.bundles.length === 0 ? (
+          <ControlEmptyState
+            title="No support bundles recorded"
+            description="Control does not currently have any support-bundle metadata rows to display."
+            action={<ControlActionLink href="/support/bundle" tone="primary">Upload support bundle</ControlActionLink>}
+          />
+        ) : (
+          <ControlTableWrap>
+            <ControlTable minWidth={1380}>
+              <thead>
+                <tr>
+                  <ControlTableHeadCell>Bundle</ControlTableHeadCell>
+                  <ControlTableHeadCell>Shop</ControlTableHeadCell>
+                  <ControlTableHeadCell>Device</ControlTableHeadCell>
+                  <ControlTableHeadCell>Created</ControlTableHeadCell>
+                  <ControlTableHeadCell>Size</ControlTableHeadCell>
+                  <ControlTableHeadCell>Status</ControlTableHeadCell>
+                  <ControlTableHeadCell align="right">Action</ControlTableHeadCell>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </ControlTableV2>
-      </ControlTableWrapV2>
+              </thead>
+              <tbody>
+                {data.bundles.map((row: SupportBundleViewRow) => (
+                  <tr key={row.id}>
+                    <ControlTableCell>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <div style={{ color: t.color.text, fontWeight: 800 }}>{fileName(row.file_path)}</div>
+                        <div style={{ fontSize: 12, color: t.color.textMuted }}>{row.file_path ?? "No stored path"}</div>
+                      </div>
+                    </ControlTableCell>
+                    <ControlTableCell>{row.shop_name ?? "Not surfaced"}</ControlTableCell>
+                    <ControlTableCell>{row.device_label}</ControlTableCell>
+                    <ControlTableCell>{formatMaybeDate(row.created_at)}</ControlTableCell>
+                    <ControlTableCell>{row.size_label}</ControlTableCell>
+                    <ControlTableCell>
+                      <ControlStatusChip label={row.status_label} tone="info" />
+                    </ControlTableCell>
+                    <ControlTableCell align="right">
+                      {row.action_href ? (
+                        <ControlActionLink href={row.action_href} tone="secondary">Open shop</ControlActionLink>
+                      ) : (
+                        <span style={{ color: t.color.textMuted, fontSize: 12 }}>Read only</span>
+                      )}
+                    </ControlTableCell>
+                  </tr>
+                ))}
+              </tbody>
+            </ControlTable>
+          </ControlTableWrap>
+        )}
+      </ControlPanel>
+
+      <ControlPanel
+        title="Device Capability / Diagnostics"
+        description="Latest surfaced capability snapshots from enrolled devices. Empty means the repo does not currently have capability rows to show."
+        actions={<ControlActionLink href="/devices">Open devices</ControlActionLink>}
+      >
+        {data.capabilityRows.length === 0 ? (
+          <ControlEmptyState
+            title="No capability snapshots surfaced"
+            description="Control does not currently have any capability snapshot rows to display."
+          />
+        ) : (
+          <ControlTableWrap>
+            <ControlTable minWidth={1260}>
+              <thead>
+                <tr>
+                  <ControlTableHeadCell>Device</ControlTableHeadCell>
+                  <ControlTableHeadCell>Shop</ControlTableHeadCell>
+                  <ControlTableHeadCell>Requirement Status</ControlTableHeadCell>
+                  <ControlTableHeadCell>OS</ControlTableHeadCell>
+                  <ControlTableHeadCell>RAM</ControlTableHeadCell>
+                  <ControlTableHeadCell>Disk Free</ControlTableHeadCell>
+                  <ControlTableHeadCell>Last Captured</ControlTableHeadCell>
+                </tr>
+              </thead>
+              <tbody>
+                {data.capabilityRows.map((row: CapabilitySupportRow) => (
+                  <tr key={row.device_id}>
+                    <ControlTableCell>{row.device_name}</ControlTableCell>
+                    <ControlTableCell>{row.shop_name ?? "Not surfaced"}</ControlTableCell>
+                    <ControlTableCell>
+                      <ControlStatusChip label={row.requirements_status ? row.requirements_status.replaceAll("_", " ") : "Not surfaced"} tone={capabilityTone(row)} />
+                    </ControlTableCell>
+                    <ControlTableCell>{row.os_label}</ControlTableCell>
+                    <ControlTableCell>{row.ram_label}</ControlTableCell>
+                    <ControlTableCell>{row.disk_free_label}</ControlTableCell>
+                    <ControlTableCell>{formatMaybeDate(row.reported_at)}</ControlTableCell>
+                  </tr>
+                ))}
+              </tbody>
+            </ControlTable>
+          </ControlTableWrap>
+        )}
+      </ControlPanel>
+
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18 }}>
+        <ControlPanel
+          title="Schema / Shop Summary"
+          description="Server-side summary using the same admin data patterns that already exist in Control. This is a visibility panel, not a mutation surface."
+          actions={<ControlActionLink href="/status">Open status page</ControlActionLink>}
+        >
+          {data.schemaSummary.available ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+              {[
+                ["Checked", formatMaybeDate(data.schemaSummary.checked_at)],
+                ["Shops", String(data.schemaSummary.shops)],
+                ["Members", String(data.schemaSummary.members)],
+                ["Employees", String(data.schemaSummary.employees)],
+                ["Devices", String(data.schemaSummary.devices)],
+                ["Time Events", String(data.schemaSummary.timeEvents)],
+                ["Support Bundles", String(data.schemaSummary.supportBundles)],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    padding: 14,
+                    borderRadius: t.radius.md,
+                    border: `1px solid ${t.color.softBorder}`,
+                    background: "rgba(7, 10, 15, 0.34)",
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.72, textTransform: "uppercase", color: t.color.textMuted }}>{label}</div>
+                  <div style={{ color: t.color.textSecondary, fontSize: 13, lineHeight: 1.55 }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ControlEmptyState
+              title="Schema summary not available"
+              description="Use the existing status page if you need deeper platform diagnostics."
+            />
+          )}
+        </ControlPanel>
+
+        <ControlPanel
+          title="Cleanup / Delete Operations"
+          description="Danger-zone visibility only. Destructive workflows stay server-side and protected; this panel surfaces real operation state without adding new mutation paths."
+        >
+          {data.deleteOperations.length === 0 ? (
+            <ControlEmptyState
+              title="No delete operations recorded"
+              description="Control does not currently have cleanup or delete-operation rows to display."
+            />
+          ) : (
+            <ControlTableWrap>
+              <ControlTable minWidth={1040}>
+                <thead>
+                  <tr>
+                    <ControlTableHeadCell>Shop</ControlTableHeadCell>
+                    <ControlTableHeadCell>Operation Phase</ControlTableHeadCell>
+                    <ControlTableHeadCell>Status</ControlTableHeadCell>
+                    <ControlTableHeadCell>Started</ControlTableHeadCell>
+                    <ControlTableHeadCell>Finished</ControlTableHeadCell>
+                    <ControlTableHeadCell>Recent Log Summary</ControlTableHeadCell>
+                    <ControlTableHeadCell align="right">Action</ControlTableHeadCell>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.deleteOperations.map((row: DeleteOperationViewRow) => (
+                    <tr key={row.id}>
+                      <ControlTableCell>{row.shop_name ?? "Not surfaced"}</ControlTableCell>
+                      <ControlTableCell>{row.phase ? row.phase.replaceAll("_", " ") : "Not surfaced"}</ControlTableCell>
+                      <ControlTableCell>
+                        <ControlStatusChip label={row.status ? row.status.replaceAll("_", " ") : "Unknown"} tone={deleteTone(row)} />
+                      </ControlTableCell>
+                      <ControlTableCell>{formatMaybeDate(row.started_at)}</ControlTableCell>
+                      <ControlTableCell>{formatMaybeDate(row.finished_at)}</ControlTableCell>
+                      <ControlTableCell>{row.recent_log_summary ?? "Not surfaced"}</ControlTableCell>
+                      <ControlTableCell align="right">
+                        {row.action_href ? (
+                          <ControlActionLink href={row.action_href} tone="danger">Open shop</ControlActionLink>
+                        ) : (
+                          <span style={{ color: t.color.textMuted, fontSize: 12 }}>Read only</span>
+                        )}
+                      </ControlTableCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </ControlTable>
+            </ControlTableWrap>
+          )}
+        </ControlPanel>
+      </div>
     </div>
   );
 }
