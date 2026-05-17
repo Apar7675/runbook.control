@@ -2,12 +2,11 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
+import ControlAppShell from "@/components/control/ControlAppShell";
+import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
-import { buildControlHeaderStatuses, toneForHealth } from "@/lib/connection-status";
+import { buildControlHeaderStatuses } from "@/lib/connection-status";
 import { resolveOnboardingPathForCurrentUser } from "@/lib/onboarding/flow";
-import ControlSidebarV2 from "@/components/control/v2/ControlSidebarV2";
-import ControlTopbarV2 from "@/components/control/v2/ControlTopbarV2";
-import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -65,10 +64,10 @@ export default async function AuthedLayout({
     dataHealthy: !adminError,
     dataReason: adminError?.message,
   });
-  const headerStatuses = headerStatusesRaw.map((status) => ({
+  const headerStatuses: Array<{ key: string; label: string; tone: ControlStatusTone }> = headerStatusesRaw.map((status) => ({
     key: status.key,
     label: status.label,
-    health: status.health === "Healthy" ? "healthy" : status.health === "Degraded" ? "warning" : "critical",
+    tone: status.health === "Healthy" ? "success" : status.health === "Degraded" ? "warning" : "danger",
   }));
 
   if (isPlatformAdmin && aal !== "aal2") {
@@ -82,74 +81,15 @@ export default async function AuthedLayout({
   }
 
   return (
-    <div
-      style={{
-        position: "relative",
-        isolation: "isolate",
-        minHeight: "100vh",
-        background: t.color.app,
-        color: t.color.text,
-      }}
-    >
+    <>
       <DeviceIdBootstrap />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          backgroundColor: "#05080e",
-          backgroundImage: "url('/control-space-bg.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          opacity: 0.12,
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          background: "rgba(5, 8, 14, 0.78)",
-        }}
-      />
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          minHeight: "100vh",
-          display: "grid",
-          gridTemplateColumns: `${t.spacing.railWidth}px minmax(0, 1fr)`,
-        }}
+      <ControlAppShell
+        email={email}
+        roleLabel={isPlatformAdmin ? "Platform admin" : "Shop admin"}
+        statuses={headerStatuses}
       >
-        <aside>
-          <ControlSidebarV2 isPlatformAdmin={isPlatformAdmin} />
-        </aside>
-
-        <div style={{ minWidth: 0, display: "grid", gridTemplateRows: `${t.spacing.topbarHeight}px minmax(0, 1fr)` }}>
-          <ControlTopbarV2
-            email={email}
-            roleLabel={isPlatformAdmin ? "Platform admin" : "Shop admin"}
-            statuses={headerStatuses}
-          />
-
-          <main
-            style={{
-              minWidth: 0,
-              display: "grid",
-              alignContent: "start",
-              gap: 14,
-              padding: "18px 20px 24px",
-            }}
-          >
-            {children}
-          </main>
-        </div>
-      </div>
-    </div>
+        {children}
+      </ControlAppShell>
+    </>
   );
 }

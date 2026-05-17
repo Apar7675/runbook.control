@@ -1,0 +1,42 @@
+import React from "react";
+import { controlTheme as t } from "@/components/control/controlTheme";
+
+export default function ControlPanel({
+  title,
+  description,
+  actions,
+  children,
+  padding = 18,
+}: {
+  title?: string;
+  description?: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+  padding?: number;
+}) {
+  return (
+    <section
+      style={{
+        display: "grid",
+        gap: 16,
+        padding,
+        borderRadius: t.radius.lg,
+        border: `1px solid ${t.color.softBorder}`,
+        background: `linear-gradient(180deg, rgba(18, 27, 40, 0.98), rgba(11, 16, 24, 0.98))`,
+        boxShadow: t.shadow.panel,
+        backdropFilter: "blur(20px)",
+      }}
+    >
+      {title || description || actions ? (
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ display: "grid", gap: 4 }}>
+            {title ? <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: t.color.text }}>{title}</h2> : null}
+            {description ? <div style={{ fontSize: 13, color: t.color.textMuted, maxWidth: 880 }}>{description}</div> : null}
+          </div>
+          {actions ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div> : null}
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
