@@ -23,7 +23,7 @@ const navItems: NavItem[] = [
   { label: "Command Center", href: "/dashboard", matchPath: "/dashboard" },
   { label: "Shops", href: "/shops", matchPath: "/shops" },
   { label: "Devices", href: "/devices", matchPath: "/devices" },
-  { label: "Workstations", href: "/apps?app=workstation", matchPath: "/apps", matchQuery: { key: "app", value: "workstation" } },
+  { label: "Workstations", href: "/workstations", matchPath: "/workstations" },
   { label: "People", href: "/people", matchPath: "/people" },
   { label: "Mobile Access", href: "/apps?app=mobile", matchPath: "/apps", matchQuery: { key: "app", value: "mobile" } },
   { label: "Timeclock Review", href: "/audit?action=timeclock", matchPath: "/audit" },

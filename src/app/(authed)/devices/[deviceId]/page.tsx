@@ -1,599 +1,453 @@
-"use client";
-
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import GlassCard from "@/components/GlassCard";
-import { safeFetch } from "@/lib/http/safeFetch";
+import React from "react";
+import { ControlActionLink } from "@/components/control/ControlActionButton";
+import ControlEmptyState from "@/components/control/ControlEmptyState";
+import ControlMetricCard from "@/components/control/ControlMetricCard";
+import ControlPageHeader from "@/components/control/ControlPageHeader";
+import ControlPanel from "@/components/control/ControlPanel";
+import ControlStatusChip, { type ControlStatusTone } from "@/components/control/ControlStatusChip";
+import { ControlTable, ControlTableCell, ControlTableHeadCell, ControlTableWrap } from "@/components/control/ControlTable";
+import DeviceAdminActionsPanel from "@/components/devices/DeviceAdminActionsPanel";
+import { capabilityMessages, capabilityStatusLabel, formatBytes, loadDeviceDetail } from "@/lib/control/deviceViews";
 import { formatDateTime } from "@/lib/ui/dates";
 
-type Device = {
-  id: string;
-  created_at: string;
-  shop_id: string | null;
-  shop_name?: string | null;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  name: string;
-  device_type: string;
-  status: string;
-
-  last_seen_at?: string | null;
-  reported_version?: string | null;
-  version?: string | null;
-  app_version?: string | null;
-  reported_version_at?: string | null;
+type Props = {
+  params: Promise<{ deviceId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type Token = {
-  id: string;
-  device_id: string;
-  created_at: string;
-  issued_at: string;
-  revoked_at: string | null;
-  last_seen_at: string | null;
-  label: string | null;
-};
+type DeviceTabKey = "overview" | "token" | "capability" | "updates" | "audit" | "support";
 
-type ListResp = { ok: true; devices: Device[]; tokens: Token[] } | { ok?: false; error?: string };
+const tabs: Array<{ key: DeviceTabKey; label: string }> = [
+  { key: "overview", label: "Overview" },
+  { key: "token", label: "Token & Enrollment" },
+  { key: "capability", label: "Capability Snapshot" },
+  { key: "updates", label: "Updates" },
+  { key: "audit", label: "Audit" },
+  { key: "support", label: "Support" },
+];
 
-function isoOrDash(ts?: string | null) {
-  if (!ts) return "—";
+function firstParam(value: string | string[] | undefined) {
+  return typeof value === "string" ? value : Array.isArray(value) ? value[0] ?? "" : "";
+}
+
+function normalizeTab(value: string | string[] | undefined): DeviceTabKey {
+  const candidate = firstParam(value).trim().toLowerCase();
+  return tabs.some((tab) => tab.key === candidate) ? (candidate as DeviceTabKey) : "overview";
+}
+
+function formatMaybeDate(value: string | null | undefined) {
+  if (!value) return "Not surfaced";
   try {
-    return formatDateTime(ts);
+    return formatDateTime(value);
   } catch {
-    return ts;
+    return value;
   }
 }
 
-function newestIso(a?: string | null, b?: string | null) {
-  if (!a) return b ?? null;
-  if (!b) return a ?? null;
-  const ta = Date.parse(a);
-  const tb = Date.parse(b);
-  if (!Number.isFinite(ta)) return b ?? a ?? null;
-  if (!Number.isFinite(tb)) return a ?? b ?? null;
-  return tb > ta ? b : a;
+function humanize(value: string | null | undefined, fallback: string) {
+  const text = String(value ?? "").trim();
+  return text ? text.replaceAll("_", " ") : fallback;
 }
 
-type RevealInfo = {
-  token: string;
-  token_id?: string | null;
-  issuedAtIso: string;
-};
-
-function StatusChip({ status }: { status: string }) {
-  const s = (status ?? "").toLowerCase();
-  const isActive = s === "active";
-  const label = isActive ? "ACTIVE" : "DISABLED";
-
+function KeyValueGrid({
+  items,
+}: {
+  items: Array<{ label: string; value: React.ReactNode }>;
+}) {
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "4px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 900,
-        letterSpacing: 0.6,
-        textTransform: "uppercase",
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: isActive ? "rgba(80,220,140,0.16)" : "rgba(255,120,120,0.16)",
-        color: isActive ? "#bff5d2" : "#ffd0d0",
-        width: "fit-content",
-      }}
-      title={`status: ${status}`}
-    >
-      {label}
-    </span>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+      {items.map((item) => (
+        <div
+          key={item.label}
+          style={{
+            display: "grid",
+            gap: 6,
+            padding: 14,
+            borderRadius: 14,
+            border: "1px solid rgba(148, 163, 184, 0.16)",
+            background: "rgba(7, 10, 15, 0.34)",
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.72, textTransform: "uppercase", color: "#64748B" }}>{item.label}</div>
+          <div style={{ color: "#CBD5E1", fontSize: 13, lineHeight: 1.55 }}>{item.value}</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
-export default function DeviceDetailPage() {
-  const params = useParams<{ deviceId: string }>();
-  const deviceId = params.deviceId;
-  const router = useRouter();
+function DeviceTabNav({
+  deviceId,
+  activeTab,
+}: {
+  deviceId: string;
+  activeTab: DeviceTabKey;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        flexWrap: "wrap",
+        padding: 8,
+        borderRadius: 18,
+        border: "1px solid rgba(148, 163, 184, 0.16)",
+        background: "linear-gradient(180deg, rgba(16, 23, 34, 0.92), rgba(11, 16, 24, 0.92))",
+      }}
+    >
+      {tabs.map((tab) => (
+        <ControlActionLink
+          key={tab.key}
+          href={tab.key === "overview" ? `/devices/${deviceId}` : `/devices/${deviceId}?tab=${tab.key}`}
+          tone={tab.key === activeTab ? "primary" : "ghost"}
+        >
+          {tab.label}
+        </ControlActionLink>
+      ))}
+    </div>
+  );
+}
 
-  const [device, setDevice] = useState<Device | null>(null);
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<string>("");
-  const [busy, setBusy] = useState(false);
+function updateTone(label: string): ControlStatusTone {
+  const value = label.toLowerCase();
+  if (value.includes("current")) return "success";
+  if (value.includes("pinned") || value.includes("below")) return "danger";
+  if (value.includes("unknown") || value.includes("format")) return "warning";
+  return "neutral";
+}
 
-  const [reveal, setReveal] = useState<RevealInfo | null>(null);
+export default async function DeviceDetailPage({ params, searchParams }: Props) {
+  const { deviceId } = await params;
+  const query = (await searchParams) ?? {};
+  const activeTab = normalizeTab(query.tab);
+  const { context, device, tokens, auditRows, supportRows } = await loadDeviceDetail(deviceId);
 
-  const [testToken, setTestToken] = useState("");
-  const [testResult, setTestResult] = useState<string>("");
-  const [testBusy, setTestBusy] = useState(false);
-
-  const activeToken = useMemo(() => tokens.find((t) => !t.revoked_at) ?? null, [tokens]);
-
-  function formatFetchErr(prefix: string, r: any) {
-    return `${prefix}: [${r.status}] ${r.error}`;
+  if (!context.isPlatformAdmin) {
+    return (
+      <div style={{ display: "grid", gap: 18 }}>
+        <ControlPageHeader
+          eyebrow="Devices"
+          title="Device Detail"
+          description="This page stays restricted to platform-admin sessions because it exposes device token and cross-shop authority details."
+          actions={<ControlActionLink href="/devices">Back to devices</ControlActionLink>}
+        />
+        <ControlPanel>
+          <ControlEmptyState
+            title="Platform admin access required"
+            description="Sign in with a platform-admin AAL2 session to review device enrollment and token details."
+          />
+        </ControlPanel>
+      </div>
+    );
   }
 
-  async function copyToClipboard(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setStatus("Copied token to clipboard.");
-    } catch {
-      setStatus("Copy failed (browser denied clipboard). Select and copy manually.");
-    }
+  if (!device) {
+    return (
+      <div style={{ display: "grid", gap: 18 }}>
+        <ControlPageHeader
+          eyebrow="Devices"
+          title="Device Not Found"
+          description="The requested device record is not available inside the current Control scope."
+          actions={<ControlActionLink href="/devices">Back to devices</ControlActionLink>}
+        />
+        <ControlPanel>
+          <ControlEmptyState
+            title="Choose a different device"
+            description="Return to the Devices directory and open a device that still exists in Control."
+          />
+        </ControlPanel>
+      </div>
+    );
   }
 
-  function getDeviceVersion(d: Device | null): string | null {
-    if (!d) return null;
-    const v =
-      (d.reported_version ?? "").trim() ||
-      (d.app_version ?? "").trim() ||
-      (d.version ?? "").trim() ||
-      "";
-    return v ? v : null;
-  }
-
-  function getDeviceLastSeen(d: Device | null, deviceTokens: Token[]): string | null {
-    let last: string | null = d?.last_seen_at ?? null;
-    for (const t of deviceTokens) last = newestIso(last, t.last_seen_at ?? null);
-    last = newestIso(last, d?.reported_version_at ?? null);
-    return last;
-  }
-
-  function getShopLabel(d: Device | null): string {
-    if (!d) return "—";
-    if (d.shop_name && d.shop_name.trim()) return d.shop_name.trim();
-    if (d.shop_id) return d.shop_id;
-    return "—";
-  }
-
-  async function reload() {
-    setLoading(true);
-    setStatus("");
-
-    const r = await safeFetch<ListResp>("/api/device/list", {
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    if (!r.ok) {
-      setStatus(formatFetchErr("Devices", r));
-      setDevice(null);
-      setTokens([]);
-      setLoading(false);
-      return;
-    }
-
-    const j: any = r.data;
-    if (!j?.ok) {
-      setStatus(j?.error ?? "Failed to load devices");
-      setDevice(null);
-      setTokens([]);
-      setLoading(false);
-      return;
-    }
-
-    const allDevices: Device[] = (j.devices ?? []) as Device[];
-    const allTokens: Token[] = (j.tokens ?? []) as Token[];
-
-    const d = allDevices.find((x) => x.id === deviceId) ?? null;
-    setDevice(d);
-
-    const t = allTokens
-      .filter((x) => x.device_id === deviceId)
-      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-
-    setTokens(t);
-
-    if (!d) setStatus("Device not found (it may have been deleted).");
-
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    reload();
-  }, [deviceId]);
-
-  async function issueToken() {
-    setStatus("");
-    setBusy(true);
-
-    const r = await safeFetch<any>("/api/device/issue-token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ device_id: deviceId, label: "issued-from-details" }),
-    });
-
-    setBusy(false);
-
-    if (!r.ok) return setStatus(formatFetchErr("Issue token", r));
-
-    const j: any = r.data;
-    if (!j?.ok) return setStatus(j?.error ?? "Issue token failed");
-
-    const token = String(j.token ?? "").trim();
-    if (!token) return setStatus("Token was not returned.");
-
-    setReveal({
-      token,
-      token_id: j.token_id ?? null,
-      issuedAtIso: new Date().toISOString(),
-    });
-
-    // convenience: load into test box too
-    setTestToken(token);
-    setTestResult("");
-
-    await reload();
-  }
-
-  async function revokeToken(tokenId: string) {
-    setStatus("");
-    setBusy(true);
-
-    const r = await safeFetch<any>("/api/device/revoke-token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ token_id: tokenId }),
-    });
-
-    setBusy(false);
-
-    if (!r.ok) return setStatus(formatFetchErr("Revoke token", r));
-
-    const j: any = r.data;
-    if (!j?.ok) return setStatus(j?.error ?? "Revoke failed");
-
-    await reload();
-  }
-
-  async function deleteDevice() {
-    if (!device) return;
-
-    const ok = window.confirm(`Delete device "${device.name}"?\n\nThis permanently deletes the device and ALL its tokens.`);
-    if (!ok) return;
-
-    setStatus("");
-    setBusy(true);
-
-    const r = await safeFetch<any>("/api/device/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ device_id: device.id }),
-    });
-
-    setBusy(false);
-
-    if (!r.ok) return setStatus(formatFetchErr("Delete device", r));
-
-    const j: any = r.data;
-    if (!j?.ok) return setStatus(j?.error ?? "Delete failed");
-
-    router.replace("/devices");
-  }
-
-  async function setDeviceStatus(nextStatus: "active" | "disabled") {
-    if (!device) return;
-
-    const label = nextStatus === "disabled" ? "Disable" : "Enable";
-    const ok = window.confirm(`${label} this device?\n\nToken validation will ${nextStatus === "disabled" ? "FAIL" : "PASS"} based on status.`);
-    if (!ok) return;
-
-    setBusy(true);
-    setStatus("");
-
-    const r = await safeFetch<any>("/api/device/set-status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ device_id: device.id, status: nextStatus }),
-    });
-
-    setBusy(false);
-
-    if (!r.ok) return setStatus(formatFetchErr("Set status", r));
-
-    const j: any = r.data;
-    if (!j?.ok) return setStatus(j?.error ?? "Status update failed");
-
-    await reload();
-  }
-
-  async function testValidate() {
-    setTestBusy(true);
-    setTestResult("");
-
-    const raw = testToken.trim();
-    if (!raw) {
-      setTestBusy(false);
-      setTestResult("Enter a token first.");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/device/validate-token", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${raw}`,
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({}),
-      });
-
-      const text = await res.text();
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(text);
-      } catch {}
-
-      const out = {
-        http_status: res.status,
-        ok: res.ok,
-        body: parsed ?? text,
-      };
-
-      setTestResult(JSON.stringify(out, null, 2));
-    } catch (e: any) {
-      setTestResult(`Fetch failed: ${e?.message ?? String(e)}`);
-    } finally {
-      setTestBusy(false);
-      // refresh to pull last_seen updates if any
-      await reload();
-    }
-  }
-
-  const version = getDeviceVersion(device);
-  const lastSeen = getDeviceLastSeen(device, tokens);
-  const isDisabled = (device?.status ?? "") !== "active";
+  const activeToken = tokens.find((token) => !token.revoked_at) ?? null;
+  const capability = device.capability;
+  const capabilityDetails = capabilityMessages(capability);
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 1100 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0 }}>Device Details</h1>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => router.back()} style={{ padding: "10px 14px", borderRadius: 12 }}>
-            Back
-          </button>
-          <button onClick={reload} disabled={busy} style={{ padding: "10px 14px", borderRadius: 12 }}>
-            Refresh
-          </button>
-        </div>
+    <div style={{ display: "grid", gap: 18 }}>
+      <ControlPageHeader
+        eyebrow="Device Profile"
+        title={device.name}
+        description="Cloud authority profile for enrollment, token lifecycle, update posture, and capability telemetry."
+        actions={[
+          <ControlActionLink key="back" href="/devices">Back to devices</ControlActionLink>,
+          device.device_type?.toLowerCase() === "workstation"
+            ? <ControlActionLink key="workstations" href="/workstations" tone="secondary">Open workstations</ControlActionLink>
+            : <ControlActionLink key="shop" href={device.shop_id ? `/shops/${device.shop_id}` : "/shops"} tone="secondary">Open shop</ControlActionLink>,
+        ]}
+      />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <ControlMetricCard label="Status" value={humanize(device.status, "Unknown")} meta={device.access_reason} tone={String(device.status ?? "").toLowerCase() === "active" ? "success" : "danger"} />
+        <ControlMetricCard label="Last Check-In" value={device.merged_last_seen_at ? formatMaybeDate(device.merged_last_seen_at) : "Not surfaced"} meta="Merged from device and active-token heartbeat data." tone={device.merged_last_seen_at ? "success" : "warning"} />
+        <ControlMetricCard label="Version" value={device.reported_version ?? "Not surfaced"} meta={device.update_detail} tone={updateTone(device.update_label)} />
+        <ControlMetricCard label="Access Mode" value={device.access_mode} meta={device.shop_snapshot ? `${device.shop_name ?? device.shop_id ?? "Shop"} access decision.` : "Shop access snapshot not available."} tone={device.access_mode.toLowerCase() === "full" ? "success" : device.access_mode.toLowerCase() === "blocked" ? "danger" : "warning"} />
       </div>
 
-      {status ? (
-        <div
-          style={{
-            fontSize: 12,
-            opacity: 0.85,
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 12,
-            padding: 12,
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {status}
+      <DeviceTabNav deviceId={device.id} activeTab={activeTab} />
+
+      {activeTab === "overview" ? (
+        <div style={{ display: "grid", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 0.9fr)", gap: 18 }}>
+            <ControlPanel
+              title="Device Identity"
+              description="Core Control-side identity and authority context for this enrolled device."
+            >
+              <KeyValueGrid
+                items={[
+                  { label: "Display Name", value: device.name },
+                  { label: "Device Type", value: humanize(device.device_type, "Not surfaced") },
+                  { label: "Shop", value: device.shop_name ?? device.shop_id ?? "Not surfaced" },
+                  { label: "Status", value: <ControlStatusChip label={humanize(device.status, "Unknown")} tone={String(device.status ?? "").toLowerCase() === "active" ? "success" : "danger"} /> },
+                  { label: "Last Seen", value: formatMaybeDate(device.merged_last_seen_at) },
+                  { label: "App Version", value: device.reported_version ?? "Not surfaced" },
+                ]}
+              />
+            </ControlPanel>
+
+            <ControlPanel
+              title="Access and Entitlement"
+              description="Effective device access posture based on the shop-level Control access decision."
+            >
+              <KeyValueGrid
+                items={[
+                  { label: "Access Mode", value: device.access_mode },
+                  { label: "Entitlement Status", value: device.shop_snapshot?.access.display_status ?? "Not surfaced" },
+                  { label: "Billing Status", value: humanize(device.shop_snapshot?.billing_status, "Not surfaced") },
+                  { label: "Access Summary", value: device.access_reason },
+                  { label: "Update Status", value: <ControlStatusChip label={device.update_label} tone={updateTone(device.update_label)} /> },
+                  { label: "Capability Status", value: <ControlStatusChip label={capabilityStatusLabel(capability)} tone={capability ? (String(capability.requirements_status ?? "").toLowerCase() === "warning" ? "warning" : String(capability.requirements_status ?? "").toLowerCase().startsWith("fail") ? "danger" : "success") : "neutral"} /> },
+                ]}
+              />
+            </ControlPanel>
+          </div>
+
+          <ControlPanel
+            title="Current Actions"
+            description="Use the existing safe device-admin routes to issue tokens, change status, or remove the device."
+          >
+            <DeviceAdminActionsPanel
+              deviceId={device.id}
+              deviceName={device.name}
+              deviceStatus={device.status}
+              activeTokenId={activeToken?.id ?? null}
+            />
+          </ControlPanel>
         </div>
       ) : null}
 
-      <GlassCard title="Device">
-        {loading ? (
-          <div style={{ opacity: 0.75 }}>Loading…</div>
-        ) : !device ? (
-          <div style={{ opacity: 0.75 }}>No device.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>{device.name}</div>
-              <StatusChip status={device.status} />
-            </div>
-
-            <div style={{ fontSize: 12, opacity: 0.75 }}>{device.device_type}</div>
-            <div style={{ fontSize: 12, opacity: 0.65 }}>Device ID: {device.id}</div>
-            <div style={{ fontSize: 12, opacity: 0.65 }}>Shop: {getShopLabel(device)}</div>
-
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-              Last seen: <span style={{ fontWeight: 900 }}>{isoOrDash(lastSeen)}</span>
-              {"  "}•{"  "}
-              Version: <span style={{ fontWeight: 900 }}>{version ?? "—"}</span>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
-              <button onClick={issueToken} disabled={busy} style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900 }}>
-                Reveal Token (once)
-              </button>
-
-              {isDisabled ? (
-                <button
-                  onClick={() => setDeviceStatus("active")}
-                  disabled={busy}
-                  style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900 }}
-                >
-                  Enable Device
-                </button>
-              ) : (
-                <button
-                  onClick={() => setDeviceStatus("disabled")}
-                  disabled={busy}
-                  style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900, opacity: 0.95 }}
-                >
-                  Disable Device
-                </button>
-              )}
-
-              <button
-                onClick={deleteDevice}
-                disabled={busy}
-                style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900, opacity: 0.9 }}
-              >
-                Delete Device
-              </button>
-            </div>
-
-            <div style={{ fontSize: 12, opacity: 0.65 }}>
-              Validation behavior: {isDisabled ? "token validation will FAIL (disabled)" : "token validation will PASS (active)"}
-            </div>
-          </div>
-        )}
-      </GlassCard>
-
-      {reveal ? (
-        <GlassCard title="Token (revealed once)">
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ fontSize: 12, opacity: 0.9, fontWeight: 900 }}>
-              Copy now • {formatDateTime(reveal.issuedAtIso)}
-            </div>
-            <textarea
-              readOnly
-              value={reveal.token}
-              style={{
-                width: "100%",
-                minHeight: 90,
-                padding: 10,
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(0,0,0,0.25)",
-                color: "#e6e8ef",
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                fontSize: 12,
-              }}
-            />
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                onClick={() => copyToClipboard(reveal.token)}
-                style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900 }}
-              >
-                Copy
-              </button>
-              <button
-                onClick={() => setReveal(null)}
-                style={{ padding: "10px 12px", borderRadius: 12, opacity: 0.9 }}
-              >
-                Clear
-              </button>
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>
-              This raw token is shown only here. It is not stored and cannot be recovered later.
-            </div>
-          </div>
-        </GlassCard>
-      ) : null}
-
-      <GlassCard title="Test validate-token">
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>
-            Paste a device token and click Validate. This calls <b>/api/device/validate-token</b> and shows the HTTP status + response.
-          </div>
-
-          <textarea
-            value={testToken}
-            onChange={(e) => setTestToken(e.target.value)}
-            placeholder="Paste token here..."
-            style={{
-              width: "100%",
-              minHeight: 80,
-              padding: 10,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(0,0,0,0.25)",
-              color: "#e6e8ef",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-              fontSize: 12,
-            }}
+      {activeTab === "token" ? (
+        <div style={{ display: "grid", gap: 18 }}>
+          <DeviceAdminActionsPanel
+            deviceId={device.id}
+            deviceName={device.name}
+            deviceStatus={device.status}
+            activeTokenId={activeToken?.id ?? null}
           />
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              onClick={testValidate}
-              disabled={testBusy}
-              style={{ padding: "10px 12px", borderRadius: 12, fontWeight: 900 }}
-            >
-              {testBusy ? "Validating…" : "Validate"}
-            </button>
+          <ControlPanel
+            title="Token and Enrollment"
+            description="Issued token records and the current enrollment state recorded in Control."
+          >
+            <KeyValueGrid
+              items={[
+                { label: "Enrollment Status", value: humanize(device.status, "Unknown") },
+                { label: "Active Token", value: activeToken ? "Present" : "No active token" },
+                { label: "Active Token Seen", value: formatMaybeDate(device.latest_token_seen_at) },
+                { label: "Latest Token Issued", value: formatMaybeDate(device.latest_token_issued_at) },
+              ]}
+            />
 
-            <button
-              onClick={() => {
-                setTestResult("");
-                setStatus("");
-              }}
-              disabled={testBusy}
-              style={{ padding: "10px 12px", borderRadius: 12, opacity: 0.9 }}
-            >
-              Clear result
-            </button>
-          </div>
-
-          {testResult ? (
-            <pre
-              style={{
-                margin: 0,
-                padding: 12,
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(255,255,255,0.03)",
-                fontSize: 12,
-                whiteSpace: "pre-wrap",
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                opacity: 0.9,
-              }}
-            >
-{testResult}
-            </pre>
-          ) : null}
-        </div>
-      </GlassCard>
-
-      <GlassCard title="Tokens">
-        {loading ? (
-          <div style={{ opacity: 0.75 }}>Loading…</div>
-        ) : tokens.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>No tokens yet.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {activeToken ? (
-              <div style={{ fontSize: 12, opacity: 0.85 }}>
-                Active token: <span style={{ fontWeight: 900 }}>{activeToken.id}</span>
-              </div>
+            {tokens.length === 0 ? (
+              <ControlEmptyState
+                title="No token records"
+                description="This device does not have any token rows recorded in Control yet."
+              />
             ) : (
-              <div style={{ fontSize: 12, opacity: 0.85 }}>No active token.</div>
+              <ControlTableWrap>
+                <ControlTable minWidth={920}>
+                  <thead>
+                    <tr>
+                      <ControlTableHeadCell>Token</ControlTableHeadCell>
+                      <ControlTableHeadCell>Label</ControlTableHeadCell>
+                      <ControlTableHeadCell>Issued</ControlTableHeadCell>
+                      <ControlTableHeadCell>Last Seen</ControlTableHeadCell>
+                      <ControlTableHeadCell>Status</ControlTableHeadCell>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokens.map((token) => (
+                      <tr key={token.id}>
+                        <ControlTableCell>{token.id}</ControlTableCell>
+                        <ControlTableCell>{token.label ?? "Not surfaced"}</ControlTableCell>
+                        <ControlTableCell>{formatMaybeDate(token.issued_at ?? token.created_at)}</ControlTableCell>
+                        <ControlTableCell>{formatMaybeDate(token.last_seen_at)}</ControlTableCell>
+                        <ControlTableCell>
+                          <ControlStatusChip label={token.revoked_at ? "Revoked" : "Active"} tone={token.revoked_at ? "danger" : "success"} />
+                        </ControlTableCell>
+                      </tr>
+                    ))}
+                  </tbody>
+                </ControlTable>
+              </ControlTableWrap>
             )}
+          </ControlPanel>
+        </div>
+      ) : null}
 
-            {tokens.map((t) => (
-              <div
-                key={t.id}
-                style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 14,
-                  padding: 12,
-                  background: "rgba(255,255,255,0.02)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12, opacity: 0.95 }}>
-                    {t.id} {t.label ? `• ${t.label}` : ""}
-                  </div>
-                  <div style={{ fontSize: 12, opacity: 0.65 }}>
-                    revoked: {t.revoked_at ? "yes" : "no"} • last_seen: {isoOrDash(t.last_seen_at)}
-                  </div>
+      {activeTab === "capability" ? (
+        <ControlPanel
+          title="Capability Snapshot"
+          description="Latest machine capability report recorded for this device. If nothing is shown here, Control is not currently receiving capability snapshots."
+        >
+          {!capability ? (
+            <ControlEmptyState
+              title="Capability snapshot not surfaced"
+              description="No capability snapshot is currently available for this device in the active schema."
+            />
+          ) : (
+            <div style={{ display: "grid", gap: 18 }}>
+              <KeyValueGrid
+                items={[
+                  { label: "Reported At", value: formatMaybeDate(capability.reported_at) },
+                  { label: "OS", value: [capability.os_name, capability.os_version].filter(Boolean).join(" ") || "Not surfaced" },
+                  { label: "CPU Model", value: capability.cpu_model ?? "Not surfaced" },
+                  { label: "Logical Cores", value: capability.logical_cores !== null ? String(capability.logical_cores) : "Not surfaced" },
+                  { label: "RAM", value: formatBytes(capability.total_ram_bytes) },
+                  { label: "Disk Total", value: formatBytes(capability.system_drive_total_bytes) },
+                  { label: "Disk Free", value: formatBytes(capability.system_drive_free_bytes) },
+                  { label: "GPU", value: capability.gpu_name ?? "Not surfaced" },
+                  { label: "Requirement Status", value: <ControlStatusChip label={capabilityStatusLabel(capability)} tone={String(capability.requirements_status ?? "").toLowerCase() === "warning" ? "warning" : String(capability.requirements_status ?? "").toLowerCase().startsWith("fail") ? "danger" : "success"} /> },
+                ]}
+              />
+
+              {capabilityDetails.length === 0 ? (
+                <ControlEmptyState
+                  title="No requirement messages"
+                  description="The capability snapshot did not include explicit requirement warnings or failure messages."
+                />
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {capabilityDetails.map((message) => (
+                    <div
+                      key={message}
+                      style={{
+                        padding: 14,
+                        borderRadius: 14,
+                        border: "1px solid rgba(148, 163, 184, 0.16)",
+                        background: "rgba(7, 10, 15, 0.34)",
+                        color: "#CBD5E1",
+                        fontSize: 13,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {message}
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+          )}
+        </ControlPanel>
+      ) : null}
 
-                <button
-                  onClick={() => revokeToken(t.id)}
-                  disabled={busy || !!t.revoked_at}
-                  style={{ padding: "8px 10px", borderRadius: 12, fontWeight: 900 }}
-                >
-                  Revoke
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </GlassCard>
+      {activeTab === "updates" ? (
+        <ControlPanel
+          title="Updates"
+          description="Current reported version and the shop-level update policy that affects this device."
+        >
+          <KeyValueGrid
+            items={[
+              { label: "Current Version", value: device.reported_version ?? "Not surfaced" },
+              { label: "Minimum Required", value: device.update_policy?.min_version ?? "Not surfaced" },
+              { label: "Pinned Version", value: device.update_policy?.pinned_version ?? "Not surfaced" },
+              { label: "Update Channel", value: device.update_policy?.channel ?? "Not surfaced" },
+              { label: "Update Status", value: <ControlStatusChip label={device.update_label} tone={updateTone(device.update_label)} /> },
+              { label: "Blocked Reason", value: device.update_detail },
+            ]}
+          />
+        </ControlPanel>
+      ) : null}
+
+      {activeTab === "audit" ? (
+        <ControlPanel
+          title="Audit"
+          description="Recent audit rows related to this device when available."
+          actions={<ControlActionLink href={`/audit?target_id=${encodeURIComponent(device.id)}`}>Open full audit log</ControlActionLink>}
+        >
+          {auditRows.length === 0 ? (
+            <ControlEmptyState
+              title="No recent device audit rows"
+              description="Control does not currently show device-targeted audit rows for this device."
+            />
+          ) : (
+            <ControlTableWrap>
+              <ControlTable minWidth={920}>
+                <thead>
+                  <tr>
+                    <ControlTableHeadCell>Action</ControlTableHeadCell>
+                    <ControlTableHeadCell>Actor</ControlTableHeadCell>
+                    <ControlTableHeadCell>Target</ControlTableHeadCell>
+                    <ControlTableHeadCell>Recorded</ControlTableHeadCell>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditRows.map((row) => (
+                    <tr key={row.id}>
+                      <ControlTableCell>{humanize(row.action, "event")}</ControlTableCell>
+                      <ControlTableCell>{row.actor_email ?? "System"}</ControlTableCell>
+                      <ControlTableCell>{[row.target_type, row.target_id].filter(Boolean).join(" ") || "event"}</ControlTableCell>
+                      <ControlTableCell>{formatMaybeDate(row.created_at)}</ControlTableCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </ControlTable>
+            </ControlTableWrap>
+          )}
+        </ControlPanel>
+      ) : null}
+
+      {activeTab === "support" ? (
+        <ControlPanel
+          title="Support"
+          description="Shop-scoped support bundle metadata that may help troubleshoot this device."
+          actions={<ControlActionLink href={device.shop_id ? `/support?shop=${encodeURIComponent(device.shop_id)}` : "/support"}>Open support area</ControlActionLink>}
+        >
+          {supportRows.length === 0 ? (
+            <ControlEmptyState
+              title="No related support bundles"
+              description="Control does not currently have shop-scoped support bundle metadata recorded for this device's shop."
+            />
+          ) : (
+            <ControlTableWrap>
+              <ControlTable minWidth={900}>
+                <thead>
+                  <tr>
+                    <ControlTableHeadCell>Bundle</ControlTableHeadCell>
+                    <ControlTableHeadCell>Path</ControlTableHeadCell>
+                    <ControlTableHeadCell>Uploaded By</ControlTableHeadCell>
+                    <ControlTableHeadCell>Created</ControlTableHeadCell>
+                  </tr>
+                </thead>
+                <tbody>
+                  {supportRows.map((row) => (
+                    <tr key={row.id}>
+                      <ControlTableCell>{row.file_path ? row.file_path.split("/").filter(Boolean).pop() ?? row.file_path : "No stored path"}</ControlTableCell>
+                      <ControlTableCell>{row.file_path ?? "Not surfaced"}</ControlTableCell>
+                      <ControlTableCell>{row.uploaded_by ?? "Unknown"}</ControlTableCell>
+                      <ControlTableCell>{formatMaybeDate(row.created_at)}</ControlTableCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </ControlTable>
+            </ControlTableWrap>
+          )}
+        </ControlPanel>
+      ) : null}
     </div>
   );
 }
