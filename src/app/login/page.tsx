@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import React, { Suspense, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 import GlassCard from "@/components/GlassCard";
@@ -9,16 +8,13 @@ import GlassCard from "@/components/GlassCard";
 export const dynamic = "force-dynamic";
 
 function sanitizeNext(raw: string | null) {
-  const fallback = "/shops";
+  const fallback = "/dashboard";
   const next = (raw ?? "").trim();
 
   if (!next) return fallback;
   if (!next.startsWith("/")) return fallback;
   if (next.startsWith("/login")) return fallback;
   if (next.startsWith("/signup")) return fallback;
-
-  // Keep old dashboard links from becoming the post-auth landing path.
-  if (next === "/dashboard") return fallback;
 
   return next;
 }
@@ -226,11 +222,8 @@ function LoginInner() {
             Redirect after login: <span style={{ fontWeight: 900 }}>{next}</span>
           </div>
 
-          <div style={{ fontSize: 12, opacity: 0.75 }}>
-            New here?{" "}
-            <Link href={`/signup?next=${encodeURIComponent(next)}`} style={{ fontWeight: 900 }}>
-              Create an account
-            </Link>
+          <div style={{ fontSize: 12, opacity: 0.75, lineHeight: 1.6 }}>
+            Access to RunBook Control is provisioned for platform administrators only. Customer setup is completed from RunBook Desktop.
           </div>
         </div>
       </GlassCard>

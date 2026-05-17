@@ -416,6 +416,9 @@ async function loadCapabilitiesByDevice(admin: ReturnType<typeof supabaseAdmin>,
   if (deviceIds.length === 0) return capabilityMap;
 
   try {
+    // Capability snapshots are support/admin telemetry reported by RunBook Desktop during
+    // Desktop-controlled onboarding and device check-in. Control stores and displays them
+    // for platform-admin diagnostics only; they are not local manufacturing authority data.
     const { data, error } = await admin
       .from("rb_device_capability_snapshots")
       .select("device_id,reported_at,os_name,os_version,cpu_model,logical_cores,total_ram_bytes,system_drive_total_bytes,system_drive_free_bytes,gpu_name,requirements_status,requirements_failures,raw_payload")

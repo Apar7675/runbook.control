@@ -3,5 +3,5 @@
 export const dynamic = "force-dynamic";
 
 export default function CreateShopAliasPage() {
-  redirect("/onboarding");
+  redirect("/restricted");
 }

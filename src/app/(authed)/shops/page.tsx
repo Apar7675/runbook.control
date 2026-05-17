@@ -113,13 +113,11 @@ export default async function ShopsPage() {
           eyebrow="Shops"
           title="Shops Directory"
           description="Cloud authority view of shop identity, billing outcomes, access posture, and enrollment scope."
-          actions={<ControlActionLink href="/create-shop" tone="primary">Add shop</ControlActionLink>}
         />
         <ControlPanel>
           <ControlEmptyState
             title="No shops are available yet"
-            description="Create the first shop before managing people, devices, billing, or access outcomes in Control."
-            action={<ControlActionLink href="/create-shop" tone="primary">Create shop</ControlActionLink>}
+            description="Customer setup is completed from RunBook Desktop. Control shows shop identity, billing, access, and support state after provisioning."
           />
         </ControlPanel>
       </div>
@@ -169,7 +167,6 @@ export default async function ShopsPage() {
         eyebrow="Shops"
         title="Shops Directory"
         description="Cloud authority view of shop identity, membership, billing outcomes, and access posture across the Control scope."
-        actions={<ControlActionLink href="/create-shop" tone="primary">Add shop</ControlActionLink>}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
@@ -207,7 +204,6 @@ export default async function ShopsPage() {
           <ControlEmptyState
             title="No shops to display"
             description="There are no shop records within the current authorized scope."
-            action={<ControlActionLink href="/create-shop" tone="primary">Create shop</ControlActionLink>}
           />
         ) : (
           <ControlTableWrap>

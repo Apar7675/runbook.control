@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 const PUBLIC_PATHS = [
   "/",
   "/login",
+  "/restricted",
   "/auth/callback",
   "/reset-password",
   "/signup",
@@ -19,6 +20,15 @@ function isPublicPath(pathname: string) {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (pathname === "/api/onboarding" || pathname.startsWith("/api/onboarding/")) {
+    return NextResponse.json(
+      {
+        error: "RunBook Control web onboarding is disabled. Customer setup is completed from RunBook Desktop.",
+      },
+      { status: 403 }
+    );
+  }
 
   const headers = new Headers(req.headers);
   headers.set("x-url", pathname);
@@ -62,5 +72,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)", "/api/onboarding/:path*"],
 };

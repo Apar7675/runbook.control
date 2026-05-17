@@ -6,7 +6,7 @@ import ControlAppShell from "@/components/control/ControlAppShell";
 import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { buildControlHeaderStatuses } from "@/lib/connection-status";
-import { resolveOnboardingPathForCurrentUser } from "@/lib/onboarding/flow";
+import { isPlatformAdmin } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,19 +50,11 @@ export default async function AuthedLayout({
   const email = user.email ?? "";
   const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
-
-  const { data: row, error: adminError } = await supabase
-    .from("rb_control_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const isPlatformAdmin = !!row;
+  const isAdmin = await isPlatformAdmin(user.id);
   const headerStatusesRaw = buildControlHeaderStatuses({
     hasSession: !!session,
     hasUser: !!user,
-    dataHealthy: !adminError,
-    dataReason: adminError?.message,
+    dataHealthy: true,
   });
   const headerStatuses: Array<{ key: string; label: string; tone: ControlStatusTone }> = headerStatusesRaw.map((status) => ({
     key: status.key,
@@ -70,14 +62,13 @@ export default async function AuthedLayout({
     tone: status.health === "Healthy" ? "success" : status.health === "Degraded" ? "warning" : "danger",
   }));
 
-  if (isPlatformAdmin && aal !== "aal2") {
-    const trusted = await isTrustedDevice(supabase, user.id);
-    if (!trusted) redirect("/mfa");
+  if (!isAdmin) {
+    redirect("/restricted");
   }
 
-  const { path: onboardingPath } = await resolveOnboardingPathForCurrentUser();
-  if (onboardingPath !== "/shops") {
-    redirect(onboardingPath);
+  if (aal !== "aal2") {
+    const trusted = await isTrustedDevice(supabase, user.id);
+    if (!trusted) redirect("/mfa");
   }
 
   return (
@@ -85,7 +76,7 @@ export default async function AuthedLayout({
       <DeviceIdBootstrap />
       <ControlAppShell
         email={email}
-        roleLabel={isPlatformAdmin ? "Platform admin" : "Shop admin"}
+        roleLabel="Platform admin"
         statuses={headerStatuses}
       >
         {children}

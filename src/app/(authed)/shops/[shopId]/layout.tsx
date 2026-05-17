@@ -178,7 +178,7 @@ export default async function ShopLayout({ params, children }: Props) {
                 maxWidth: 760,
               }}
             >
-              {email} - Manage health, access, billing, and setup for this shop without
+              {email} - Manage health, access, billing, and support state for this shop without
               exposing platform internals.
             </div>
           </div>
