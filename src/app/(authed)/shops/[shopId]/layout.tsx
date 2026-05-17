@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
-import SideNav from "@/components/SideNav";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { rbGetShop } from "@/lib/rb";
 import { BillingGate, BillingGateMode } from "@/components/billing/BillingGate";
@@ -129,13 +128,13 @@ export default async function ShopLayout({ params, children }: Props) {
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            gap: 18,
+            alignItems: "flex-start",
+            gap: 16,
             flexWrap: "wrap",
-            padding: `16px ${theme.spacing.shellX}px`,
+            padding: `14px ${theme.spacing.shellX}px`,
           }}
         >
-          <div style={{ display: "grid", gap: 9 }}>
+          <div style={{ display: "grid", gap: 6 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <Link
                 href="/shops"
@@ -162,28 +161,17 @@ export default async function ShopLayout({ params, children }: Props) {
             </div>
             <div
               style={{
-                fontSize: 28,
-                fontWeight: 800,
-                lineHeight: 1.04,
-                letterSpacing: -0.56,
-              }}
-            >
-              {shopName}
-            </div>
-            <div
-              style={{
                 color: theme.text.secondary,
-                fontSize: 13,
-                lineHeight: 1.55,
+                fontSize: 12.5,
+                lineHeight: 1.5,
                 maxWidth: 760,
               }}
             >
-              {email} - Manage health, access, billing, and support state for this shop without
-              exposing platform internals.
+              {email} - Manage health, access, billing, and support state for {shopName} without exposing platform internals.
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Link
               href="/status"
               style={{ color: theme.text.secondary, textDecoration: "none", fontWeight: 800 }}
@@ -202,46 +190,10 @@ export default async function ShopLayout({ params, children }: Props) {
           maxWidth: theme.spacing.contentWidth,
           margin: "0 auto",
           padding: `${theme.spacing.shellY}px ${theme.spacing.shellX}px ${theme.spacing.xxl}px`,
-          display: "grid",
-          gridTemplateColumns: `${theme.spacing.navWidth}px minmax(0, 1fr)`,
-          gap: 22,
-          alignItems: "start",
+          display: "block",
         }}
       >
-        <aside
-          style={{
-            position: "sticky",
-            top: 24,
-            padding: "20px 18px 18px",
-            borderRadius: theme.radius.xl,
-            border: theme.border.nav,
-            background: theme.bg.nav,
-            boxShadow: theme.shadow.nav,
-            height: "fit-content",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              background:
-                "radial-gradient(circle at top left, rgba(122,157,214,0.12), transparent 28%), radial-gradient(circle at bottom left, rgba(120,105,255,0.08), transparent 24%)",
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <SideNav
-              isPlatformAdmin={isPlatformAdmin}
-              mode="shop"
-              shopId={shopId}
-              shopName={shopName}
-            />
-          </div>
-        </aside>
-
-        <main style={{ minWidth: 0, display: "grid", gap: 22 }}>
+        <main style={{ minWidth: 0, display: "grid", gap: 18 }}>
           {isBillingPath ? (
             children
           ) : (

@@ -669,7 +669,6 @@ export default async function ShopPage({ params, searchParams }: Props) {
   }
 
   const headerActions = [
-    <ControlActionLink key="back" href="/shops">Back to shops</ControlActionLink>,
     <ControlActionLink key="billing" href={`/shops/${shop.id}?tab=billing`} tone="secondary">Billing & access</ControlActionLink>,
   ];
 
