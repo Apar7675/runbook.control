@@ -270,7 +270,7 @@ function buildAlerts(
         scope: snapshot.name,
         detail: `${blockedWorkstations} active workstation${blockedWorkstations === 1 ? "" : "s"} are currently blocked by access policy.`,
         source: snapshot.access.reason,
-        href: "/apps?app=workstation",
+        href: "/workstations",
       });
     }
 
@@ -410,7 +410,7 @@ export default async function DashboardPage() {
           value={String(blockedWorkstations)}
           meta={`${totalActiveWorkstations} active workstation records in scope.`}
           tone={blockedWorkstations > 0 ? "warning" : "success"}
-          href="/apps?app=workstation"
+          href="/workstations"
         />
         <ControlMetricCard
           label="Mobile / Timeclock Review"
@@ -424,7 +424,7 @@ export default async function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         <ControlMetricCard label="Total Shops" value={String(platformSnapshot.manageableShopCount)} meta="Authorized shop workspaces." tone="info" href="/shops" />
         <ControlMetricCard label="Active Devices" value={String(totalActiveDevices)} meta="Merged from current shop snapshots." tone="info" href="/devices" />
-        <ControlMetricCard label="Active Workstations" value={String(totalActiveWorkstations)} meta="Registered active workstation devices." tone="info" href="/apps?app=workstation" />
+        <ControlMetricCard label="Active Workstations" value={String(totalActiveWorkstations)} meta="Registered active workstation devices." tone="info" href="/workstations" />
         <ControlMetricCard label="Mobile Ready Employees" value={String(totalMobileReady)} meta="Employees currently eligible for mobile access." tone="info" href="/people" />
         <ControlMetricCard label="Audit Events (24h)" value={String(summaryRows.audit.recent_24h)} meta="Recent audit rows within authorized scope." tone="info" href="/audit" />
       </div>

@@ -951,7 +951,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
         <ControlPanel
           title="Workstations"
           description="Shop-scoped workstation enrollment and effective access posture."
-          actions={<ControlActionLink href="/apps?app=workstation">Open workstation area</ControlActionLink>}
+          actions={<ControlActionLink href="/workstations">Open workstation area</ControlActionLink>}
         >
           {workstationRows.length === 0 ? (
             <ControlEmptyState
