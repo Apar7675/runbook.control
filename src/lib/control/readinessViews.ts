@@ -20,6 +20,32 @@ export type ShopReadinessSummary = {
   averageScore: number | null;
 };
 
+function emptyReadinessState(): {
+  rows: ReadinessReportRow[];
+  summary: ShopReadinessSummary;
+} {
+  return {
+    rows: [],
+    summary: {
+      totalReports: 0,
+      readyCount: 0,
+      needsAttentionCount: 0,
+      notReadyCount: 0,
+      notCheckedCount: 0,
+      latestReportedAt: null,
+      averageScore: null,
+    },
+  };
+}
+
+function isMissingReadinessTableError(message: string) {
+  const normalized = text(message).toLowerCase();
+  return normalized.includes("rb_device_readiness_reports") &&
+    (normalized.includes("schema cache") ||
+      normalized.includes("could not find the table") ||
+      normalized.includes("relation") && normalized.includes("does not exist"));
+}
+
 export async function loadShopReadinessReports(shopId: string): Promise<{
   rows: ReadinessReportRow[];
   summary: ShopReadinessSummary;
@@ -31,7 +57,14 @@ export async function loadShopReadinessReports(shopId: string): Promise<{
     .eq("shop_id", shopId)
     .order("reported_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isMissingReadinessTableError(error.message)) {
+      console.warn(`Readiness reports unavailable: ${error.message}`);
+      return emptyReadinessState();
+    }
+
+    throw new Error(error.message);
+  }
 
   const rows = ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
     id: text(row.id),
