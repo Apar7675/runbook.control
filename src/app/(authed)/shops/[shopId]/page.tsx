@@ -85,7 +85,6 @@ type MembershipRow = {
   role: string | null;
   is_active: boolean | null;
   created_at: string | null;
-  rb_profiles: MemberProfileRow | MemberProfileRow[] | null;
 };
 
 type TrustedDeviceRow = {
@@ -347,7 +346,7 @@ async function loadShopMembers(shopId: string): Promise<{ rows: ShopMemberRow[];
       .order("display_name", { ascending: true }),
     admin
       .from("rb_shop_members")
-      .select("user_id,role,is_active,created_at,rb_profiles(first_name,last_name,email,phone)")
+      .select("user_id,role,is_active,created_at")
       .eq("shop_id", shopId)
       .order("created_at", { ascending: true }),
   ]);
@@ -357,6 +356,28 @@ async function loadShopMembers(shopId: string): Promise<{ rows: ShopMemberRow[];
 
   const employees = (employeesRaw ?? []) as EmployeeRow[];
   const members = (membersRaw ?? []) as MembershipRow[];
+  const memberUserIds = members.map((member) => asText(member.user_id)).filter(Boolean);
+
+  const profilesByUserId = new Map<string, MemberProfileRow>();
+  if (memberUserIds.length > 0) {
+    const { data: profilesRaw, error: profileError } = await admin
+      .from("rb_profiles")
+      .select("id,first_name,last_name,email,phone")
+      .in("id", memberUserIds);
+
+    if (!profileError) {
+      for (const row of (profilesRaw ?? []) as Array<MemberProfileRow & { id: string | null }>) {
+        const userId = asText(row.id);
+        if (!userId) continue;
+        profilesByUserId.set(userId, {
+          first_name: row.first_name ?? null,
+          last_name: row.last_name ?? null,
+          email: row.email ?? null,
+          phone: row.phone ?? null,
+        });
+      }
+    }
+  }
 
   const memberByUserId = new Map<string, MembershipRow>();
   for (const member of members) {
@@ -416,8 +437,7 @@ async function loadShopMembers(shopId: string): Promise<{ rows: ShopMemberRow[];
     const userId = asText(member.user_id);
     if (!userId || seenUserIds.has(userId)) continue;
 
-    const profileValue = Array.isArray(member.rb_profiles) ? member.rb_profiles[0] ?? null : member.rb_profiles;
-    const profile = profileValue ?? null;
+    const profile = profilesByUserId.get(userId) ?? null;
     const profileName = [asText(profile?.first_name), asText(profile?.last_name)].filter(Boolean).join(" ").trim();
     const email = asText(profile?.email) || null;
 
@@ -425,8 +445,8 @@ async function loadShopMembers(shopId: string): Promise<{ rows: ShopMemberRow[];
       key: `member:${userId}`,
       employee_id: null,
       auth_user_id: userId,
-      name: profileName || email || "Membership-only user",
-      email,
+      name: profileName || email || "Not surfaced",
+      email: email || null,
       role: asText(member.role) || null,
       status: member.is_active === false ? "Inactive" : "Membership only",
       membership_role: asText(member.role) || null,
