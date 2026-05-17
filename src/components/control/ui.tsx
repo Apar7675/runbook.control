@@ -504,14 +504,14 @@ export function MetricCard({
       style={{
         position: "relative",
         overflow: "hidden",
-        borderRadius: theme.radius.lg,
+        borderRadius: theme.radius.md,
         border: toneStyles.border,
         background: toneStyles.background,
-        padding: "11px 12px 10px",
-        minHeight: 112,
+        padding: "10px 11px",
+        minHeight: 78,
         display: "grid",
-        alignContent: "space-between",
-        gap: 10,
+        alignContent: "center",
+        gap: 8,
         boxShadow: toneStyles.boxShadow,
       }}
     >
@@ -525,7 +525,7 @@ export function MetricCard({
           pointerEvents: "none",
         }}
       />
-      <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 10 }}>
+      <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 8 }}>
         <div
           style={{
             display: "flex",
@@ -534,12 +534,12 @@ export function MetricCard({
             alignItems: "flex-start",
           }}
         >
-          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 24,
+                  height: 24,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -551,7 +551,7 @@ export function MetricCard({
               >
                 <Icon
                   name={icon ?? "spark"}
-                  size={13}
+                  size={12}
                   tone={toneStyles.iconTone}
                 />
               </span>
@@ -566,7 +566,7 @@ export function MetricCard({
             </div>
             <div
               style={{
-                fontSize: 23,
+                fontSize: 20,
                 fontWeight: 900,
                 lineHeight: 1.02,
                 letterSpacing: -0.42,
@@ -578,7 +578,7 @@ export function MetricCard({
           </div>
           {badge ? <div style={{ display: "flex", justifyContent: "flex-end" }}>{badge}</div> : null}
         </div>
-        <div style={{ color: theme.text.secondary, lineHeight: 1.42, fontSize: 12 }}>
+        <div style={{ color: theme.text.secondary, lineHeight: 1.35, fontSize: 11.5 }}>
           {summary}
         </div>
       </div>

@@ -12,7 +12,7 @@ export function ControlTableWrap({
         overflowX: "auto",
         borderRadius: t.radius.md,
         border: `1px solid ${t.color.softBorder}`,
-        background: "rgba(7, 10, 15, 0.30)",
+        background: "rgba(7, 10, 15, 0.34)",
       }}
     >
       {children}
@@ -44,12 +44,12 @@ export function ControlTableHeadCell({
   return (
     <th
       style={{
-        padding: "12px 14px",
+        padding: "9px 12px",
         borderBottom: `1px solid ${t.color.softBorder}`,
         color: t.color.textMuted,
-        fontSize: 11,
+        fontSize: 10.5,
         fontWeight: 800,
-        letterSpacing: 0.72,
+        letterSpacing: 0.5,
         textTransform: "uppercase",
         textAlign: align,
         background: "rgba(16, 23, 34, 0.72)",
@@ -70,10 +70,11 @@ export function ControlTableCell({
   return (
     <td
       style={{
-        padding: "12px 14px",
+        padding: "9px 12px",
         borderBottom: `1px solid rgba(148, 163, 184, 0.10)`,
         color: t.color.textSecondary,
-        fontSize: 13,
+        fontSize: 12.5,
+        lineHeight: 1.45,
         textAlign: align,
         verticalAlign: "top",
       }}

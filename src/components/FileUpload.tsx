@@ -1,7 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { controlTheme as t } from "@/components/control/controlTheme";
 import { supabaseBrowser } from "@/lib/supabase/client";
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 export default function FileUpload({
   bucket,
@@ -42,8 +47,8 @@ export default function FileUpload({
 
       await onUploaded({ path });
       setMsg(`Uploaded: ${path}`);
-    } catch (e: any) {
-      setMsg(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setMsg(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -52,13 +57,15 @@ export default function FileUpload({
   return (
     <div
       style={{
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.03)",
-        borderRadius: 14,
-        padding: 14,
+        display: "grid",
+        gap: 8,
+        border: `1px solid ${t.color.softBorder}`,
+        background: "rgba(7, 10, 15, 0.34)",
+        borderRadius: t.radius.md,
+        padding: 12,
       }}
     >
-      <div style={{ fontWeight: 900, marginBottom: 8 }}>{label}</div>
+      <div style={{ fontWeight: 800, fontSize: 13, color: t.color.text }}>{label}</div>
 
       <input
         type="file"
@@ -68,10 +75,11 @@ export default function FileUpload({
           const f = e.target.files?.[0];
           if (f) upload(f);
         }}
+        style={{ color: t.color.textSecondary, fontSize: 12.5 }}
       />
 
-      {busy ? <div style={{ marginTop: 10, opacity: 0.8 }}>Uploading…</div> : null}
-      {msg ? <div style={{ marginTop: 10, opacity: 0.85 }}>{msg}</div> : null}
+      {busy ? <div style={{ fontSize: 12, color: t.color.textMuted }}>Uploading...</div> : null}
+      {msg ? <div style={{ fontSize: 12, color: t.color.textSecondary }}>{msg}</div> : null}
     </div>
   );
 }

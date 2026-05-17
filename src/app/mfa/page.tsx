@@ -1,17 +1,31 @@
-// REPLACE ENTIRE FILE: src/app/mfa/page.tsx
-
 "use client";
 
-import React, { useEffect, useState } from "react";
-import GlassCard from "@/components/GlassCard";
+import { useEffect, useState, type CSSProperties } from "react";
+import ControlActionButton from "@/components/control/ControlActionButton";
+import ControlPanel from "@/components/control/ControlPanel";
+import { controlTheme as t } from "@/components/control/controlTheme";
 import { supabaseBrowser } from "@/lib/supabase/client";
+
+const inputStyle: CSSProperties = {
+  minHeight: 38,
+  padding: "0 11px",
+  borderRadius: t.radius.sm,
+  border: `1px solid ${t.color.softBorder}`,
+  background: "rgba(7, 10, 15, 0.68)",
+  color: t.color.text,
+  outline: "none",
+};
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Verification failed.";
+}
 
 export default function MFAPage() {
   const supabase = supabaseBrowser();
 
   const [factorId, setFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const [status, setStatus] = useState("Loading…");
+  const [status, setStatus] = useState("Loading...");
   const [loading, setLoading] = useState(false);
   const [trustThisDevice, setTrustThisDevice] = useState(true);
 
@@ -19,7 +33,7 @@ export default function MFAPage() {
     let cancelled = false;
 
     async function init() {
-      setStatus("Loading MFA factors…");
+      setStatus("Loading MFA factors...");
 
       // ensure device id cookie exists (for trust)
       await fetch("/api/user/ensure-device-id", { method: "POST", credentials: "include" }).catch(() => {});
@@ -58,14 +72,14 @@ export default function MFAPage() {
     }
 
     setLoading(true);
-    setStatus("Creating challenge…");
+    setStatus("Creating challenge...");
 
     try {
       const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId });
       if (chErr) throw chErr;
       if (!ch?.id) throw new Error("Challenge did not return an id.");
 
-      setStatus("Verifying…");
+      setStatus("Verifying...");
 
       const { error: vErr } = await supabase.auth.mfa.verify({
         factorId,
@@ -74,7 +88,7 @@ export default function MFAPage() {
       });
       if (vErr) throw vErr;
 
-      setStatus("Verified. Finalizing session…");
+      setStatus("Verified. Finalizing session...");
 
       const { error: refErr } = await supabase.auth.refreshSession();
       if (refErr) throw refErr;
@@ -84,27 +98,28 @@ export default function MFAPage() {
       }
 
       window.location.href = "/shops";
-    } catch (e: any) {
-      setStatus(e?.message ?? "Verification failed.");
+    } catch (e: unknown) {
+      setStatus(errorMessage(e));
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 720, margin: "24px auto", padding: "0 18px" }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>MFA Verification</h1>
+    <div style={{ display: "grid", gap: 14, width: "min(100%, 520px)", margin: "24px auto", padding: "0 18px" }}>
+      <div style={{ display: "grid", gap: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.9, textTransform: "uppercase", color: t.color.textMuted }}>
+          RunBook Control
+        </div>
+        <h1 style={{ fontSize: 30, lineHeight: 1.08, margin: 0, color: t.color.text }}>MFA verification</h1>
+      </div>
 
-      <GlassCard title="Authenticator required">
-        <div style={{ display: "grid", gap: 12, maxWidth: 520 }}>
-          <div style={{ opacity: 0.85 }}>
-            Platform Admin access requires a 6-digit code from your authenticator app.
-          </div>
-
+      <ControlPanel title="Authenticator required" description="Platform admin access requires a 6-digit code from your authenticator app.">
+        <div style={{ display: "grid", gap: 10 }}>
           <input
             placeholder="6-digit code"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            style={{ padding: 10, borderRadius: 12 }}
+            style={inputStyle}
             inputMode="numeric"
             autoComplete="one-time-code"
             onKeyDown={(e) => {
@@ -112,7 +127,7 @@ export default function MFAPage() {
             }}
           />
 
-          <label style={{ display: "flex", gap: 10, alignItems: "center", opacity: 0.9 }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", color: t.color.textSecondary, fontSize: 12.5 }}>
             <input
               type="checkbox"
               checked={trustThisDevice}
@@ -121,17 +136,18 @@ export default function MFAPage() {
             Trust this device for 24 hours (skip MFA redirect on this browser)
           </label>
 
-          <button
+          <ControlActionButton
             onClick={verify}
             disabled={loading || !factorId || code.trim().length !== 6}
-            style={{ padding: 10, borderRadius: 12, fontWeight: 900, opacity: loading ? 0.7 : 1 }}
+            tone="primary"
+            style={{ width: "fit-content" }}
           >
-            {loading ? "Verifying…" : "Verify"}
-          </button>
+            {loading ? "Verifying..." : "Verify"}
+          </ControlActionButton>
 
-          <div style={{ fontSize: 12, opacity: 0.75 }}>{status}</div>
+          <div style={{ fontSize: 12, color: t.color.textMuted }}>{status}</div>
         </div>
-      </GlassCard>
+      </ControlPanel>
     </div>
   );
 }

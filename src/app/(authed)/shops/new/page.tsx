@@ -1,9 +1,10 @@
-import React from "react";
-import Link from "next/link";
-import GlassCard from "@/components/GlassCard";
-import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import ControlActionButton, { ControlActionLink } from "@/components/control/ControlActionButton";
+import ControlPageHeader from "@/components/control/ControlPageHeader";
+import ControlPanel from "@/components/control/ControlPanel";
+import { controlTheme as t } from "@/components/control/controlTheme";
 import { auditLog } from "@/lib/audit";
+import { supabaseServer } from "@/lib/supabase/server";
 
 async function createShop(formData: FormData) {
   "use server";
@@ -32,30 +33,37 @@ async function createShop(formData: FormData) {
 
 export default async function NewShopPage() {
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 900 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h1 style={{ fontSize: 28, margin: 0 }}>Create Shop</h1>
-        <Link href="/shops" style={{ textDecoration: "none", opacity: 0.9 }}>
-          ← Back to Shops
-        </Link>
-      </div>
+    <div style={{ display: "grid", gap: 16 }}>
+      <ControlPageHeader
+        eyebrow="Shops"
+        title="Create Shop"
+        description="Create a Control shop authority record using the existing secure server function."
+        actions={<ControlActionLink href="/shops">Back to shops</ControlActionLink>}
+      />
 
-      <GlassCard title="Shop Details">
-        <form action={createShop} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <ControlPanel title="Shop Details" description="This creates the shop record and assigns the current platform-admin session as admin.">
+        <form action={createShop} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input
             name="name"
             placeholder="Shop name (e.g. Ten MFG)"
-            style={{ padding: 10, borderRadius: 12, minWidth: 320 }}
+            style={{
+              flex: "1 1 320px",
+              minHeight: 38,
+              padding: "0 11px",
+              borderRadius: t.radius.sm,
+              border: `1px solid ${t.color.softBorder}`,
+              background: "rgba(7, 10, 15, 0.68)",
+              color: t.color.text,
+              outline: "none",
+            }}
           />
-          <button type="submit" style={{ padding: "10px 14px", borderRadius: 12, fontWeight: 900 }}>
-            Create
-          </button>
+          <ControlActionButton type="submit" tone="primary">Create</ControlActionButton>
         </form>
 
-        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>
+        <div style={{ fontSize: 12, color: t.color.textMuted }}>
           Uses a secure server function to create the shop and set you as admin.
         </div>
-      </GlassCard>
+      </ControlPanel>
     </div>
   );
 }

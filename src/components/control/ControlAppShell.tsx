@@ -55,9 +55,9 @@ export default function ControlAppShell({
             style={{
               maxWidth: t.layout.contentMaxWidth,
               margin: "0 auto",
-              padding: 24,
+              padding: 18,
               display: "grid",
-              gap: 18,
+              gap: 16,
             }}
           >
             {children}

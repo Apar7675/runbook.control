@@ -18,14 +18,14 @@ export const controlTheme = {
     overlay: "rgba(7, 10, 15, 0.78)",
   },
   radius: {
-    sm: 10,
-    md: 14,
-    lg: 18,
-    xl: 22,
+    sm: 8,
+    md: 10,
+    lg: 12,
+    xl: 14,
     pill: 999,
   },
   shadow: {
-    panel: "0 18px 40px rgba(0, 0, 0, 0.24)",
+    panel: "0 12px 28px rgba(0, 0, 0, 0.22)",
   },
   layout: {
     sidebarWidth: 272,

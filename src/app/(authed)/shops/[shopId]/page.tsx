@@ -1,11 +1,12 @@
-import React from "react";
 import BillingControlPanel from "@/components/shops/billing/BillingControlPanel";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
+import ControlKeyValueGrid from "@/components/control/ControlKeyValueGrid";
 import ControlMetricCard from "@/components/control/ControlMetricCard";
 import ControlPageHeader from "@/components/control/ControlPageHeader";
 import ControlPanel from "@/components/control/ControlPanel";
 import ControlStatusChip, { type ControlStatusTone } from "@/components/control/ControlStatusChip";
+import ControlTabNav from "@/components/control/ControlTabNav";
 import { ControlTable, ControlTableCell, ControlTableHeadCell, ControlTableWrap } from "@/components/control/ControlTable";
 import { controlTheme as t } from "@/components/control/controlTheme";
 import { getShopSnapshot, getViewerContext, selectPrimaryShop, type ShopSnapshot } from "@/lib/control/summary";
@@ -520,70 +521,6 @@ async function loadSupportRows(shopId: string): Promise<SupportBundleRow[]> {
   }));
 }
 
-function ShopTabNav({
-  shopId,
-  activeTab,
-}: {
-  shopId: string;
-  activeTab: ShopTabKey;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 10,
-        flexWrap: "wrap",
-        padding: 8,
-        borderRadius: t.radius.lg,
-        border: `1px solid ${t.color.softBorder}`,
-        background: "linear-gradient(180deg, rgba(16, 23, 34, 0.92), rgba(11, 16, 24, 0.92))",
-      }}
-    >
-      {SHOP_TABS.map((tab) => {
-        const active = tab.key === activeTab;
-        return (
-          <ControlActionLink
-            key={tab.key}
-            href={tab.key === "overview" ? `/shops/${shopId}` : `/shops/${shopId}?tab=${tab.key}`}
-            tone={active ? "primary" : "ghost"}
-          >
-            {tab.label}
-          </ControlActionLink>
-        );
-      })}
-    </div>
-  );
-}
-
-function KeyValueGrid({
-  items,
-}: {
-  items: Array<{ label: string; value: React.ReactNode }>;
-}) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-      {items.map((item) => (
-        <div
-          key={item.label}
-          style={{
-            display: "grid",
-            gap: 6,
-            padding: 14,
-            borderRadius: t.radius.md,
-            border: `1px solid ${t.color.softBorder}`,
-            background: "rgba(7, 10, 15, 0.34)",
-          }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.72, textTransform: "uppercase", color: t.color.textMuted }}>
-            {item.label}
-          </div>
-          <div style={{ color: t.color.textSecondary, fontSize: 13, lineHeight: 1.55 }}>{item.value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function IssueList({
   issues,
 }: {
@@ -772,7 +709,14 @@ export default async function ShopPage({ params, searchParams }: Props) {
         />
       </div>
 
-      <ShopTabNav shopId={shop.id} activeTab={activeTab} />
+      <ControlTabNav
+        activeKey={activeTab}
+        items={SHOP_TABS.map((tab) => ({
+          key: tab.key,
+          label: tab.label,
+          href: tab.key === "overview" ? `/shops/${shop.id}` : `/shops/${shop.id}?tab=${tab.key}`,
+        }))}
+      />
 
       {activeTab === "overview" ? (
         <div style={{ display: "grid", gap: 18 }}>
@@ -781,7 +725,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
               title="Shop Identity"
               description="Core shop identity and the Control-side access posture for this authorized workspace."
             >
-              <KeyValueGrid
+              <ControlKeyValueGrid
                 items={[
                   { label: "Shop Name", value: snapshot.name },
                   { label: "Viewer Role", value: humanizeLabel(snapshot.member_role, "member") },
@@ -797,7 +741,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
               title="RunBook Access Modes"
               description="These are the effective product outcomes for the current entitlement state, not just raw Stripe metadata."
             >
-              <KeyValueGrid
+              <ControlKeyValueGrid
                 items={[
                   { label: "Desktop", value: renderAccessModeLabel(snapshot.access.desktop_mode) },
                   { label: "Mobile", value: renderAccessModeLabel(snapshot.access.mobile_mode) },
@@ -842,7 +786,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
             title="Billing and Access Summary"
             description="RunBook product behavior under the current billing and entitlement outcome. This stays focused on what the customer can actually do."
           >
-            <KeyValueGrid
+            <ControlKeyValueGrid
               items={[
                 { label: "Desktop", value: renderAccessModeLabel(snapshot.access.desktop_mode) },
                 { label: "Mobile", value: renderAccessModeLabel(snapshot.access.mobile_mode) },
@@ -1022,7 +966,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
             />
           ) : (
             <div style={{ display: "grid", gap: 16 }}>
-              <KeyValueGrid
+              <ControlKeyValueGrid
                 items={[
                   { label: "Mobile-ready users", value: String(mobileReadyRows.length) },
                   { label: "Review queue", value: String(memberData.counts.mobileReviewCount) },
@@ -1119,7 +1063,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
           description="Shop-specific policy surfaces stay scoped and can expand further in a later phase."
           actions={<ControlActionLink href={`/shops/${shop.id}/policy`} tone="secondary">Open policy page</ControlActionLink>}
         >
-          <KeyValueGrid
+          <ControlKeyValueGrid
             items={[
               { label: "Desktop mode", value: renderAccessModeLabel(snapshot.access.desktop_mode) },
               { label: "Mobile mode", value: renderAccessModeLabel(snapshot.access.mobile_mode) },

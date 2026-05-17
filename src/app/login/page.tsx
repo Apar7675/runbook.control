@@ -2,8 +2,10 @@
 
 import React, { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ControlActionButton from "@/components/control/ControlActionButton";
+import ControlPanel from "@/components/control/ControlPanel";
+import { controlTheme as t } from "@/components/control/controlTheme";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
-import GlassCard from "@/components/GlassCard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,21 @@ function sanitizeNext(raw: string | null) {
 
   return next;
 }
+
+function errorMessage(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
+}
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 38,
+  padding: "0 11px",
+  borderRadius: t.radius.sm,
+  border: `1px solid ${t.color.softBorder}`,
+  background: "rgba(7, 10, 15, 0.68)",
+  color: t.color.text,
+  outline: "none",
+};
 
 function LoginInner() {
   const router = useRouter();
@@ -70,8 +87,8 @@ function LoginInner() {
 
       router.replace(next);
       router.refresh();
-    } catch (err: any) {
-      setStatus(err?.message ?? "Login failed");
+    } catch (err: unknown) {
+      setStatus(errorMessage(err, "Login failed"));
     } finally {
       setBusy(false);
     }
@@ -104,8 +121,8 @@ function LoginInner() {
       }
 
       setStatus("Magic link sent. Check your email.");
-    } catch (err: any) {
-      setStatus(err?.message ?? "Failed to send magic link");
+    } catch (err: unknown) {
+      setStatus(errorMessage(err, "Failed to send magic link"));
     } finally {
       setBusy(false);
     }
@@ -137,103 +154,101 @@ function LoginInner() {
       }
 
       setStatus("Password reset link sent. Check your email.");
-    } catch (err: any) {
-      setStatus(err?.message ?? "Failed to send password reset email");
+    } catch (err: unknown) {
+      setStatus(errorMessage(err, "Failed to send password reset email"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div style={{ display: "grid", gap: 18, maxWidth: 520 }}>
-      <h1 style={{ margin: 0, fontSize: 28 }}>Login</h1>
-
-      <GlassCard title="Sign in">
-        <div style={{ display: "grid", gap: 12 }}>
-          {callbackError ? (
-            <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>
-              {callbackError}
-            </div>
-          ) : null}
-
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            autoComplete="email"
-            style={{ padding: 10, borderRadius: 12 }}
-          />
-
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            type="password"
-            autoComplete="current-password"
-            style={{ padding: 10, borderRadius: 12 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") signInEmailPassword();
-            }}
-          />
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              onClick={signInEmailPassword}
-              disabled={busy}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 12,
-                fontWeight: 900,
-              }}
-            >
-              {busy ? "Signing in..." : "Sign in"}
-            </button>
-
-            <button
-              onClick={sendMagicLink}
-              disabled={busy}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 12,
-              }}
-            >
-              Send magic link
-            </button>
-
-            <button
-              onClick={sendPasswordReset}
-              disabled={busy}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 12,
-              }}
-            >
-              Forgot password
-            </button>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 18, background: t.color.appBg }}>
+      <div style={{ display: "grid", gap: 14, width: "min(100%, 460px)" }}>
+        <div style={{ display: "grid", gap: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.9, textTransform: "uppercase", color: t.color.textMuted }}>
+            RunBook Control
           </div>
-
-          {status && (
-            <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>
-              {status}
-            </div>
-          )}
-
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Redirect after login: <span style={{ fontWeight: 900 }}>{next}</span>
-          </div>
-
-          <div style={{ fontSize: 12, opacity: 0.75, lineHeight: 1.6 }}>
-            Access to RunBook Control is provisioned for platform administrators only. Customer setup is completed from RunBook Desktop.
-          </div>
+          <h1 style={{ margin: 0, fontSize: 30, lineHeight: 1.08, color: t.color.text }}>Platform admin login</h1>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: t.color.textMuted }}>
+            Customer setup is completed from RunBook Desktop. Control web access is restricted to platform administrators.
+          </p>
         </div>
-      </GlassCard>
+
+        <ControlPanel title="Sign in" description="Use your platform-admin credentials. MFA/AAL2 is enforced by the protected Control shell.">
+          <div style={{ display: "grid", gap: 10 }}>
+            {callbackError ? (
+              <div style={{ fontSize: 12, color: "#FECACA", whiteSpace: "pre-wrap" }}>
+                {callbackError}
+              </div>
+            ) : null}
+
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              autoComplete="email"
+              style={inputStyle}
+            />
+
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              type="password"
+              autoComplete="current-password"
+              style={inputStyle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") signInEmailPassword();
+              }}
+            />
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <ControlActionButton
+                onClick={signInEmailPassword}
+                disabled={busy}
+                tone="primary"
+              >
+                {busy ? "Signing in..." : "Sign in"}
+              </ControlActionButton>
+
+              <ControlActionButton
+                onClick={sendMagicLink}
+                disabled={busy}
+              >
+                Send magic link
+              </ControlActionButton>
+
+              <ControlActionButton
+                onClick={sendPasswordReset}
+                disabled={busy}
+              >
+                Forgot password
+              </ControlActionButton>
+            </div>
+
+            {status && (
+              <div style={{ fontSize: 12, color: t.color.textSecondary, whiteSpace: "pre-wrap" }}>
+                {status}
+              </div>
+            )}
+
+            <div style={{ fontSize: 12, color: t.color.textMuted }}>
+              Redirect after login: <span style={{ fontWeight: 900 }}>{next}</span>
+            </div>
+
+            <div style={{ fontSize: 12, color: t.color.textMuted, lineHeight: 1.5 }}>
+              Access to RunBook Control is provisioned for platform administrators only. Customer setup is completed from RunBook Desktop.
+            </div>
+          </div>
+        </ControlPanel>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 24, opacity: 0.75 }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 18, color: t.color.textMuted }}>Loading...</div>}>
       <LoginInner />
     </Suspense>
   );

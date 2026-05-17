@@ -1,10 +1,11 @@
-import React from "react";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
+import ControlKeyValueGrid from "@/components/control/ControlKeyValueGrid";
 import ControlMetricCard from "@/components/control/ControlMetricCard";
 import ControlPageHeader from "@/components/control/ControlPageHeader";
 import ControlPanel from "@/components/control/ControlPanel";
 import ControlStatusChip, { type ControlStatusTone } from "@/components/control/ControlStatusChip";
+import ControlTabNav from "@/components/control/ControlTabNav";
 import { ControlTable, ControlTableCell, ControlTableHeadCell, ControlTableWrap } from "@/components/control/ControlTable";
 import DeviceAdminActionsPanel from "@/components/devices/DeviceAdminActionsPanel";
 import { capabilityMessages, capabilityStatusLabel, formatBytes, loadDeviceDetail } from "@/lib/control/deviceViews";
@@ -50,65 +51,6 @@ function formatMaybeDate(value: string | null | undefined) {
 function humanize(value: string | null | undefined, fallback: string) {
   const text = String(value ?? "").trim();
   return text ? text.replaceAll("_", " ") : fallback;
-}
-
-function KeyValueGrid({
-  items,
-}: {
-  items: Array<{ label: string; value: React.ReactNode }>;
-}) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-      {items.map((item) => (
-        <div
-          key={item.label}
-          style={{
-            display: "grid",
-            gap: 6,
-            padding: 14,
-            borderRadius: 14,
-            border: "1px solid rgba(148, 163, 184, 0.16)",
-            background: "rgba(7, 10, 15, 0.34)",
-          }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.72, textTransform: "uppercase", color: "#64748B" }}>{item.label}</div>
-          <div style={{ color: "#CBD5E1", fontSize: 13, lineHeight: 1.55 }}>{item.value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DeviceTabNav({
-  deviceId,
-  activeTab,
-}: {
-  deviceId: string;
-  activeTab: DeviceTabKey;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 10,
-        flexWrap: "wrap",
-        padding: 8,
-        borderRadius: 18,
-        border: "1px solid rgba(148, 163, 184, 0.16)",
-        background: "linear-gradient(180deg, rgba(16, 23, 34, 0.92), rgba(11, 16, 24, 0.92))",
-      }}
-    >
-      {tabs.map((tab) => (
-        <ControlActionLink
-          key={tab.key}
-          href={tab.key === "overview" ? `/devices/${deviceId}` : `/devices/${deviceId}?tab=${tab.key}`}
-          tone={tab.key === activeTab ? "primary" : "ghost"}
-        >
-          {tab.label}
-        </ControlActionLink>
-      ))}
-    </div>
-  );
 }
 
 function updateTone(label: string): ControlStatusTone {
@@ -188,7 +130,14 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
         <ControlMetricCard label="Access Mode" value={device.access_mode} meta={device.shop_snapshot ? `${device.shop_name ?? device.shop_id ?? "Shop"} access decision.` : "Shop access snapshot not available."} tone={device.access_mode.toLowerCase() === "full" ? "success" : device.access_mode.toLowerCase() === "blocked" ? "danger" : "warning"} />
       </div>
 
-      <DeviceTabNav deviceId={device.id} activeTab={activeTab} />
+      <ControlTabNav
+        activeKey={activeTab}
+        items={tabs.map((tab) => ({
+          key: tab.key,
+          label: tab.label,
+          href: tab.key === "overview" ? `/devices/${device.id}` : `/devices/${device.id}?tab=${tab.key}`,
+        }))}
+      />
 
       {activeTab === "overview" ? (
         <div style={{ display: "grid", gap: 18 }}>
@@ -197,7 +146,7 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
               title="Device Identity"
               description="Core Control-side identity and authority context for this enrolled device."
             >
-              <KeyValueGrid
+              <ControlKeyValueGrid
                 items={[
                   { label: "Display Name", value: device.name },
                   { label: "Device Type", value: humanize(device.device_type, "Not surfaced") },
@@ -213,7 +162,7 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
               title="Access and Entitlement"
               description="Effective device access posture based on the shop-level Control access decision."
             >
-              <KeyValueGrid
+              <ControlKeyValueGrid
                 items={[
                   { label: "Access Mode", value: device.access_mode },
                   { label: "Entitlement Status", value: device.shop_snapshot?.access.display_status ?? "Not surfaced" },
@@ -253,7 +202,7 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
             title="Token and Enrollment"
             description="Issued token records and the current enrollment state recorded in Control."
           >
-            <KeyValueGrid
+            <ControlKeyValueGrid
               items={[
                 { label: "Enrollment Status", value: humanize(device.status, "Unknown") },
                 { label: "Active Token", value: activeToken ? "Present" : "No active token" },
@@ -311,7 +260,7 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
             />
           ) : (
             <div style={{ display: "grid", gap: 18 }}>
-              <KeyValueGrid
+              <ControlKeyValueGrid
                 items={[
                   { label: "Reported At", value: formatMaybeDate(capability.reported_at) },
                   { label: "OS", value: [capability.os_name, capability.os_version].filter(Boolean).join(" ") || "Not surfaced" },
@@ -360,7 +309,7 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
           title="Updates"
           description="Current reported version and the shop-level update policy that affects this device."
         >
-          <KeyValueGrid
+          <ControlKeyValueGrid
             items={[
               { label: "Current Version", value: device.reported_version ?? "Not surfaced" },
               { label: "Minimum Required", value: device.update_policy?.min_version ?? "Not surfaced" },

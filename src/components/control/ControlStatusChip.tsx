@@ -25,27 +25,26 @@ export default function ControlStatusChip({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
-        minHeight: 28,
-        padding: "0 10px",
+        gap: 6,
+        minHeight: 22,
+        padding: "0 8px",
         borderRadius: t.radius.pill,
         border: `1px solid ${styles.border}`,
         background: styles.background,
         color: styles.color,
-        fontSize: 12,
+        fontSize: 11.5,
         fontWeight: 700,
-        letterSpacing: 0.2,
         whiteSpace: "nowrap",
       }}
     >
       <span
         aria-hidden="true"
         style={{
-          width: 8,
-          height: 8,
+          width: 6,
+          height: 6,
           borderRadius: 999,
           background: styles.color,
-          boxShadow: `0 0 0 4px ${styles.background}`,
+          boxShadow: `0 0 0 3px ${styles.background}`,
         }}
       />
       {label}

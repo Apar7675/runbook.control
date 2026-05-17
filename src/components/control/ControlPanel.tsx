@@ -6,7 +6,7 @@ export default function ControlPanel({
   description,
   actions,
   children,
-  padding = 18,
+  padding = 14,
 }: {
   title?: string;
   description?: string;
@@ -18,9 +18,9 @@ export default function ControlPanel({
     <section
       style={{
         display: "grid",
-        gap: 16,
+        gap: 12,
         padding,
-        borderRadius: t.radius.lg,
+        borderRadius: t.radius.md,
         border: `1px solid ${t.color.softBorder}`,
         background: `linear-gradient(180deg, rgba(18, 27, 40, 0.98), rgba(11, 16, 24, 0.98))`,
         boxShadow: t.shadow.panel,
@@ -28,10 +28,10 @@ export default function ControlPanel({
       }}
     >
       {title || description || actions ? (
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ display: "grid", gap: 4 }}>
-            {title ? <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: t.color.text }}>{title}</h2> : null}
-            {description ? <div style={{ fontSize: 13, color: t.color.textMuted, maxWidth: 880 }}>{description}</div> : null}
+            {title ? <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.color.text }}>{title}</h2> : null}
+            {description ? <div style={{ fontSize: 12.5, lineHeight: 1.45, color: t.color.textMuted, maxWidth: 880 }}>{description}</div> : null}
           </div>
           {actions ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div> : null}
         </div>
