@@ -9,6 +9,8 @@ import ControlStatusChip, { type ControlStatusTone } from "@/components/control/
 import ControlTabNav from "@/components/control/ControlTabNav";
 import { ControlTable, ControlTableCell, ControlTableHeadCell, ControlTableWrap } from "@/components/control/ControlTable";
 import { controlTheme as t } from "@/components/control/controlTheme";
+import { formatReadinessStatus, type ReadinessReportRow } from "@/lib/control/readiness";
+import { loadShopReadinessReports, readinessIssueCount, readinessTone } from "@/lib/control/readinessViews";
 import { getShopSnapshot, getViewerContext, selectPrimaryShop, type ShopSnapshot } from "@/lib/control/summary";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/ui/dates";
@@ -598,6 +600,54 @@ function ActivityTable({
   );
 }
 
+function ReadinessDetails({
+  row,
+}: {
+  row: ReadinessReportRow;
+}) {
+  return (
+    <details>
+      <summary style={{ cursor: "pointer", color: t.color.textSecondary, fontSize: 12.5, fontWeight: 700 }}>
+        View checks
+      </summary>
+      <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+        {row.summary ? (
+          <div style={{ color: t.color.textMuted, fontSize: 12.5, lineHeight: 1.5 }}>
+            {row.summary}
+          </div>
+        ) : null}
+        {row.checks.length === 0 ? (
+          <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+            No detailed readiness checks were submitted.
+          </div>
+        ) : (
+          row.checks.map((check) => (
+            <div
+              key={`${row.id}:${check.key}`}
+              style={{
+                display: "grid",
+                gap: 6,
+                padding: 10,
+                borderRadius: t.radius.sm,
+                border: `1px solid ${t.color.softBorder}`,
+                background: "rgba(7, 10, 15, 0.32)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ color: t.color.text, fontSize: 12.5, fontWeight: 700 }}>{check.label}</div>
+                <ControlStatusChip label={formatReadinessStatus(check.status)} tone={readinessTone(check.status)} />
+              </div>
+              <div style={{ color: t.color.textMuted, fontSize: 12.5, lineHeight: 1.5 }}>
+                {check.message ?? "No extra details were submitted for this check."}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </details>
+  );
+}
+
 export default async function ShopPage({ params, searchParams }: Props) {
   const { shopId } = await params;
   const query = (await searchParams) ?? {};
@@ -625,13 +675,14 @@ export default async function ShopPage({ params, searchParams }: Props) {
     );
   }
 
-  const [snapshot, deviceRows, memberData, auditRows, supportRows, billingSummary] = await Promise.all([
+  const [snapshot, deviceRows, memberData, auditRows, supportRows, billingSummary, readinessData] = await Promise.all([
     getShopSnapshot(shop),
     loadShopDeviceRows(shop.id),
     loadShopMembers(shop.id),
     loadAuditRows(shop.id),
     loadSupportRows(shop.id),
     loadBillingSummary(shop.id),
+    loadShopReadinessReports(shop.id),
   ]);
 
   const workstationRows = deviceRows.filter((row) => asText(row.device_type).toLowerCase() === "workstation");
@@ -870,44 +921,138 @@ export default async function ShopPage({ params, searchParams }: Props) {
       ) : null}
 
       {activeTab === "devices" ? (
-        <ControlPanel
-          title="Devices"
-          description="Enrolled device records for this shop, using Control-side enrollment and heartbeat metadata only."
-        >
-          {deviceRows.length === 0 ? (
-            <ControlEmptyState
-              title="No devices enrolled"
-              description="There are no enrolled device rows for this shop yet."
-            />
-          ) : (
-            <ControlTableWrap>
-              <ControlTable minWidth={920}>
-                <thead>
-                  <tr>
-                    <ControlTableHeadCell>Device</ControlTableHeadCell>
-                    <ControlTableHeadCell>Type</ControlTableHeadCell>
-                    <ControlTableHeadCell>Status</ControlTableHeadCell>
-                    <ControlTableHeadCell>Created</ControlTableHeadCell>
-                    <ControlTableHeadCell>Last Seen</ControlTableHeadCell>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deviceRows.map((row) => (
-                    <tr key={row.id}>
-                      <ControlTableCell>{row.name ?? row.id}</ControlTableCell>
-                      <ControlTableCell>{humanizeLabel(row.device_type, "Unknown")}</ControlTableCell>
-                      <ControlTableCell>
-                        <ControlStatusChip label={humanizeLabel(row.status, "Unknown")} tone={deviceStatusTone(row.status)} />
-                      </ControlTableCell>
-                      <ControlTableCell>{formatMaybeDate(row.created_at)}</ControlTableCell>
-                      <ControlTableCell>{formatMaybeDate(row.last_seen_at)}</ControlTableCell>
+        <div style={{ display: "grid", gap: 18 }}>
+          <ControlPanel
+            title="Devices"
+            description="Enrolled device records for this shop, using Control-side enrollment and heartbeat metadata only."
+          >
+            {deviceRows.length === 0 ? (
+              <ControlEmptyState
+                title="No devices enrolled"
+                description="There are no enrolled device rows for this shop yet."
+              />
+            ) : (
+              <ControlTableWrap>
+                <ControlTable minWidth={920}>
+                  <thead>
+                    <tr>
+                      <ControlTableHeadCell>Device</ControlTableHeadCell>
+                      <ControlTableHeadCell>Type</ControlTableHeadCell>
+                      <ControlTableHeadCell>Status</ControlTableHeadCell>
+                      <ControlTableHeadCell>Created</ControlTableHeadCell>
+                      <ControlTableHeadCell>Last Seen</ControlTableHeadCell>
                     </tr>
-                  ))}
-                </tbody>
-              </ControlTable>
-            </ControlTableWrap>
-          )}
-        </ControlPanel>
+                  </thead>
+                  <tbody>
+                    {deviceRows.map((row) => (
+                      <tr key={row.id}>
+                        <ControlTableCell>{row.name ?? row.id}</ControlTableCell>
+                        <ControlTableCell>{humanizeLabel(row.device_type, "Unknown")}</ControlTableCell>
+                        <ControlTableCell>
+                          <ControlStatusChip label={humanizeLabel(row.status, "Unknown")} tone={deviceStatusTone(row.status)} />
+                        </ControlTableCell>
+                        <ControlTableCell>{formatMaybeDate(row.created_at)}</ControlTableCell>
+                        <ControlTableCell>{formatMaybeDate(row.last_seen_at)}</ControlTableCell>
+                      </tr>
+                    ))}
+                  </tbody>
+                </ControlTable>
+              </ControlTableWrap>
+            )}
+          </ControlPanel>
+
+          <ControlPanel
+            title="RunBook Readiness Check"
+            description="Submitted readiness reports from RunBook Desktop or RunBook Service. Control displays the reports; it does not scan computers directly."
+          >
+            {readinessData.rows.length === 0 ? (
+              <ControlEmptyState
+                title="No computers have reported readiness yet."
+                description="RunBook Desktop or RunBook Service will submit a readiness check from each computer."
+              />
+            ) : (
+              <div style={{ display: "grid", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+                  <ControlMetricCard
+                    label="Reports"
+                    value={String(readinessData.summary.totalReports)}
+                    meta={readinessData.summary.latestReportedAt ? `Last reported ${formatMaybeDate(readinessData.summary.latestReportedAt)}.` : "No recent report time is available."}
+                    tone="neutral"
+                  />
+                  <ControlMetricCard
+                    label="Ready"
+                    value={String(readinessData.summary.readyCount)}
+                    meta="Computers that reported Ready."
+                    tone={readinessData.summary.readyCount > 0 ? "success" : "neutral"}
+                  />
+                  <ControlMetricCard
+                    label="Needs Attention"
+                    value={String(readinessData.summary.needsAttentionCount)}
+                    meta="Computers that can run but still need attention."
+                    tone={readinessData.summary.needsAttentionCount > 0 ? "warning" : "neutral"}
+                  />
+                  <ControlMetricCard
+                    label="Not Ready"
+                    value={String(readinessData.summary.notReadyCount)}
+                    meta="Computers that should not proceed until issues are fixed."
+                    tone={readinessData.summary.notReadyCount > 0 ? "danger" : "success"}
+                  />
+                  <ControlMetricCard
+                    label="Average Score"
+                    value={readinessData.summary.averageScore === null ? "N/A" : String(readinessData.summary.averageScore)}
+                    meta="Simple readiness score from submitted reports."
+                    tone={readinessData.summary.averageScore === null ? "neutral" : readinessData.summary.averageScore >= 85 ? "success" : readinessData.summary.averageScore >= 60 ? "warning" : "danger"}
+                  />
+                </div>
+
+                <ControlTableWrap>
+                  <ControlTable minWidth={1080}>
+                    <thead>
+                      <tr>
+                        <ControlTableHeadCell>Computer</ControlTableHeadCell>
+                        <ControlTableHeadCell>Status</ControlTableHeadCell>
+                        <ControlTableHeadCell>Score</ControlTableHeadCell>
+                        <ControlTableHeadCell>Last Reported</ControlTableHeadCell>
+                        <ControlTableHeadCell>Issues</ControlTableHeadCell>
+                        <ControlTableHeadCell>Versions</ControlTableHeadCell>
+                        <ControlTableHeadCell>Details</ControlTableHeadCell>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {readinessData.rows.map((row) => (
+                        <tr key={row.id}>
+                          <ControlTableCell>
+                            <div style={{ display: "grid", gap: 4 }}>
+                              <div style={{ color: t.color.text, fontWeight: 700 }}>{row.computer_name}</div>
+                              <div style={{ fontSize: 12, color: t.color.textMuted }}>
+                                {row.os_summary ?? "OS not surfaced"}
+                              </div>
+                            </div>
+                          </ControlTableCell>
+                          <ControlTableCell>
+                            <ControlStatusChip label={formatReadinessStatus(row.overall_status)} tone={readinessTone(row.overall_status)} />
+                          </ControlTableCell>
+                          <ControlTableCell>{row.score === null ? "N/A" : String(row.score)}</ControlTableCell>
+                          <ControlTableCell>{formatMaybeDate(row.reported_at ?? row.created_at)}</ControlTableCell>
+                          <ControlTableCell>{String(readinessIssueCount(row))}</ControlTableCell>
+                          <ControlTableCell>
+                            <div style={{ display: "grid", gap: 4 }}>
+                              <div>App: {row.app_version ?? "Not surfaced"}</div>
+                              <div>Service: {row.service_version ?? "Not surfaced"}</div>
+                            </div>
+                          </ControlTableCell>
+                          <ControlTableCell>
+                            <ReadinessDetails row={row} />
+                          </ControlTableCell>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </ControlTable>
+                </ControlTableWrap>
+              </div>
+            )}
+          </ControlPanel>
+        </div>
       ) : null}
 
       {activeTab === "workstations" ? (
