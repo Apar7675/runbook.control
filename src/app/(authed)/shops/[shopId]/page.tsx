@@ -9,8 +9,8 @@ import ControlStatusChip, { type ControlStatusTone } from "@/components/control/
 import ControlTabNav from "@/components/control/ControlTabNav";
 import { ControlTable, ControlTableCell, ControlTableHeadCell, ControlTableWrap } from "@/components/control/ControlTable";
 import { controlTheme as t } from "@/components/control/controlTheme";
-import { formatReadinessStatus, type ReadinessReportRow } from "@/lib/control/readiness";
-import { loadShopReadinessReports, readinessIssueCount, readinessTone } from "@/lib/control/readinessViews";
+import { formatReadinessCheckStatus, formatReadinessStatus, type ReadinessReportRow } from "@/lib/control/readiness";
+import { loadShopReadinessReports, readinessCheckTone, readinessIssueCount, readinessTone } from "@/lib/control/readinessViews";
 import { getShopSnapshot, getViewerContext, selectPrimaryShop, type ShopSnapshot } from "@/lib/control/summary";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/ui/dates";
@@ -635,7 +635,7 @@ function ReadinessDetails({
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ color: t.color.text, fontSize: 12.5, fontWeight: 700 }}>{check.label}</div>
-                <ControlStatusChip label={formatReadinessStatus(check.status)} tone={readinessTone(check.status)} />
+                <ControlStatusChip label={formatReadinessCheckStatus(check.status)} tone={readinessCheckTone(check.status)} />
               </div>
               <div style={{ color: t.color.textMuted, fontSize: 12.5, lineHeight: 1.5 }}>
                 {check.message ?? "No extra details were submitted for this check."}

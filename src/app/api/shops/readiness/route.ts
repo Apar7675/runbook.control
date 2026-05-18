@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { assertUuid, requireShopAccessOrAdminAal2 } from "@/lib/authz";
+import { requireDesktopShopAdmin } from "@/lib/desktopShopAdminAuth";
 import { formatReadinessStatus, READINESS_STATUSES, sanitizeReadinessPayload } from "@/lib/control/readiness";
 import { loadShopReadinessReports } from "@/lib/control/readinessViews";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
@@ -18,6 +19,11 @@ function errorStatus(message: string) {
   if (/access denied/i.test(message)) return 403;
   if (/must be a uuid/i.test(message)) return 400;
   return 500;
+}
+
+function hasBearerAuth(req: Request) {
+  const auth = req.headers.get("authorization") ?? "";
+  return /^Bearer\s+.+/i.test(auth);
 }
 
 export async function GET(req: Request) {
@@ -52,7 +58,9 @@ export async function POST(req: Request) {
     if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
     assertUuid("shop_id", shopId);
 
-    const { user } = await requireShopAccessOrAdminAal2(shopId);
+    const { user } = hasBearerAuth(req)
+      ? await requireDesktopShopAdmin(req, shopId)
+      : await requireShopAccessOrAdminAal2(shopId);
     const payload = sanitizeReadinessPayload(body);
 
     if (!payload.computer_name) {

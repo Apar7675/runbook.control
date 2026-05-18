@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { countIssueChecks, normalizeReadinessStatus, sanitizeMachineSummary, sanitizeReadinessChecks, type ReadinessReportRow, type ReadinessStatus } from "@/lib/control/readiness";
+import { countIssueChecks, normalizeReadinessStatus, sanitizeMachineSummary, sanitizeReadinessChecks, type ReadinessCheckStatus, type ReadinessReportRow, type ReadinessStatus } from "@/lib/control/readiness";
 
 function text(value: unknown) {
   return String(value ?? "").trim();
@@ -127,6 +127,13 @@ export function readinessTone(status: ReadinessStatus): "success" | "warning" | 
   if (status === "ready") return "success";
   if (status === "needs_attention") return "warning";
   if (status === "not_ready") return "danger";
+  return "neutral";
+}
+
+export function readinessCheckTone(status: ReadinessCheckStatus): "success" | "warning" | "danger" | "neutral" {
+  if (status === "pass") return "success";
+  if (status === "warning") return "warning";
+  if (status === "fail") return "danger";
   return "neutral";
 }
 

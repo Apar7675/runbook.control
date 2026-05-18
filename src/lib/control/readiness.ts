@@ -1,11 +1,13 @@
 export const READINESS_STATUSES = ["ready", "needs_attention", "not_ready", "not_checked"] as const;
+export const READINESS_CHECK_STATUSES = ["pass", "warning", "fail", "info"] as const;
 
 export type ReadinessStatus = (typeof READINESS_STATUSES)[number];
+export type ReadinessCheckStatus = (typeof READINESS_CHECK_STATUSES)[number];
 
 export type ReadinessCheck = {
   key: string;
   label: string;
-  status: ReadinessStatus;
+  status: ReadinessCheckStatus;
   message: string | null;
 };
 
@@ -38,9 +40,18 @@ function isReadinessStatus(value: string): value is ReadinessStatus {
   return READINESS_STATUSES.includes(value as ReadinessStatus);
 }
 
+function isReadinessCheckStatus(value: string): value is ReadinessCheckStatus {
+  return READINESS_CHECK_STATUSES.includes(value as ReadinessCheckStatus);
+}
+
 export function normalizeReadinessStatus(value: unknown): ReadinessStatus {
   const status = text(value).toLowerCase();
   return isReadinessStatus(status) ? status : "not_checked";
+}
+
+export function normalizeReadinessCheckStatus(value: unknown): ReadinessCheckStatus {
+  const status = text(value).toLowerCase();
+  return isReadinessCheckStatus(status) ? status : "info";
 }
 
 function looksLikeLocalPath(value: string) {
@@ -93,7 +104,7 @@ export function sanitizeReadinessChecks(value: unknown): ReadinessCheck[] {
       const row = entry as UnsafeJson;
       const key = safeText(row.key, `check_${index + 1}`) || `check_${index + 1}`;
       const label = safeText(row.label, key) || key;
-      const status = normalizeReadinessStatus(row.status);
+      const status = normalizeReadinessCheckStatus(row.status);
       const message = safeText(row.message);
 
       return {
@@ -137,7 +148,7 @@ export function sanitizeReadinessPayload(body: unknown) {
 }
 
 export function countIssueChecks(checks: ReadinessCheck[]) {
-  return checks.filter((check) => check.status === "needs_attention" || check.status === "not_ready").length;
+  return checks.filter((check) => check.status === "warning" || check.status === "fail").length;
 }
 
 export function formatReadinessStatus(status: ReadinessStatus) {
@@ -145,4 +156,11 @@ export function formatReadinessStatus(status: ReadinessStatus) {
   if (status === "needs_attention") return "Needs Attention";
   if (status === "not_ready") return "Not Ready";
   return "Not Checked";
+}
+
+export function formatReadinessCheckStatus(status: ReadinessCheckStatus) {
+  if (status === "pass") return "Ready";
+  if (status === "warning") return "Needs Attention";
+  if (status === "fail") return "Not Ready";
+  return "Info";
 }
