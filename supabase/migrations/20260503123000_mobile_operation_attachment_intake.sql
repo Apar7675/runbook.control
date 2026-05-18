@@ -1,0 +1,5 @@
+-- Compatibility placeholder only.
+-- The remote database already has migration version 20260503123000 recorded.
+-- The original SQL for this migration was missing from the local repository history.
+-- This file exists only to align local migration history so later migrations can apply.
+-- Do not use this file as the real schema source for fresh databases.
