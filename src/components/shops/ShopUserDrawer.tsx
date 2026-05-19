@@ -57,19 +57,23 @@ export default function ShopUserDrawer({
 }) {
   const [busy, setBusy] = React.useState(false);
   const [timeclockBusy, setTimeclockBusy] = React.useState(false);
+  const [workstationBusy, setWorkstationBusy] = React.useState(false);
   const [status, setStatus] = React.useState("");
   const [mobileTimeclockEnabled, setMobileTimeclockEnabled] = React.useState(false);
   const [mobileTimeclockRequiresReview, setMobileTimeclockRequiresReview] = React.useState(false);
+  const [workstationAccessEnabled, setWorkstationAccessEnabled] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) {
       setBusy(false);
       setTimeclockBusy(false);
+      setWorkstationBusy(false);
       setStatus("");
     }
     setMobileTimeclockEnabled(Boolean(user?.mobile_timeclock_enabled));
     setMobileTimeclockRequiresReview(Boolean(user?.mobile_timeclock_requires_review));
-  }, [open, user?.employee_id, user?.mobile_timeclock_enabled, user?.mobile_timeclock_requires_review]);
+    setWorkstationAccessEnabled(Boolean(user?.workstation_access_enabled));
+  }, [open, user?.employee_id, user?.mobile_timeclock_enabled, user?.mobile_timeclock_requires_review, user?.workstation_access_enabled]);
 
   if (!open || !user) return null;
 
@@ -140,6 +144,41 @@ export default function ShopUserDrawer({
     onRemoved();
   }
 
+  async function saveWorkstationAccess() {
+    if (!activeUser.employee_id) return;
+    setWorkstationBusy(true);
+    setStatus("");
+
+    const response = await safeFetch<{
+      ok?: boolean;
+      error?: string;
+      employee?: {
+        workstation_access_enabled?: boolean;
+      };
+    }>("/api/admin/users/workstation-access", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        shop_id: shopId,
+        employee_id: activeUser.employee_id,
+        workstation_access_enabled: workstationAccessEnabled,
+      }),
+    });
+
+    if (!response.ok || !response.data?.ok) {
+      setStatus(response.ok ? response.data?.error ?? "Could not save Workstation access." : `${response.status}: ${response.error}`);
+      setWorkstationBusy(false);
+      return;
+    }
+
+    setWorkstationAccessEnabled(Boolean(response.data.employee?.workstation_access_enabled));
+    setStatus("Workstation access saved.");
+    setWorkstationBusy(false);
+    onRemoved();
+  }
+
   return (
     <div
       style={{
@@ -184,13 +223,45 @@ export default function ShopUserDrawer({
           <DetailRow label="Email" value={activeUser.email ?? "Not available"} />
           <DetailRow label="Phone" value={activeUser.phone ?? "Not available"} />
           <DetailRow label="Employee Code" value={activeUser.employee_code ?? "Not assigned"} />
-          <DetailRow label="Source" value={activeUser.source === "employee" ? "Employee record" : "Membership only"} />
+          <DetailRow label="Source" value={activeUser.source === "employee" ? "Employee record" : "Shop member only"} />
           <DetailRow label="RunBook Access" value={activeUser.runbook_access_enabled ? "Enabled" : "Not enabled"} />
           <DetailRow label="Mobile" value={activeUser.mobile_access_enabled ? "Ready" : "Not ready"} />
           <DetailRow label="Mobile Time Clock" value={mobileTimeclockEnabled ? "Phone punching allowed" : "Phone punching not allowed"} />
-          <DetailRow label="Workstation" value={activeUser.workstation_access_enabled ? "Ready" : "Not ready"} />
+          <DetailRow label="Workstation" value={workstationAccessEnabled ? "Ready" : "Not ready"} />
           <DetailRow label="Created" value={activeUser.created_at ? formatDateTime(activeUser.created_at) : activeUser.membership_created_at ? formatDateTime(activeUser.membership_created_at) : "Unknown"} />
           <DetailRow label="Auth User" value={activeUser.auth_user_id ?? "Not linked"} />
+        </ControlPanelV2>
+
+        <ControlPanelV2 title="Workstation Access" description="Workstation readiness applies to employee rows. This controls whether the employee can appear in the workstation auth package after general RunBook access and workstation capabilities are satisfied.">
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: activeUser.employee_id ? "pointer" : "not-allowed" }}>
+              <input
+                type="checkbox"
+                checked={workstationAccessEnabled}
+                disabled={!activeUser.employee_id || workstationBusy}
+                onChange={(event) => setWorkstationAccessEnabled(event.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span style={{ display: "grid", gap: 3 }}>
+                <span style={{ color: t.color.text, fontSize: 13, fontWeight: 700 }}>Allow this employee to use Workstation</span>
+                <span style={{ color: t.color.textQuiet, fontSize: 12, lineHeight: 1.45 }}>
+                  Employee rows, not membership-only rows, control workstation roster eligibility.
+                </span>
+              </span>
+            </label>
+
+            {!activeUser.runbook_access_enabled ? (
+              <div style={{ color: t.color.warning, fontSize: 12 }}>
+                General RunBook access is not enabled, so this employee still cannot use Workstation.
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <ControlActionButtonV2 tone="primary" disabled={workstationBusy || !activeUser.employee_id} onClick={saveWorkstationAccess}>
+                {workstationBusy ? "Saving..." : "Save Workstation Access"}
+              </ControlActionButtonV2>
+            </div>
+          </div>
         </ControlPanelV2>
 
         <ControlPanelV2 title="Mobile Time Clock" description="Phone punching requires both general Mobile access and this employee-specific permission. Control still evaluates each submitted punch.">

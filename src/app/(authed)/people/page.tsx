@@ -74,7 +74,7 @@ export default async function PeoplePage({
       <ControlPageHeader
         eyebrow="People"
         title="People & Access"
-        description="Cloud authority view of Control users, shop members, employees, and remote access posture across the authorized scope."
+        description="Cloud authority view of Control users, shop members, and employee records. Shop Member means account-to-shop access, while Employee means the shop-floor record that drives workstation readiness."
         actions={<ControlActionLink href="/mobile-access">Open mobile access</ControlActionLink>}
       />
 
@@ -88,7 +88,7 @@ export default async function PeoplePage({
 
       <ControlPanel
         title="People Directory"
-        description="Table-first authority view. MFA is shown only where the repo currently surfaces it, and employee mobile/workstation access stays grounded in real Control-side policy inputs."
+        description="Table-first authority view. Employee mobile and workstation access applies to Employee rows unless a linked employee record exists, while Shop Member rows represent account/shop role membership."
       >
         <form method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div

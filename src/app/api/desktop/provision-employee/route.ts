@@ -19,6 +19,13 @@ function s(v: any) {
   return String(v ?? "").trim();
 }
 
+function normalizePhone(value: any) {
+  const digits = String(value ?? "").replace(/\D+/g, "");
+  if (!digits) return "";
+  if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
+  return digits;
+}
+
 function b(v: any, def = false) {
   if (typeof v === "boolean") return v;
   if (typeof v === "number") return v !== 0;
@@ -209,68 +216,88 @@ async function findExistingEmployee(admin: any, args: {
   authUserId: string;
   employeeCode: string;
   email: string;
+  phone: string;
   sourceDeviceId: string;
   sourceLocalEmployeeId: number | null;
 }) {
-  const selectFields = "id,shop_id,auth_user_id,employee_code,display_name,email,role,is_active,source_device_id,source_local_employee_id";
+  const selectFields =
+    "id,shop_id,auth_user_id,employee_code,display_name,email,phone,role,is_active,source_device_id,source_local_employee_id";
+  const lookupSteps: Array<{ key: string; rows: any[] }> = [];
+
+  async function queryEmployees(configure: (query: any) => any) {
+    let query = admin
+      .from("employees")
+      .select(selectFields)
+      .eq("shop_id", args.shopId)
+      .limit(3);
+    query = configure(query);
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return Array.isArray(data) ? data.filter(Boolean) : [];
+  }
+
+  async function addLookup(key: string, enabled: boolean, configure: (query: any) => any) {
+    if (!enabled) return;
+    const rows = await queryEmployees(configure);
+    lookupSteps.push({ key, rows });
+  }
 
   if (args.remoteEmployeeId) {
-    const { data, error } = await admin
-      .from("employees")
-      .select(selectFields)
-      .eq("shop_id", args.shopId)
-      .eq("id", args.remoteEmployeeId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data) return data;
+    const rows = await queryEmployees((query) => query.eq("id", args.remoteEmployeeId));
+    if (rows.length > 1) {
+      throw new Error(`Employee identity conflict for shop ${args.shopId}: remote employee id ${args.remoteEmployeeId} matched multiple rows. Manual review required.`);
+    }
+    if (rows.length === 1) return rows[0];
   }
 
-  if (args.sourceDeviceId && args.sourceLocalEmployeeId !== null) {
-    const { data, error } = await admin
-      .from("employees")
-      .select(selectFields)
-      .eq("shop_id", args.shopId)
-      .eq("source_device_id", args.sourceDeviceId)
-      .eq("source_local_employee_id", args.sourceLocalEmployeeId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data) return data;
+  const normalizedPhone = normalizePhone(args.phone);
+  await addLookup("auth_user_id", !!args.authUserId, (query) => query.eq("auth_user_id", args.authUserId));
+  await addLookup("email", !!args.email, (query) => query.eq("email", args.email));
+  await addLookup("phone", !!normalizedPhone, (query) =>
+    query.or([
+      `phone.eq.${args.phone.replaceAll(",", "\\,")}`,
+      `phone.eq.${normalizedPhone.replaceAll(",", "\\,")}`,
+      normalizedPhone.length === 10 ? `phone.eq.+1${normalizedPhone}` : "",
+    ].filter(Boolean).join(",")));
+  await addLookup("employee_code", !!args.employeeCode, (query) => query.eq("employee_code", args.employeeCode));
+  await addLookup(
+    "source_trace",
+    !!args.sourceDeviceId && args.sourceLocalEmployeeId !== null,
+    (query) => query.eq("source_device_id", args.sourceDeviceId).eq("source_local_employee_id", args.sourceLocalEmployeeId)
+  );
+
+  const candidateById = new Map<string, { row: any; keys: string[] }>();
+  for (const step of lookupSteps) {
+    if (step.rows.length > 1) {
+      throw new Error(
+        `Employee identity conflict for shop ${args.shopId}: ${step.key} matched multiple employee rows. Manual review required before provisioning can continue.`
+      );
+    }
+
+    const row = step.rows[0];
+    if (!row?.id) continue;
+    const id = s(row.id);
+    const existing = candidateById.get(id);
+    if (existing) {
+      existing.keys.push(step.key);
+      continue;
+    }
+
+    candidateById.set(id, { row, keys: [step.key] });
   }
 
-  if (args.email) {
-    const { data, error } = await admin
-      .from("employees")
-      .select(selectFields)
-      .eq("shop_id", args.shopId)
-      .eq("email", args.email)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data) return data;
+  if (candidateById.size > 1) {
+    const details = Array.from(candidateById.values()).map((candidate) => {
+      const code = s(candidate.row?.employee_code);
+      const name = s(candidate.row?.display_name);
+      return `${s(candidate.row?.id)} [${candidate.keys.join("+")}] ${code || name || "employee"}`;
+    });
+    throw new Error(
+      `Employee identity conflict for shop ${args.shopId}: multiple existing employee rows matched the provisioning request (${details.join("; ")}). Manual review required.`
+    );
   }
 
-  if (args.authUserId) {
-    const { data, error } = await admin
-      .from("employees")
-      .select(selectFields)
-      .eq("shop_id", args.shopId)
-      .eq("auth_user_id", args.authUserId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data) return data;
-  }
-
-  if (args.employeeCode) {
-    const { data, error } = await admin
-      .from("employees")
-      .select(selectFields)
-      .eq("shop_id", args.shopId)
-      .eq("employee_code", args.employeeCode)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data) return data;
-  }
-
-  return null;
+  return candidateById.values().next().value?.row ?? null;
 }
 
 async function findEmployeeByAuthUserId(admin: any, shopId: string, authUserId: string) {
@@ -445,6 +472,7 @@ export async function POST(req: Request) {
       authUserId,
       employeeCode,
       email,
+      phone,
       sourceDeviceId,
       sourceLocalEmployeeId: localEmployeeId,
     });
@@ -532,6 +560,7 @@ export async function POST(req: Request) {
       authUserId,
       employeeCode,
       email,
+      phone,
       sourceDeviceId,
       sourceLocalEmployeeId: localEmployeeId,
     });

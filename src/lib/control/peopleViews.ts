@@ -529,7 +529,7 @@ export async function loadPeopleViews(): Promise<PeopleViewsData> {
       workstation_access_tone: workstation.tone,
       status_tone: member.is_active === false ? "danger" : "success",
       action_href: `/shops/${shopId}?tab=members`,
-      action_label: "Open shop",
+      action_label: "Open membership",
       created_at: isoOrNull(member.created_at),
     });
   }
@@ -554,7 +554,7 @@ export async function loadPeopleViews(): Promise<PeopleViewsData> {
       workstation_access_tone: workstation.tone,
       status_tone: employeeStatusTone(row),
       action_href: `/shops/${row.shop_id}?tab=members`,
-      action_label: "Open shop",
+      action_label: "Open employee access",
       created_at: row.created_at,
     });
   }
