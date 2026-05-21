@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { label: "Timeclock Review", href: "/timeclock-review", matchPath: "/timeclock-review" },
   { label: "Billing & Plans", href: "/billing-access", matchPath: "/billing-access" },
   { label: "Support", href: "/support", matchPath: "/support" },
+  { label: "Software Updates", href: "/software-updates", matchPath: "/software-updates" },
   { label: "Updates", href: "/updates", matchPath: "/updates" },
   { label: "Audit Log", href: "/audit", matchPath: "/audit" },
   { label: "Settings / Policies", href: "/settings", matchPath: "/settings" },
