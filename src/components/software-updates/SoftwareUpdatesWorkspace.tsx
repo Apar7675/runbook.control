@@ -85,9 +85,9 @@ export type SoftwareRolloutEditorView = {
 
 function toneForStatus(value: string): ControlStatusTone {
   const normalized = value.trim().toLowerCase();
-  if (normalized.includes("failed") || normalized.includes("below minimum")) return "danger";
+  if (normalized.includes("failed") || normalized.includes("blocked") || normalized.includes("below minimum")) return "danger";
   if (normalized.includes("required") || normalized.includes("pending") || normalized.includes("review")) return "warning";
-  if (normalized.includes("approved") || normalized.includes("active") || normalized.includes("current")) return "success";
+  if (normalized.includes("approved") || normalized.includes("active") || normalized.includes("current") || normalized.includes("succeeded")) return "success";
   if (normalized.includes("minimum")) return "info";
   return "neutral";
 }
@@ -155,11 +155,11 @@ function OverviewTab({ overviewStats, sourceKind }: { overviewStats: SoftwareUpd
       </div>
 
       <ControlPanel
-        title={sourceKind === "live" ? "Phase 2A foundation" : sourceKind === "mixed" ? "Phase 2A mixed source" : "Phase 1 scope"}
+        title={sourceKind === "live" ? "Phase 2E foundation" : sourceKind === "mixed" ? "Phase 2E mixed source" : "Phase 1 scope"}
         description={sourceKind === "live"
           ? "This workspace is reading the new Control software update tables. Control remains the metadata and approval authority only; download and install behavior still belongs to future Service-owned execution paths."
           : sourceKind === "mixed"
-            ? "Some sections are now reading the new Control software update tables, while empty sections continue to show local demo fallback data until records are available."
+            ? "Some sections already have real Control-backed rows while others are still empty. Control remains the visibility and approval authority only."
             : "Control is only surfacing release metadata, rollout approval posture, and device-reported update status in this pass. Download, verification, staging, and installation remain future Service-owned behaviors."}
       >
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -201,7 +201,7 @@ function ReleasesTab({
       <ControlPanel
         title="Release catalog"
         description={sourceKind === "demo"
-          ? "Local demo rows still appear when the schema is unavailable or no real release rows exist yet. If the schema is available, you can start creating real release metadata below."
+          ? "Local demo rows appear only while the software updates schema is unavailable."
           : "Release rows are reading from rb_software_releases and rb_software_packages when records are available."}
         actions={
           releaseCrudEnabled
@@ -394,7 +394,7 @@ function ReleasesTab({
       <ControlPanel
         title="Package metadata"
         description={sourceKind === "demo"
-          ? "Package metadata is demo-only until the schema is available. Once it is available, add package records here without uploading files yet."
+          ? "Package metadata is demo-only until the schema is available."
           : "Manage package metadata rows tied to each release. This remains metadata-only and does not upload or install anything."}
         actions={
           selectedRelease && packageCrudEnabled
@@ -579,8 +579,14 @@ function DevicesTab({ deviceRows, sourceKind }: { deviceRows: SoftwareUpdatesWor
         ? "Sample rows show how Control can become the remote visibility layer for reported desktop, service, workstation, and mobile versions without taking on local installation authority."
         : "Device status rows are reading from rb_device_software_status when records are available, without giving Control local installation authority."}
     >
+      {deviceRows.length === 0 && sourceKind !== "demo" ? (
+        <div style={{ fontSize: 12.5, color: t.color.textMuted }}>
+          No device software status has been reported yet. Devices will appear here after RunBook.Service or other approved local clients post software status to Control.
+        </div>
+      ) : null}
+
       <ControlTableWrap>
-        <ControlTable minWidth={1120}>
+        <ControlTable minWidth={1360}>
           <thead>
             <tr>
               <ControlTableHeadCell>Device</ControlTableHeadCell>
@@ -589,8 +595,10 @@ function DevicesTab({ deviceRows, sourceKind }: { deviceRows: SoftwareUpdatesWor
               <ControlTableHeadCell>Service</ControlTableHeadCell>
               <ControlTableHeadCell>Workstation</ControlTableHeadCell>
               <ControlTableHeadCell>Mobile</ControlTableHeadCell>
+              <ControlTableHeadCell>Channel</ControlTableHeadCell>
               <ControlTableHeadCell>Status</ControlTableHeadCell>
               <ControlTableHeadCell>Last Check</ControlTableHeadCell>
+              <ControlTableHeadCell>Last Error</ControlTableHeadCell>
             </tr>
           </thead>
           <tbody>
@@ -602,10 +610,12 @@ function DevicesTab({ deviceRows, sourceKind }: { deviceRows: SoftwareUpdatesWor
                 <ControlTableCell>{row.service}</ControlTableCell>
                 <ControlTableCell>{row.workstation}</ControlTableCell>
                 <ControlTableCell>{row.mobile}</ControlTableCell>
+                <ControlTableCell>{row.channel}</ControlTableCell>
                 <ControlTableCell>
                   <ControlStatusChip label={row.status} tone={toneForStatus(row.status)} />
                 </ControlTableCell>
                 <ControlTableCell>{row.lastCheck}</ControlTableCell>
+                <ControlTableCell>{row.lastError}</ControlTableCell>
               </tr>
             ))}
           </tbody>
@@ -1040,7 +1050,7 @@ export default function SoftwareUpdatesWorkspace({
         actions={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <ControlStatusChip label={data.sourceKind === "live" ? "Database-backed" : data.sourceKind === "mixed" ? "Mixed source" : "Local demo data"} tone={data.sourceKind === "live" ? "success" : data.sourceKind === "mixed" ? "warning" : "warning"} />
-            <ControlStatusChip label="Phase 2D workspace" tone="info" />
+            <ControlStatusChip label="Phase 2E workspace" tone="info" />
           </div>
         }
       >

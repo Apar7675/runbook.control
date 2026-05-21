@@ -55,8 +55,10 @@ export type SoftwareUpdateDeviceRow = {
   service: string;
   workstation: string;
   mobile: string;
+  channel: string;
   status: string;
   lastCheck: string;
+  lastError: string;
 };
 
 export type SoftwareUpdateRolloutRow = {
@@ -140,9 +142,11 @@ type DeviceStatusDbRow = {
   service_version: string | null;
   workstation_version: string | null;
   mobile_version: string | null;
+  channel: string | null;
   update_status: string | null;
   pending_release_id: string | null;
   last_check_at: string | null;
+  last_error: string | null;
 };
 
 type RolloutDbRow = {
@@ -210,7 +214,7 @@ export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
       { label: "Devices Current", value: "42", meta: "Sample count from local demo data until device update status is backed by the database.", tone: "success" },
       { label: "Devices Pending Update", value: "9", meta: "Devices behind an approved release in this Phase 1 mock workspace.", tone: "warning" },
       { label: "Failed Installs", value: "2", meta: "Placeholder operational visibility for future service-reported update outcomes.", tone: "danger" },
-      { label: "Required Updates", value: "5", meta: "Demo count for releases flagged as required by rollout policy.", tone: "warning" },
+      { label: "Blocked Devices", value: "3", meta: "Demo count for devices that cannot proceed because policy or version state is blocked.", tone: "danger" },
     ],
     releaseRows: [
       { app: "Desktop", version: "1.4.2", channel: "stable", status: "active", required: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Desktop-1.4.2.zip" },
@@ -224,11 +228,11 @@ export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
     shopOptions: [],
     deviceOptions: [],
     deviceRows: [
-      { device: "RB-WS-014", shop: "Ten MFG East", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", status: "current", lastCheck: "2026-05-21 08:04 ET" },
-      { device: "RB-WS-019", shop: "Ten MFG East", desktop: "1.4.1", service: "1.4.2", workstation: "1.4.1", mobile: "1.2.0", status: "pending update", lastCheck: "2026-05-21 07:42 ET" },
-      { device: "RB-SVC-003", shop: "North River Fab", desktop: "n/a", service: "1.4.0", workstation: "n/a", mobile: "n/a", status: "required update", lastCheck: "2026-05-21 07:15 ET" },
-      { device: "RB-MOB-221", shop: "North River Fab", desktop: "n/a", service: "n/a", workstation: "n/a", mobile: "1.1.8", status: "below minimum", lastCheck: "2026-05-20 18:11 ET" },
-      { device: "RB-WS-030", shop: "Summit Tool", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", status: "install failed", lastCheck: "2026-05-21 06:58 ET" },
+      { device: "RB-WS-014", shop: "Ten MFG East", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", channel: "stable", status: "current", lastCheck: "2026-05-21 08:04 ET", lastError: "None reported" },
+      { device: "RB-WS-019", shop: "Ten MFG East", desktop: "1.4.1", service: "1.4.2", workstation: "1.4.1", mobile: "1.2.0", channel: "stable", status: "pending update", lastCheck: "2026-05-21 07:42 ET", lastError: "None reported" },
+      { device: "RB-SVC-003", shop: "North River Fab", desktop: "n/a", service: "1.4.0", workstation: "n/a", mobile: "n/a", channel: "stable", status: "required update", lastCheck: "2026-05-21 07:15 ET", lastError: "None reported" },
+      { device: "RB-MOB-221", shop: "North River Fab", desktop: "n/a", service: "n/a", workstation: "n/a", mobile: "1.1.8", channel: "stable", status: "blocked", lastCheck: "2026-05-20 18:11 ET", lastError: "Store minimum version policy not met" },
+      { device: "RB-WS-030", shop: "Summit Tool", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", channel: "stable", status: "failed", lastCheck: "2026-05-21 06:58 ET", lastError: "Installer exited before completion" },
     ],
     rolloutRows: [
       { release: "Desktop 1.4.2", target: "Pilot shops", channel: "stable", required: "optional", status: "approved", starts: "2026-05-22 21:00 ET", progress: "6/12 devices current" },
@@ -241,7 +245,7 @@ export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
 
 function sourceKindForSections(sections: boolean[]) {
   const populated = sections.filter(Boolean).length;
-  if (populated === 0) return "demo" as const;
+  if (populated === 0) return "live" as const;
   if (populated === sections.length) return "live" as const;
   return "mixed" as const;
 }
@@ -278,7 +282,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
         .limit(400),
       admin
         .from("rb_device_software_status")
-        .select("id,shop_id,device_id,device_name,desktop_version,service_version,workstation_version,mobile_version,update_status,pending_release_id,last_check_at")
+        .select("id,shop_id,device_id,device_name,desktop_version,service_version,workstation_version,mobile_version,channel,update_status,pending_release_id,last_check_at,last_error")
         .order("updated_at", { ascending: false })
         .limit(500),
       admin
@@ -422,8 +426,10 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       service: asText(row.service_version) || "n/a",
       workstation: asText(row.workstation_version) || "n/a",
       mobile: asText(row.mobile_version) || "n/a",
+      channel: asText(row.channel) || "stable",
       status: asText(row.update_status).replaceAll("_", " ") || "unknown",
       lastCheck: formatMaybeDateTime(row.last_check_at, "No check reported"),
+      lastError: asText(row.last_error) || "None reported",
     }));
 
     const releaseStatusCounts = new Map<string, number>();
@@ -456,17 +462,17 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
     const devicesCurrent = deviceStatuses.filter((row) => asText(row.update_status).toLowerCase() === "current").length;
     const devicesPending = deviceStatuses.filter((row) => ["available", "required", "installing", "pending_restart"].includes(asText(row.update_status).toLowerCase())).length;
     const failedInstalls = deviceStatuses.filter((row) => asText(row.update_status).toLowerCase() === "failed").length;
-    const requiredUpdates = deviceStatuses.filter((row) => asText(row.update_status).toLowerCase() === "required").length;
+    const blockedDevices = deviceStatuses.filter((row) => asText(row.update_status).toLowerCase() === "blocked").length;
 
     const liveOverviewStats: SoftwareUpdateOverviewStat[] = [
-      { label: "Latest Desktop Version", value: asText(desktopRelease?.version) || "Not surfaced", meta: "Read from rb_software_releases when available, otherwise demo fallback remains in place.", tone: desktopRelease ? "success" : "neutral" },
+      { label: "Latest Desktop Version", value: asText(desktopRelease?.version) || "Not surfaced", meta: "Read from rb_software_releases when available.", tone: desktopRelease ? "success" : "neutral" },
       { label: "Latest Service Version", value: asText(serviceRelease?.version) || "Not surfaced", meta: "Control metadata only. No local install behavior is implemented in this phase.", tone: serviceRelease ? "success" : "neutral" },
       { label: "Latest Workstation Version", value: asText(workstationRelease?.version) || "Not surfaced", meta: "Release visibility is database-backed when records exist.", tone: workstationRelease ? "success" : "neutral" },
       { label: "Mobile Minimum Version", value: asText(mobileRelease?.minimum_supported_version) || asText(mobileRelease?.version) || "Not surfaced", meta: "Control tracks minimum/current supported mobile versions only.", tone: mobileRelease ? "info" : "neutral" },
       { label: "Devices Current", value: String(devicesCurrent), meta: "Counted from rb_device_software_status rows currently marked current.", tone: devicesCurrent > 0 ? "success" : "neutral" },
       { label: "Devices Pending Update", value: String(devicesPending), meta: "Counted from statuses such as available, required, installing, and pending restart.", tone: devicesPending > 0 ? "warning" : "success" },
       { label: "Failed Installs", value: String(failedInstalls), meta: "Current failed count from device software status reporting.", tone: failedInstalls > 0 ? "danger" : "success" },
-      { label: "Required Updates", value: String(requiredUpdates), meta: "Devices reporting required update status from Control-backed metadata.", tone: requiredUpdates > 0 ? "warning" : "neutral" },
+      { label: "Blocked Devices", value: String(blockedDevices), meta: "Devices reporting blocked status from Control-backed software status reporting.", tone: blockedDevices > 0 ? "danger" : "success" },
     ];
 
     const populatedReleases = liveReleaseRows.length > 0;
@@ -474,35 +480,21 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
     const populatedRollouts = liveRolloutRows.length > 0;
     const sourceKind = sourceKindForSections([populatedReleases, populatedDevices, populatedRollouts]);
 
-    if (sourceKind === "demo") {
-      return {
-        ...demo,
-        schemaAvailable: true,
-        releaseCrudEnabled: true,
-        packageCrudEnabled: true,
-        rolloutCrudEnabled: true,
-        rolloutRows: [],
-        rolloutRecords,
-        shopOptions,
-        deviceOptions,
-      };
-    }
-
     return {
       sourceKind,
       schemaAvailable: true,
       releaseCrudEnabled: true,
       packageCrudEnabled: true,
       rolloutCrudEnabled: true,
-      overviewStats: populatedReleases || populatedDevices ? liveOverviewStats : demo.overviewStats,
-      releaseRows: populatedReleases ? liveReleaseRows : demo.releaseRows,
+      overviewStats: liveOverviewStats,
+      releaseRows: liveReleaseRows,
       releaseRecords,
       packageRecords,
       rolloutRecords,
       shopOptions,
       deviceOptions,
-      deviceRows: populatedDevices ? liveDeviceRows : demo.deviceRows,
-      rolloutRows: populatedRollouts ? liveRolloutRows : [],
+      deviceRows: liveDeviceRows,
+      rolloutRows: liveRolloutRows,
     };
   } catch {
     return demo;
