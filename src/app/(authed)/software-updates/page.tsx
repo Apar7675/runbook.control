@@ -1,5 +1,5 @@
 import React from "react";
-import SoftwareUpdatesWorkspace, { type SoftwareReleaseEditorView } from "@/components/software-updates/SoftwareUpdatesWorkspace";
+import SoftwareUpdatesWorkspace, { type SoftwarePackageEditorView, type SoftwareReleaseEditorView, type SoftwareRolloutEditorView } from "@/components/software-updates/SoftwareUpdatesWorkspace";
 import { loadSoftwareUpdatesWorkspaceData, type SoftwareReleaseRecord } from "@/lib/control/softwareUpdatesViews";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +19,31 @@ type SearchParams = {
   release_notes?: string;
   minimum_supported_version?: string;
   rollback_version?: string;
+  package_mode?: string;
+  selected_release_id?: string;
+  package_flash?: string;
+  package_error?: string;
+  package_id?: string;
+  package_release_id?: string;
+  package_file_name?: string;
+  package_storage_path?: string;
+  package_download_url?: string;
+  package_sha256?: string;
+  package_size_bytes?: string;
+  package_platform?: string;
+  package_architecture?: string;
+  rollout_mode?: string;
+  rollout_flash?: string;
+  rollout_error?: string;
+  rollout_id?: string;
+  rollout_release_id?: string;
+  rollout_target_type?: string;
+  rollout_target_shop_id?: string;
+  rollout_target_device_id?: string;
+  rollout_channel?: string;
+  rollout_required?: string;
+  rollout_status?: string;
+  rollout_starts_at?: string;
 };
 
 const allowedTabs = new Set(["overview", "releases", "devices", "rollouts", "upload-package", "settings"]);
@@ -33,6 +58,20 @@ function readTab(searchParams: SearchParams | undefined) {
 
 function asText(value: string | undefined) {
   return String(value ?? "").trim();
+}
+
+function toDateTimeLocalValue(value: string | undefined) {
+  const text = asText(value);
+  if (!text) return "";
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return text;
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function buildReleaseEditor(searchParams: SearchParams | undefined, releaseRecords: SoftwareReleaseRecord[]) {
@@ -59,6 +98,56 @@ function buildReleaseEditor(searchParams: SearchParams | undefined, releaseRecor
   };
 }
 
+function buildPackageEditor(searchParams: SearchParams | undefined, data: Awaited<ReturnType<typeof loadSoftwareUpdatesWorkspaceData>>) {
+  const modeRaw = asText(searchParams?.package_mode).toLowerCase();
+  const mode: SoftwarePackageEditorView["mode"] = modeRaw === "new" || modeRaw === "edit" ? modeRaw : null;
+  const packageId = asText(searchParams?.package_id);
+  const selectedReleaseId = asText(searchParams?.selected_release_id) || asText(searchParams?.package_release_id) || data.releaseRecords[0]?.id || "";
+  const existing = packageId ? data.packageRecords.find((row) => row.id === packageId) ?? null : null;
+
+  return {
+    mode,
+    selectedReleaseId,
+    flash: asText(searchParams?.package_flash),
+    error: asText(searchParams?.package_error),
+    values: {
+      package_id: packageId || existing?.id || "",
+      release_id: asText(searchParams?.package_release_id) || existing?.release_id || selectedReleaseId,
+      file_name: asText(searchParams?.package_file_name) || existing?.file_name || "",
+      storage_path: asText(searchParams?.package_storage_path) || existing?.storage_path || "",
+      download_url: asText(searchParams?.package_download_url) || existing?.download_url || "",
+      sha256: asText(searchParams?.package_sha256) || existing?.sha256 || "",
+      size_bytes: asText(searchParams?.package_size_bytes) || existing?.size_bytes || "",
+      platform: asText(searchParams?.package_platform) || existing?.platform || "windows",
+      architecture: asText(searchParams?.package_architecture) || existing?.architecture || "x64",
+    },
+  };
+}
+
+function buildRolloutEditor(searchParams: SearchParams | undefined, data: Awaited<ReturnType<typeof loadSoftwareUpdatesWorkspaceData>>) {
+  const modeRaw = asText(searchParams?.rollout_mode).toLowerCase();
+  const mode: SoftwareRolloutEditorView["mode"] = modeRaw === "new" || modeRaw === "edit" ? modeRaw : null;
+  const rolloutId = asText(searchParams?.rollout_id);
+  const existing = rolloutId ? data.rolloutRecords.find((row) => row.id === rolloutId) ?? null : null;
+
+  return {
+    mode,
+    flash: asText(searchParams?.rollout_flash),
+    error: asText(searchParams?.rollout_error),
+    values: {
+      rollout_id: rolloutId || existing?.id || "",
+      release_id: asText(searchParams?.rollout_release_id) || existing?.release_id || data.releaseRecords[0]?.id || "",
+      target_type: asText(searchParams?.rollout_target_type) || existing?.target_type || "all",
+      target_shop_id: asText(searchParams?.rollout_target_shop_id) || existing?.target_shop_id || "",
+      target_device_id: asText(searchParams?.rollout_target_device_id) || existing?.target_device_id || "",
+      channel: asText(searchParams?.rollout_channel) || existing?.channel || "stable",
+      required: asText(searchParams?.rollout_required).toLowerCase() === "true" || (!!existing?.required && !asText(searchParams?.rollout_required)),
+      status: asText(searchParams?.rollout_status) || existing?.status || "planned",
+      starts_at: toDateTimeLocalValue(asText(searchParams?.rollout_starts_at) || existing?.starts_at || ""),
+    },
+  };
+}
+
 export default async function SoftwareUpdatesPage({
   searchParams,
 }: {
@@ -66,5 +155,7 @@ export default async function SoftwareUpdatesPage({
 }) {
   const data = await loadSoftwareUpdatesWorkspaceData();
   const releaseEditor = buildReleaseEditor(searchParams, data.releaseRecords);
-  return <SoftwareUpdatesWorkspace activeTab={readTab(searchParams)} data={data} releaseEditor={releaseEditor} />;
+  const packageEditor = buildPackageEditor(searchParams, data);
+  const rolloutEditor = buildRolloutEditor(searchParams, data);
+  return <SoftwareUpdatesWorkspace activeTab={readTab(searchParams)} data={data} releaseEditor={releaseEditor} packageEditor={packageEditor} rolloutEditor={rolloutEditor} />;
 }

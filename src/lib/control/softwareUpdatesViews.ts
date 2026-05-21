@@ -35,6 +35,19 @@ export type SoftwareReleaseRecord = {
   published_at: string | null;
 };
 
+export type SoftwarePackageRecord = {
+  id: string;
+  release_id: string;
+  file_name: string;
+  storage_path: string;
+  download_url: string;
+  sha256: string;
+  size_bytes: string;
+  platform: string;
+  architecture: string;
+  created_at: string | null;
+};
+
 export type SoftwareUpdateDeviceRow = {
   device: string;
   shop: string;
@@ -47,6 +60,7 @@ export type SoftwareUpdateDeviceRow = {
 };
 
 export type SoftwareUpdateRolloutRow = {
+  id?: string;
   release: string;
   target: string;
   channel: string;
@@ -56,13 +70,36 @@ export type SoftwareUpdateRolloutRow = {
   progress: string;
 };
 
+export type SoftwareRolloutRecord = {
+  id: string;
+  release_id: string;
+  target_type: string;
+  target_shop_id: string;
+  target_device_id: string;
+  channel: string;
+  required: boolean;
+  status: string;
+  starts_at: string;
+};
+
+export type SoftwareTargetOption = {
+  id: string;
+  label: string;
+};
+
 export type SoftwareUpdatesWorkspaceData = {
   sourceKind: "demo" | "mixed" | "live";
   schemaAvailable: boolean;
   releaseCrudEnabled: boolean;
+  packageCrudEnabled: boolean;
+  rolloutCrudEnabled: boolean;
   overviewStats: SoftwareUpdateOverviewStat[];
   releaseRows: SoftwareUpdateReleaseRow[];
   releaseRecords: SoftwareReleaseRecord[];
+  packageRecords: SoftwarePackageRecord[];
+  rolloutRecords: SoftwareRolloutRecord[];
+  shopOptions: SoftwareTargetOption[];
+  deviceOptions: SoftwareTargetOption[];
   deviceRows: SoftwareUpdateDeviceRow[];
   rolloutRows: SoftwareUpdateRolloutRow[];
 };
@@ -82,8 +119,16 @@ type ReleaseDbRow = {
 };
 
 type PackageDbRow = {
+  id: string | null;
   release_id: string | null;
   file_name: string | null;
+  storage_path: string | null;
+  download_url: string | null;
+  sha256: string | null;
+  size_bytes: number | null;
+  platform: string | null;
+  architecture: string | null;
+  created_at: string | null;
 };
 
 type DeviceStatusDbRow = {
@@ -155,6 +200,8 @@ export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
     sourceKind: "demo",
     schemaAvailable: false,
     releaseCrudEnabled: false,
+    packageCrudEnabled: false,
+    rolloutCrudEnabled: false,
     overviewStats: [
       { label: "Latest Desktop Version", value: "1.4.2", meta: "Stable channel package currently surfaced in local demo data.", tone: "success" },
       { label: "Latest Service Version", value: "1.4.2", meta: "Control-only release metadata placeholder for future service rollout approval.", tone: "success" },
@@ -172,6 +219,10 @@ export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
       { app: "Mobile", version: "1.2.0", channel: "stable", status: "minimum supported", required: "minimum", released: "2026-05-12 08:30 ET", packageName: "App store tracked" },
     ],
     releaseRecords: [],
+    packageRecords: [],
+    rolloutRecords: [],
+    shopOptions: [],
+    deviceOptions: [],
     deviceRows: [
       { device: "RB-WS-014", shop: "Ten MFG East", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", status: "current", lastCheck: "2026-05-21 08:04 ET" },
       { device: "RB-WS-019", shop: "Ten MFG East", desktop: "1.4.1", service: "1.4.2", workstation: "1.4.1", mobile: "1.2.0", status: "pending update", lastCheck: "2026-05-21 07:42 ET" },
@@ -197,10 +248,10 @@ function sourceKindForSections(sections: boolean[]) {
 
 function targetLabel(row: RolloutDbRow, shopNames: Map<string, string>, deviceNames: Map<string, string>) {
   const type = asText(row.target_type).toLowerCase();
-  if (type === "all") return "All devices";
-  if (type === "beta") return "Beta cohort";
-  if (type === "shop") return shopNames.get(asText(row.target_shop_id)) ?? "Target shop";
-  if (type === "device") return deviceNames.get(asText(row.target_device_id)) ?? "Target device";
+  if (type === "all") return "All shops/devices";
+  if (type === "beta") return "Beta channel devices";
+  if (type === "shop") return `Shop: ${shopNames.get(asText(row.target_shop_id)) ?? "Target shop"}`;
+  if (type === "device") return `Device: ${deviceNames.get(asText(row.target_device_id)) ?? "Target device"}`;
   return "Target not labeled";
 }
 
@@ -223,7 +274,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
         .limit(200),
       admin
         .from("rb_software_packages")
-        .select("release_id,file_name")
+        .select("id,release_id,file_name,storage_path,download_url,sha256,size_bytes,platform,architecture,created_at")
         .limit(400),
       admin
         .from("rb_device_software_status")
@@ -271,11 +322,15 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
 
     const shopNames = new Map(asArray<ShopDbRow>(shopsResult.data).map((row) => [asText(row.id), asText(row.name) || "Unnamed shop"]));
     const deviceNames = new Map(asArray<DeviceDbRow>(devicesResult.data).map((row) => [asText(row.id), asText(row.name) || "Unnamed device"]));
+    const shopOptions = [...shopNames.entries()].map(([id, label]) => ({ id, label }));
+    const deviceOptions = [...deviceNames.entries()].map(([id, label]) => ({ id, label }));
     const packageNames = new Map<string, string>();
+    const packageCounts = new Map<string, number>();
     for (const row of packages) {
       const releaseId = asText(row.release_id);
-      if (!releaseId || packageNames.has(releaseId)) continue;
-      packageNames.set(releaseId, asText(row.file_name) || "Package recorded");
+      if (!releaseId) continue;
+      if (!packageNames.has(releaseId)) packageNames.set(releaseId, asText(row.file_name) || "Package recorded");
+      packageCounts.set(releaseId, (packageCounts.get(releaseId) ?? 0) + 1);
     }
 
     const releaseLabelById = new Map<string, string>();
@@ -304,6 +359,45 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       })
       .filter((row): row is SoftwareReleaseRecord => !!row);
 
+    const packageRecords: SoftwarePackageRecord[] = packages
+      .map((row) => {
+        const id = asText(row.id);
+        const releaseId = asText(row.release_id);
+        if (!id || !releaseId) return null;
+        return {
+          id,
+          release_id: releaseId,
+          file_name: asText(row.file_name),
+          storage_path: asText(row.storage_path),
+          download_url: asText(row.download_url),
+          sha256: asText(row.sha256),
+          size_bytes: row.size_bytes === null || row.size_bytes === undefined ? "" : String(row.size_bytes),
+          platform: asText(row.platform) || "windows",
+          architecture: asText(row.architecture) || "x64",
+          created_at: asText(row.created_at) || null,
+        } satisfies SoftwarePackageRecord;
+      })
+      .filter((row): row is SoftwarePackageRecord => !!row);
+
+    const rolloutRecords: SoftwareRolloutRecord[] = rollouts
+      .map((row) => {
+        const id = asText(row.id);
+        const releaseId = asText(row.release_id);
+        if (!id || !releaseId) return null;
+        return {
+          id,
+          release_id: releaseId,
+          target_type: asText(row.target_type) || "all",
+          target_shop_id: asText(row.target_shop_id),
+          target_device_id: asText(row.target_device_id),
+          channel: asText(row.channel) || "stable",
+          required: !!row.required,
+          status: asText(row.status) || "planned",
+          starts_at: asText(row.starts_at),
+        } satisfies SoftwareRolloutRecord;
+      })
+      .filter((row): row is SoftwareRolloutRecord => !!row);
+
     const liveReleaseRows = releases.map((row) => ({
       id: asText(row.id) || undefined,
       app: titleCaseApp(asText(row.app_name)),
@@ -312,7 +406,13 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       status: asText(row.status) || "draft",
       required: row.required ? "required" : (asText(row.app_name).toLowerCase() === "mobile" && asText(row.minimum_supported_version) ? "minimum" : "optional"),
       released: formatMaybeDateTime(row.published_at || row.created_at, "Not published"),
-      packageName: packageNames.get(asText(row.id)) ?? "Not recorded",
+      packageName: (() => {
+        const releaseId = asText(row.id);
+        const count = packageCounts.get(releaseId) ?? 0;
+        if (count <= 0) return "Missing metadata";
+        if (count === 1) return packageNames.get(releaseId) ?? "1 package";
+        return `${count} packages`;
+      })(),
     }));
 
     const liveDeviceRows = deviceStatuses.map((row) => ({
@@ -337,6 +437,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       const releaseId = asText(row.release_id);
       const linkedStatuses = releaseStatusCounts.get(releaseId) ?? 0;
       return {
+        id: asText(row.id) || undefined,
         release: releaseLabelById.get(releaseId) ?? "Unknown release",
         target: targetLabel(row, shopNames, deviceNames),
         channel: asText(row.channel) || "stable",
@@ -378,6 +479,12 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
         ...demo,
         schemaAvailable: true,
         releaseCrudEnabled: true,
+        packageCrudEnabled: true,
+        rolloutCrudEnabled: true,
+        rolloutRows: [],
+        rolloutRecords,
+        shopOptions,
+        deviceOptions,
       };
     }
 
@@ -385,11 +492,17 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       sourceKind,
       schemaAvailable: true,
       releaseCrudEnabled: true,
+      packageCrudEnabled: true,
+      rolloutCrudEnabled: true,
       overviewStats: populatedReleases || populatedDevices ? liveOverviewStats : demo.overviewStats,
       releaseRows: populatedReleases ? liveReleaseRows : demo.releaseRows,
       releaseRecords,
+      packageRecords,
+      rolloutRecords,
+      shopOptions,
+      deviceOptions,
       deviceRows: populatedDevices ? liveDeviceRows : demo.deviceRows,
-      rolloutRows: populatedRollouts ? liveRolloutRows : demo.rolloutRows,
+      rolloutRows: populatedRollouts ? liveRolloutRows : [],
     };
   } catch {
     return demo;
