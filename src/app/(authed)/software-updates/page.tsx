@@ -16,9 +16,14 @@ type SearchParams = {
   channel?: string;
   status?: string;
   required?: string;
+  release_intent?: string;
   release_notes?: string;
   minimum_supported_version?: string;
   rollback_version?: string;
+  release_package_url?: string;
+  release_package_file_name?: string;
+  release_package_sha256?: string;
+  release_package_size_bytes?: string;
   package_mode?: string;
   selected_release_id?: string;
   package_flash?: string;
@@ -91,9 +96,14 @@ function buildReleaseEditor(searchParams: SearchParams | undefined, releaseRecor
       channel: asText(searchParams?.channel) || existing?.channel || "stable",
       status: asText(searchParams?.status) || existing?.status || "draft",
       required: asText(searchParams?.required).toLowerCase() === "true" || (!!existing?.required && !asText(searchParams?.required)),
+      release_intent: asText(searchParams?.release_intent) || existing?.release_intent || (existing?.required ? "required" : "optional"),
       release_notes: asText(searchParams?.release_notes) || existing?.release_notes || "",
       minimum_supported_version: asText(searchParams?.minimum_supported_version) || existing?.minimum_supported_version || "",
       rollback_version: asText(searchParams?.rollback_version) || existing?.rollback_version || "",
+      package_url: asText(searchParams?.release_package_url) || existing?.package_url || "",
+      package_file_name: asText(searchParams?.release_package_file_name) || existing?.package_file_name || "",
+      package_sha256: asText(searchParams?.release_package_sha256) || existing?.package_sha256 || "",
+      package_size_bytes: asText(searchParams?.release_package_size_bytes) || existing?.package_size_bytes || "",
     },
   };
 }

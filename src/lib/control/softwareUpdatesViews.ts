@@ -17,7 +17,7 @@ export type SoftwareUpdateReleaseRow = {
   version: string;
   channel: string;
   status: string;
-  required: string;
+  intent: string;
   released: string;
   packageName: string;
 };
@@ -29,9 +29,15 @@ export type SoftwareReleaseRecord = {
   channel: string;
   status: string;
   required: boolean;
+  release_intent: string;
   release_notes: string;
   minimum_supported_version: string;
   rollback_version: string;
+  package_url: string;
+  package_file_name: string;
+  package_sha256: string;
+  package_size_bytes: string;
+  package_uploaded_at: string | null;
   created_at: string | null;
   updated_at: string | null;
   published_at: string | null;
@@ -118,9 +124,15 @@ type ReleaseDbRow = {
   channel: string | null;
   status: string | null;
   required: boolean | null;
+  release_intent: string | null;
   release_notes: string | null;
   minimum_supported_version: string | null;
   rollback_version: string | null;
+  package_url: string | null;
+  package_file_name: string | null;
+  package_sha256: string | null;
+  package_size_bytes: number | null;
+  package_uploaded_at: string | null;
   published_at: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -202,6 +214,12 @@ function formatMaybeDateTime(value: string | null | undefined, fallback: string)
   }
 }
 
+function resolveReleaseIntent(intent: string | null | undefined, required: boolean | null | undefined) {
+  const normalized = asText(intent).toLowerCase();
+  if (normalized === "optional" || normalized === "recommended" || normalized === "required") return normalized;
+  return required ? "required" : "optional";
+}
+
 function isMissingRelationError(message: string) {
   const text = String(message ?? "").toLowerCase();
   return text.includes("does not exist") || text.includes("could not find the table") || text.includes("schema cache");
@@ -225,10 +243,10 @@ export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
       { label: "Blocked Devices", value: "3", meta: "Demo count for devices that cannot proceed because policy or version state is blocked.", tone: "danger" },
     ],
     releaseRows: [
-      { app: "Desktop", version: "1.4.2", channel: "stable", status: "active", required: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Desktop-1.4.2.zip" },
-      { app: "Service", version: "1.4.2", channel: "stable", status: "active", required: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Service-1.4.2.zip" },
-      { app: "Workstation", version: "1.4.2", channel: "stable", status: "active", required: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Workstation-1.4.2.zip" },
-      { app: "Mobile", version: "1.2.0", channel: "stable", status: "minimum supported", required: "minimum", released: "2026-05-12 08:30 ET", packageName: "App store tracked" },
+      { app: "Desktop", version: "1.4.2", channel: "stable", status: "active", intent: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Desktop-1.4.2.zip" },
+      { app: "Service", version: "1.4.2", channel: "stable", status: "active", intent: "recommended", released: "2026-05-18 09:10 ET", packageName: "RunBook.Service-1.4.2.zip" },
+      { app: "Workstation", version: "1.4.2", channel: "stable", status: "active", intent: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Workstation-1.4.2.zip" },
+      { app: "Mobile", version: "1.2.0", channel: "stable", status: "minimum supported", intent: "required", released: "2026-05-12 08:30 ET", packageName: "App store tracked" },
     ],
     releaseRecords: [],
     packageRecords: [],
@@ -281,7 +299,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
     const [releasesResult, packagesResult, deviceStatusesResult, rolloutsResult] = await Promise.all([
       admin
         .from("rb_software_releases")
-        .select("id,app_name,version,channel,status,required,release_notes,minimum_supported_version,rollback_version,published_at,created_at,updated_at")
+        .select("id,app_name,version,channel,status,required,release_intent,release_notes,minimum_supported_version,rollback_version,package_url,package_file_name,package_sha256,package_size_bytes,package_uploaded_at,published_at,created_at,updated_at")
         .order("created_at", { ascending: false })
         .limit(200),
       admin
@@ -363,9 +381,15 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
           channel: asText(row.channel) || "stable",
           status: asText(row.status) || "draft",
           required: !!row.required,
+          release_intent: resolveReleaseIntent(row.release_intent, row.required),
           release_notes: asText(row.release_notes),
           minimum_supported_version: asText(row.minimum_supported_version),
           rollback_version: asText(row.rollback_version),
+          package_url: asText(row.package_url),
+          package_file_name: asText(row.package_file_name),
+          package_sha256: asText(row.package_sha256),
+          package_size_bytes: row.package_size_bytes === null || row.package_size_bytes === undefined ? "" : String(row.package_size_bytes),
+          package_uploaded_at: asText(row.package_uploaded_at) || null,
           created_at: asText(row.created_at) || null,
           updated_at: asText(row.updated_at) || null,
           published_at: asText(row.published_at) || null,
@@ -420,11 +444,15 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       version: asText(row.version) || "Unknown",
       channel: asText(row.channel) || "stable",
       status: asText(row.status) || "draft",
-      required: row.required ? "required" : (asText(row.app_name).toLowerCase() === "mobile" && asText(row.minimum_supported_version) ? "minimum" : "optional"),
+      intent: resolveReleaseIntent(row.release_intent, row.required),
       released: formatMaybeDateTime(row.published_at || row.created_at, "Not published"),
       packageName: (() => {
         const releaseId = asText(row.id);
+        const releaseFileName = asText(row.package_file_name);
+        const releaseUrl = asText(row.package_url);
         const count = packageCounts.get(releaseId) ?? 0;
+        if (releaseFileName) return releaseFileName;
+        if (releaseUrl) return "Release package URL recorded";
         if (count <= 0) return "Missing metadata";
         if (count === 1) return packageNames.get(releaseId) ?? "1 package";
         return `${count} packages`;

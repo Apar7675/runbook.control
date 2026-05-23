@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 const allowedApps = new Set(["desktop", "service", "workstation", "mobile", "control"]);
 const allowedChannels = new Set(["dev", "beta", "stable"]);
 const allowedStatuses = new Set(["draft", "active", "retired", "blocked"]);
+const allowedReleaseIntents = new Set(["optional", "recommended", "required"]);
 const allowedPlatforms = new Set(["windows", "ios", "android", "web"]);
 const allowedArchitectures = new Set(["x64", "arm64", "universal", "none"]);
 const allowedRolloutTargetTypes = new Set(["all", "shop", "device", "beta"]);
@@ -20,9 +21,14 @@ type ReleaseEditorFields = {
   channel: string;
   status: string;
   required: boolean;
+  release_intent: string;
   release_notes: string;
   minimum_supported_version: string;
   rollback_version: string;
+  package_url: string;
+  package_file_name: string;
+  package_sha256: string;
+  package_size_bytes: string;
 };
 
 type PackageEditorFields = {
@@ -81,9 +87,14 @@ function encodeEditorUrl(args: {
   if (fields.channel) params.set("channel", fields.channel);
   if (fields.status) params.set("status", fields.status);
   params.set("required", fields.required ? "true" : "false");
+  if (fields.release_intent) params.set("release_intent", fields.release_intent);
   if (fields.release_notes) params.set("release_notes", fields.release_notes);
   if (fields.minimum_supported_version) params.set("minimum_supported_version", fields.minimum_supported_version);
   if (fields.rollback_version) params.set("rollback_version", fields.rollback_version);
+  if (fields.package_url) params.set("release_package_url", fields.package_url);
+  if (fields.package_file_name) params.set("release_package_file_name", fields.package_file_name);
+  if (fields.package_sha256) params.set("release_package_sha256", fields.package_sha256);
+  if (fields.package_size_bytes) params.set("release_package_size_bytes", fields.package_size_bytes);
 
   return `/software-updates?${params.toString()}`;
 }
@@ -141,16 +152,23 @@ function encodeRolloutEditorUrl(args: {
 }
 
 function readReleaseFields(formData: FormData): ReleaseEditorFields {
+  const releaseIntent = asText(formData.get("release_intent")).toLowerCase() || "optional";
+  const isRequiredIntent = releaseIntent === "required";
   return {
     release_id: asOptionalText(formData.get("release_id")) || undefined,
     app_name: asText(formData.get("app_name")).toLowerCase(),
     version: asText(formData.get("version")),
     channel: asText(formData.get("channel")).toLowerCase(),
     status: asText(formData.get("status")).toLowerCase() || "draft",
-    required: asBoolean(formData.get("required")),
+    required: isRequiredIntent || asBoolean(formData.get("required")),
+    release_intent: releaseIntent,
     release_notes: asOptionalText(formData.get("release_notes")),
     minimum_supported_version: asOptionalText(formData.get("minimum_supported_version")),
     rollback_version: asOptionalText(formData.get("rollback_version")),
+    package_url: asOptionalText(formData.get("package_url")),
+    package_file_name: asOptionalText(formData.get("package_file_name")),
+    package_sha256: asText(formData.get("package_sha256")).toLowerCase(),
+    package_size_bytes: asOptionalText(formData.get("package_size_bytes")),
   };
 }
 
@@ -159,6 +177,14 @@ function validateReleaseFields(fields: ReleaseEditorFields) {
   if (!fields.version) return "Version is required.";
   if (!allowedChannels.has(fields.channel)) return "Choose a valid channel.";
   if (!allowedStatuses.has(fields.status)) return "Choose a valid status.";
+  if (!allowedReleaseIntents.has(fields.release_intent)) return "Choose a valid release intent.";
+  if (fields.package_sha256 && !/^[0-9a-f]{64}$/i.test(fields.package_sha256)) return "Package SHA256 must be exactly 64 hex characters when provided.";
+  if (fields.package_size_bytes) {
+    const parsed = Number(fields.package_size_bytes);
+    if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+      return "Package size bytes must be a positive whole number when provided.";
+    }
+  }
   return "";
 }
 
@@ -221,7 +247,7 @@ async function loadReleaseOrThrow(releaseId: string) {
   const admin = supabaseAdmin();
   const { data, error } = await admin
     .from("rb_software_releases")
-    .select("id,published_at")
+    .select("id,published_at,package_uploaded_at")
     .eq("id", releaseId)
     .maybeSingle();
 
@@ -287,6 +313,7 @@ export async function saveSoftwareReleaseAction(formData: FormData) {
 
   const admin = supabaseAdmin();
   const isActivating = fields.status === "active";
+  const hasReleasePackageMetadata = !!fields.package_url || !!fields.package_file_name || !!fields.package_sha256 || !!fields.package_size_bytes;
 
   try {
     if (fields.release_id) {
@@ -296,10 +323,16 @@ export async function saveSoftwareReleaseAction(formData: FormData) {
         version: fields.version,
         channel: fields.channel,
         status: fields.status,
-        required: fields.required,
+        required: fields.release_intent === "required" ? true : fields.required,
+        release_intent: fields.release_intent,
         release_notes: fields.release_notes || null,
         minimum_supported_version: fields.minimum_supported_version || null,
         rollback_version: fields.rollback_version || null,
+        package_url: fields.package_url || null,
+        package_file_name: fields.package_file_name || null,
+        package_sha256: fields.package_sha256 || null,
+        package_size_bytes: fields.package_size_bytes ? Number(fields.package_size_bytes) : null,
+        package_uploaded_at: hasReleasePackageMetadata ? (existing.package_uploaded_at ?? new Date().toISOString()) : null,
         approved_by: isActivating ? user.id : null,
         published_at: isActivating ? (existing.published_at ?? new Date().toISOString()) : existing.published_at,
       };
@@ -319,10 +352,16 @@ export async function saveSoftwareReleaseAction(formData: FormData) {
         version: fields.version,
         channel: fields.channel,
         status: fields.status || "draft",
-        required: fields.required,
+        required: fields.release_intent === "required" ? true : fields.required,
+        release_intent: fields.release_intent,
         release_notes: fields.release_notes || null,
         minimum_supported_version: fields.minimum_supported_version || null,
         rollback_version: fields.rollback_version || null,
+        package_url: fields.package_url || null,
+        package_file_name: fields.package_file_name || null,
+        package_sha256: fields.package_sha256 || null,
+        package_size_bytes: fields.package_size_bytes ? Number(fields.package_size_bytes) : null,
+        package_uploaded_at: hasReleasePackageMetadata ? new Date().toISOString() : null,
         created_by: user.id,
         approved_by: isActivating ? user.id : null,
         published_at: isActivating ? new Date().toISOString() : null,

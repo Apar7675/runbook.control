@@ -42,9 +42,14 @@ export type SoftwareReleaseEditorView = {
     channel: string;
     status: string;
     required: boolean;
+    release_intent: string;
     release_notes: string;
     minimum_supported_version: string;
     rollback_version: string;
+    package_url: string;
+    package_file_name: string;
+    package_sha256: string;
+    package_size_bytes: string;
   };
 };
 
@@ -155,6 +160,54 @@ function formatTruthDate(value: string | null | undefined, fallback = "Not track
   return text || fallback;
 }
 
+function packageStateSummary(
+  release: SoftwareUpdatesWorkspaceData["releaseRecords"][number] | null,
+  packageRecords: SoftwareUpdatesWorkspaceData["packageRecords"],
+) {
+  if (!release) {
+    return {
+      summary: "No package",
+      badges: [{ label: "No package", tone: "neutral" as const }],
+      detail: "Package metadata is not tracked for this row yet.",
+    };
+  }
+
+  const relatedPackages = packageRecords.filter((item) => item.release_id === release.id);
+  const hasReleasePackage =
+    !!release.package_url ||
+    !!release.package_file_name ||
+    !!release.package_sha256 ||
+    !!release.package_size_bytes ||
+    !!release.package_uploaded_at;
+  const hasRelatedPackages = relatedPackages.length > 0;
+  const hasChecksum = !!release.package_sha256 || relatedPackages.some((item) => !!item.sha256);
+
+  if (!hasReleasePackage && !hasRelatedPackages) {
+    return {
+      summary: "No package",
+      badges: [{ label: "No package", tone: "neutral" as const }],
+      detail: "This release does not have package metadata recorded yet.",
+    };
+  }
+
+  const badges: Array<{ label: string; tone: ControlStatusTone }> = [
+    { label: "Package metadata recorded", tone: "success" },
+    { label: hasChecksum ? "Checksum recorded" : "Checksum missing", tone: hasChecksum ? "success" : "warning" },
+  ];
+
+  const summary = release.package_file_name
+    || (release.package_url ? "Release package URL recorded" : "")
+    || (hasRelatedPackages ? `${relatedPackages.length} package row${relatedPackages.length === 1 ? "" : "s"}` : "Package metadata recorded");
+
+  const detail = release.package_url
+    ? "This records package information only. Devices will not download or install from this page yet."
+    : hasRelatedPackages
+      ? "Legacy package rows are still available below for per-package metadata."
+      : "Checksum is metadata only in this phase. Verification is not wired yet.";
+
+  return { summary, badges, detail };
+}
+
 function releaseLifecycleBadges(
   release: SoftwareUpdatesWorkspaceData["releaseRecords"][number],
   relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"],
@@ -173,15 +226,14 @@ function requirementTruth(
   release: SoftwareUpdatesWorkspaceData["releaseRecords"][number],
   relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"],
 ) {
-  if (release.required || relatedRollouts.some((item) => item.required)) {
-    return { label: "Required", tone: "warning" as const, detail: "Required means only for critical fixes." };
+  const releaseIntent = release.release_intent || (release.required ? "required" : "optional");
+  if (releaseIntent === "required" || relatedRollouts.some((item) => item.required)) {
+    return { label: "Required", tone: "warning" as const, detail: "Required: use only for critical fixes or compatibility blocks." };
   }
-
-  return {
-    label: "Not required",
-    tone: "neutral" as const,
-    detail: "Optional versus recommended is not tracked separately in the current schema.",
-  };
+  if (releaseIntent === "recommended") {
+    return { label: "Recommended", tone: "success" as const, detail: "Recommended: normal release for most shops." };
+  }
+  return { label: "Optional", tone: "neutral" as const, detail: "Optional: user/admin may install when ready." };
 }
 
 function rolloutTargetSummary(relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"]) {
@@ -615,6 +667,7 @@ function ReleasesTab({
     ? deviceRows.filter((item) => item.pendingReleaseId === selectedRelease.id).slice(0, 6)
     : [];
   const selectedTruth = selectedRelease ? releaseTruthSummary(selectedRelease, selectedReleaseRollouts) : null;
+  const selectedPackageState = packageStateSummary(selectedRelease, packageRecords);
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -697,6 +750,16 @@ function ReleasesTab({
                 )}
                 {plannedField(
                   <>
+                    {fieldLabel("Release Intent")}
+                    <select name="release_intent" defaultValue={editor.values.release_intent} style={inputStyle()}>
+                      <option value="optional">Optional — visible but not pushed</option>
+                      <option value="recommended">Recommended — normal suggested update</option>
+                      <option value="required">Required — critical fix only</option>
+                    </select>
+                  </>
+                )}
+                {plannedField(
+                  <>
                     {fieldLabel("Minimum Supported Version")}
                     <input name="minimum_supported_version" defaultValue={editor.values.minimum_supported_version} style={inputStyle()} />
                   </>
@@ -716,10 +779,61 @@ function ReleasesTab({
                 </>
               )}
 
-              <label style={{ display: "flex", gap: 10, alignItems: "center", color: t.color.textSecondary, fontSize: 12.5 }}>
-                <input type="checkbox" name="required" value="true" defaultChecked={editor.values.required} />
-                Mark as required update
-              </label>
+              <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ color: t.color.text, fontSize: 13.5, fontWeight: 800 }}>Package Metadata</div>
+                <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+                  This records package information only. Devices will not download or install from this page yet.
+                </div>
+                <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+                  Checksum is metadata only in this phase. Verification is not wired yet.
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+                {plannedField(
+                  <>
+                    {fieldLabel("Package URL")}
+                    <input name="package_url" defaultValue={editor.values.package_url} style={inputStyle()} />
+                  </>
+                )}
+                {plannedField(
+                  <>
+                    {fieldLabel("File Name")}
+                    <input name="package_file_name" defaultValue={editor.values.package_file_name} style={inputStyle()} />
+                  </>
+                )}
+                {plannedField(
+                  <>
+                    {fieldLabel("SHA256 Checksum")}
+                    <input name="package_sha256" defaultValue={editor.values.package_sha256} style={inputStyle()} />
+                  </>
+                )}
+                {plannedField(
+                  <>
+                    {fieldLabel("Package Size Bytes")}
+                    <input name="package_size_bytes" defaultValue={editor.values.package_size_bytes} style={inputStyle()} />
+                  </>
+                )}
+                {plannedField(
+                  <>
+                    {fieldLabel("Uploaded At")}
+                    <input
+                      value={formatTruthDate(
+                        releaseRecords.find((item) => item.id === editor.values.release_id)?.package_uploaded_at,
+                        "Not tracked yet",
+                      )}
+                      readOnly
+                      style={disabledInputStyle()}
+                    />
+                  </>
+                )}
+              </div>
+
+              <div style={{ color: editor.values.release_intent === "required" ? t.color.warning : t.color.textMuted, fontSize: 12.5 }}>
+                {editor.values.release_intent === "required"
+                  ? "Required updates should be reserved for critical fixes."
+                  : "Optional: user/admin may install when ready. Recommended: normal release for most shops."}
+              </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <ControlActionButton type="submit" tone="primary">
@@ -753,6 +867,7 @@ function ReleasesTab({
                 const relatedRollouts = record ? rolloutRecords.filter((item) => item.release_id === record.id) : [];
                 const requirement = record ? requirementTruth(record, relatedRollouts) : null;
                 const targetScope = relatedRollouts.length > 0 ? rolloutTargetSummary(relatedRollouts) : "Not tracked yet";
+                const packageState = packageStateSummary(record, packageRecords);
                 return (
                   <tr key={row.id ?? `${row.app}-${row.version}-${row.channel}`}>
                     <ControlTableCell>
@@ -805,15 +920,13 @@ function ReleasesTab({
                     </ControlTableCell>
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 4 }}>
-                        <div>{row.packageName}</div>
-                        {record ? (
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <ControlStatusChip
-                              label={(packageRecords.filter((item) => item.release_id === record.id).length > 0) ? "metadata recorded" : "metadata missing"}
-                              tone={(packageRecords.filter((item) => item.release_id === record.id).length > 0) ? "success" : "warning"}
-                            />
-                          </div>
-                        ) : null}
+                        <div>{record ? packageState.summary : row.packageName}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {record
+                            ? packageState.badges.map((item) => <ControlStatusChip key={`${record.id}-${item.label}`} label={item.label} tone={item.tone} />)
+                            : <ControlStatusChip label="Not tracked yet" tone="neutral" />}
+                        </div>
+                        {record ? <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>{packageState.detail}</div> : null}
                       </div>
                     </ControlTableCell>
                     <ControlTableCell align="right">
@@ -902,6 +1015,20 @@ function ReleasesTab({
                   {fieldLabel("Current Activity")}
                   <div>{renderBadgeRow(releaseLifecycleBadges(selectedRelease, selectedReleaseRollouts))}</div>
                   <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>{selectedTruth.activeText}</div>
+                </>,
+              )}
+              {plannedField(
+                <>
+                  {fieldLabel("Package State")}
+                  <div>{renderBadgeRow(selectedPackageState.badges)}</div>
+                  <div style={{ color: t.color.textSecondary, fontSize: 12.5 }}>{selectedPackageState.summary}</div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+                    {selectedRelease.package_file_name || selectedRelease.package_url || "No release-level package source recorded yet."}
+                  </div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+                    Uploaded at {formatTruthDate(selectedRelease.package_uploaded_at)}
+                  </div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>{selectedPackageState.detail}</div>
                 </>,
               )}
             </div>
