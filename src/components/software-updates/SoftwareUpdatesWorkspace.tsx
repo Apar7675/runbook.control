@@ -145,6 +145,335 @@ function inputStyle(multiline = false): React.CSSProperties {
   };
 }
 
+type WorkflowStep = {
+  step: number;
+  title: string;
+  description: string;
+  checklist: string[];
+  statusLabel?: string;
+  statusTone?: ControlStatusTone;
+};
+
+function countLabel(count: number, noun: string) {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] {
+  const releaseCount = data.releaseRecords.length;
+  const packageCount = data.packageRecords.length;
+  const rolloutCount = data.rolloutRecords.length;
+  const activeReleaseCount = data.releaseRecords.filter((item) => item.status === "active").length;
+  const activeRolloutCount = data.rolloutRecords.filter((item) => item.status === "active").length;
+  const monitoredDeviceCount = data.deviceRows.length;
+  const failedDeviceCount = data.deviceRows.filter((item) => item.status.toLowerCase().includes("failed")).length;
+  const requiredDeviceCount = data.deviceRows.filter((item) => item.status.toLowerCase().includes("required")).length;
+
+  return [
+    {
+      step: 1,
+      title: "Prepare Release",
+      description: "Create the release record first so Control can track version, notes, channel, and rollback intent before anything is exposed to devices.",
+      checklist: [
+        "Pick the correct app and version.",
+        "Choose the right release channel.",
+        "Write operator-facing release notes.",
+        "Record minimum supported and rollback versions if known.",
+      ],
+      statusLabel: releaseCount > 0 ? countLabel(releaseCount, "release") : data.sourceKind === "demo" ? "Demo guidance only" : "No release yet",
+      statusTone: releaseCount > 0 ? "success" : "warning",
+    },
+    {
+      step: 2,
+      title: "Upload Package",
+      description: "This phase only records package metadata. Real file upload is still disabled, so treat this as a metadata verification step.",
+      checklist: [
+        "Record the installer file name.",
+        "Add storage path or download URL metadata.",
+        "Save SHA256 checksum.",
+        "Confirm platform and architecture match the build.",
+      ],
+      statusLabel: packageCount > 0 ? countLabel(packageCount, "package record") : data.sourceKind === "demo" ? "Phase 2C metadata only" : "Metadata missing",
+      statusTone: packageCount > 0 ? "success" : "warning",
+    },
+    {
+      step: 3,
+      title: "Verify Build",
+      description: "Use this as a human checkpoint before rollout. Control should only publish builds that have already been tested outside of this page.",
+      checklist: [
+        "Confirm the app builds successfully.",
+        "Verify checksum against the build artifact.",
+        "Confirm the installer launches cleanly in internal testing.",
+        "Validate against existing company data before broad rollout.",
+      ],
+      statusLabel: "Manual check",
+      statusTone: "info",
+    },
+    {
+      step: 4,
+      title: "Select Targets",
+      description: "Start narrow. Choose one shop, one device, or beta-only rollout targets before expanding to broader approval.",
+      checklist: [
+        "Prefer internal or beta targets first.",
+        "Target one shop before all shops.",
+        "Use device-specific rollouts for focused validation if needed.",
+        "Mark rollout required only when justified.",
+      ],
+      statusLabel: rolloutCount > 0 ? countLabel(rolloutCount, "rollout") : data.sourceKind === "demo" ? "Demo guidance only" : "No targets selected",
+      statusTone: rolloutCount > 0 ? "success" : "warning",
+    },
+    {
+      step: 5,
+      title: "Publish Update",
+      description: "Publishing should happen only after release metadata, package metadata, and rollout targets are all in place.",
+      checklist: [
+        "Activate the release only when it is ready.",
+        "Start with optional updates when possible.",
+        "Use required updates only for urgent fixes.",
+        "Double-check channel and rollout scope before activation.",
+      ],
+      statusLabel: activeReleaseCount > 0 || activeRolloutCount > 0
+        ? `${countLabel(activeReleaseCount, "active release")} / ${countLabel(activeRolloutCount, "active rollout")}`
+        : data.sourceKind === "demo" ? "Demo guidance only" : "Not published",
+      statusTone: activeReleaseCount > 0 || activeRolloutCount > 0 ? "success" : "warning",
+    },
+    {
+      step: 6,
+      title: "Monitor Installs",
+      description: "Devices report status back to Control. Watch current, available, required, blocked, and failed states before widening rollout scope.",
+      checklist: [
+        "Review Devices for current versus pending systems.",
+        "Check failed or blocked devices before expanding rollout.",
+        "Confirm one-shop results are clean.",
+        "Use rollout progress and device status together.",
+      ],
+      statusLabel: monitoredDeviceCount > 0
+        ? `${countLabel(monitoredDeviceCount, "device")} monitored`
+        : data.sourceKind === "demo" ? "Demo monitoring data" : "Waiting for device reports",
+      statusTone: monitoredDeviceCount > 0 ? "success" : "warning",
+    },
+    {
+      step: 7,
+      title: "Pause or Roll Back",
+      description: "If failures climb or required devices are blocked, stop expansion first. Rollback planning should exist before a broad publish.",
+      checklist: [
+        "Pause rollout if failures appear.",
+        "Review blocked and failed device reports.",
+        "Confirm rollback version is documented.",
+        "Resume only after a clean retest.",
+      ],
+      statusLabel: failedDeviceCount > 0 || requiredDeviceCount > 0
+        ? `${countLabel(failedDeviceCount, "failure")} / ${countLabel(requiredDeviceCount, "required device")}`
+        : "Ready if needed",
+      statusTone: failedDeviceCount > 0 ? "danger" : requiredDeviceCount > 0 ? "warning" : "neutral",
+    },
+  ];
+}
+
+function StepByStepGuide({
+  data,
+  releaseEditor,
+  rolloutEditor,
+}: {
+  data: SoftwareUpdatesWorkspaceData;
+  releaseEditor: SoftwareReleaseEditorView;
+  rolloutEditor: SoftwareRolloutEditorView;
+}) {
+  const steps = buildWorkflowSteps(data);
+  const highlightRequiredWarning =
+    (releaseEditor.mode !== null && releaseEditor.values.required) ||
+    (rolloutEditor.mode !== null && rolloutEditor.values.required);
+
+  return (
+    <ControlPanel
+      title="Software Update Center"
+      description="Use this page to safely prepare, publish, and monitor RunBook updates. Start internal, test one shop, then expand rollout only after devices report clean results."
+      actions={
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <ControlStatusChip label={data.sourceKind === "live" ? "Live workflow data" : data.sourceKind === "mixed" ? "Mixed workflow data" : "Manual workflow guidance"} tone={data.sourceKind === "live" ? "success" : "warning"} />
+          <ControlStatusChip label="No install execution" tone="neutral" />
+        </div>
+      }
+    >
+      <div style={{ display: "grid", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            padding: 10,
+            borderRadius: t.radius.md,
+            border: `1px solid ${t.color.softBorder}`,
+            background: "rgba(7, 10, 15, 0.24)",
+          }}
+        >
+          {steps.map((item) => (
+            <div
+              key={`quick-${item.step}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 10px",
+                borderRadius: 999,
+                border: `1px solid ${t.color.softBorder}`,
+                background: "rgba(18, 29, 43, 0.44)",
+                color: t.color.textSecondary,
+                fontSize: 12,
+              }}
+            >
+              <span style={{ color: t.color.text, fontWeight: 800 }}>{item.step}</span>
+              <span>{item.title}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.3fr) minmax(280px, 0.85fr)", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10 }}>
+          {steps.map((item) => (
+            <details
+              key={item.step}
+              style={{
+                padding: 12,
+                borderRadius: t.radius.md,
+                border: `1px solid ${t.color.softBorder}`,
+                background: "rgba(7, 10, 15, 0.34)",
+              }}
+              open={item.step === 1}
+            >
+              <summary
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  listStyle: "none",
+                }}
+              >
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      minWidth: 28,
+                      height: 28,
+                      borderRadius: 999,
+                      border: `1px solid ${t.color.softBorder}`,
+                      display: "grid",
+                      placeItems: "center",
+                      color: t.color.text,
+                      fontSize: 12,
+                      fontWeight: 800,
+                      background: "rgba(18, 29, 43, 0.72)",
+                    }}
+                  >
+                    {item.step}
+                  </div>
+                  <div style={{ display: "grid", gap: 3 }}>
+                    <div style={{ color: t.color.text, fontSize: 14, fontWeight: 800 }}>{item.title}</div>
+                    <div style={{ color: t.color.textMuted, fontSize: 12.5, maxWidth: 420 }}>{item.description}</div>
+                  </div>
+                </div>
+                {item.statusLabel ? <ControlStatusChip label={item.statusLabel} tone={item.statusTone ?? "neutral"} /> : null}
+              </summary>
+
+              <ul style={{ margin: "10px 0 0", paddingLeft: 18, color: t.color.textSecondary, fontSize: 12.5, display: "grid", gap: 5 }}>
+                {item.checklist.map((check) => (
+                  <li key={check}>{check}</li>
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gap: 12, alignContent: "start" }}>
+          <ControlPanel
+            title="Safe Release Order"
+            description="Follow this rollout order every time so new releases stay contained until device reporting is clean."
+            padding={12}
+          >
+            <div style={{ display: "grid", gap: 6, color: t.color.textSecondary, fontSize: 12.5 }}>
+              {[
+                "Build and test locally",
+                "Upload package and verify checksum",
+                "Publish to Internal Only",
+                "Test one shop",
+                "Expand to selected shops",
+                "Publish to all shops",
+                "Monitor failures and pause if needed",
+              ].map((label, index) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    padding: "7px 9px",
+                    borderRadius: 10,
+                    border: `1px solid ${t.color.softBorder}`,
+                    background: "rgba(7, 10, 15, 0.18)",
+                  }}
+                >
+                  <span style={{ color: t.color.textMuted, fontWeight: 800, minWidth: 14 }}>{index + 1}</span>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+          </ControlPanel>
+
+          <ControlPanel
+            title="Before You Publish"
+            description="Manual checklist only. These items are not persisted in the current schema yet."
+            padding={12}
+            actions={<ControlStatusChip label="Manual checklist" tone="info" />}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
+              {[
+                "App builds successfully",
+                "Installer/package uploaded",
+                "Checksum verified",
+                "Release notes added",
+                "Tested on internal machine",
+                "Tested against existing company data",
+                "Rollback plan confirmed",
+              ].map((label) => (
+                <label
+                  key={label}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
+                    color: t.color.textSecondary,
+                    fontSize: 12.5,
+                    padding: "8px 9px",
+                    borderRadius: 10,
+                    border: `1px solid ${t.color.softBorder}`,
+                    background: "rgba(7, 10, 15, 0.18)",
+                  }}
+                >
+                  <input type="checkbox" disabled />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </ControlPanel>
+
+          <ControlPanel
+            title="Publish Warning"
+            description="Required updates should only be used for critical fixes. Recommended updates are safer for normal releases."
+            padding={12}
+            actions={<ControlStatusChip label={highlightRequiredWarning ? "Required update in progress" : "Guidance only"} tone={highlightRequiredWarning ? "warning" : "neutral"} />}
+          >
+            <div style={{ color: highlightRequiredWarning ? t.color.warning : t.color.textMuted, fontSize: 12.5 }}>
+              Keep normal releases optional first, validate one shop, then widen rollout after devices stay current and error-free.
+            </div>
+          </ControlPanel>
+        </div>
+      </div>
+      </div>
+    </ControlPanel>
+  );
+}
+
 function OverviewTab({ overviewStats, sourceKind }: { overviewStats: SoftwareUpdatesWorkspaceData["overviewStats"]; sourceKind: SoftwareUpdatesWorkspaceData["sourceKind"] }) {
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -1058,6 +1387,8 @@ export default function SoftwareUpdatesWorkspace({
       </ControlPanel>
 
       {content}
+
+      <StepByStepGuide data={data} releaseEditor={releaseEditor} rolloutEditor={rolloutEditor} />
     </div>
   );
 }
