@@ -100,6 +100,26 @@ export type SoftwareTargetOption = {
   label: string;
 };
 
+export type SoftwareReleaseReadinessState = "ready" | "missing" | "review" | "not-tracked-yet";
+
+export type SoftwareReleaseReadinessItem = {
+  key: string;
+  label: string;
+  state: SoftwareReleaseReadinessState;
+  detail: string;
+};
+
+export type SoftwareReleasePublishReadiness = {
+  items: SoftwareReleaseReadinessItem[];
+  readyCount: number;
+  missingCount: number;
+  reviewCount: number;
+  notTrackedCount: number;
+  isComplete: boolean;
+  packageMetadataIncomplete: boolean;
+  hasValidChecksum: boolean;
+};
+
 export type SoftwareUpdatesWorkspaceData = {
   sourceKind: "demo" | "mixed" | "live";
   schemaAvailable: boolean;
@@ -218,6 +238,117 @@ function resolveReleaseIntent(intent: string | null | undefined, required: boole
   const normalized = asText(intent).toLowerCase();
   if (normalized === "optional" || normalized === "recommended" || normalized === "required") return normalized;
   return required ? "required" : "optional";
+}
+
+function isValidChecksum(value: string) {
+  return /^[0-9a-f]{64}$/i.test(asText(value));
+}
+
+function isPositiveWholeNumber(value: string) {
+  const parsed = Number(asText(value));
+  return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0;
+}
+
+export function deriveReleasePublishReadiness(release: SoftwareReleaseRecord): SoftwareReleasePublishReadiness {
+  const resolvedIntent = resolveReleaseIntent(release.release_intent, release.required);
+  const checksumText = asText(release.package_sha256);
+  const sizeText = asText(release.package_size_bytes);
+
+  const items: SoftwareReleaseReadinessItem[] = [
+    {
+      key: "app_name",
+      label: "App",
+      state: asText(release.app_name) ? "ready" : "missing",
+      detail: asText(release.app_name) ? `App recorded as ${release.app_name}.` : "Choose which RunBook app this release belongs to.",
+    },
+    {
+      key: "version",
+      label: "Version",
+      state: asText(release.version) ? "ready" : "missing",
+      detail: asText(release.version) ? `Version ${release.version} is recorded.` : "Add a release version before publishing.",
+    },
+    {
+      key: "release_intent",
+      label: "Release Intent",
+      state: resolvedIntent ? "ready" : "missing",
+      detail: resolvedIntent
+        ? `Intent resolves to ${resolvedIntent}.`
+        : "Choose optional, recommended, or required intent.",
+    },
+    {
+      key: "release_notes",
+      label: "Release Notes",
+      state: asText(release.release_notes) ? "ready" : "missing",
+      detail: asText(release.release_notes) ? "Release notes are recorded." : "Add operator-facing release notes.",
+    },
+    {
+      key: "package_url",
+      label: "Package URL",
+      state: asText(release.package_url) ? "ready" : "missing",
+      detail: asText(release.package_url) ? "Package URL metadata is recorded." : "Record where the package can be retrieved later.",
+    },
+    {
+      key: "package_file_name",
+      label: "Package File Name",
+      state: asText(release.package_file_name) ? "ready" : "missing",
+      detail: asText(release.package_file_name) ? "Package file name is recorded." : "Record the package file name.",
+    },
+    {
+      key: "package_sha256",
+      label: "Package SHA256",
+      state: !checksumText ? "missing" : isValidChecksum(checksumText) ? "ready" : "review",
+      detail: !checksumText
+        ? "Record a SHA256 checksum."
+        : isValidChecksum(checksumText)
+          ? "Checksum looks valid."
+          : "Checksum is present but does not look like a 64-character hex value.",
+    },
+    {
+      key: "package_size_bytes",
+      label: "Package Size",
+      state: !sizeText ? "missing" : isPositiveWholeNumber(sizeText) ? "ready" : "review",
+      detail: !sizeText
+        ? "Record package size in bytes."
+        : isPositiveWholeNumber(sizeText)
+          ? "Package size is recorded."
+          : "Package size is present but should be a positive whole number.",
+    },
+    {
+      key: "minimum_supported_version",
+      label: "Minimum Supported Version",
+      state: asText(release.minimum_supported_version) ? "review" : "missing",
+      detail: asText(release.minimum_supported_version)
+        ? `Review minimum supported version ${release.minimum_supported_version} before publishing.`
+        : "Review whether a minimum supported version should be recorded.",
+    },
+    {
+      key: "rollback_version",
+      label: "Rollback Version",
+      state: asText(release.rollback_version) ? "review" : "missing",
+      detail: asText(release.rollback_version)
+        ? `Review rollback version ${release.rollback_version} before publishing.`
+        : "Review whether a rollback version should be recorded.",
+    },
+  ];
+
+  const readyCount = items.filter((item) => item.state === "ready").length;
+  const missingCount = items.filter((item) => item.state === "missing").length;
+  const reviewCount = items.filter((item) => item.state === "review").length;
+  const notTrackedCount = items.filter((item) => item.state === "not-tracked-yet").length;
+  const packageMetadataIncomplete = items.some((item) =>
+    ["package_url", "package_file_name", "package_sha256", "package_size_bytes"].includes(item.key) && item.state !== "ready",
+  );
+
+  return {
+    items,
+    readyCount,
+    missingCount,
+    reviewCount,
+    notTrackedCount,
+    isComplete: missingCount === 0 && reviewCount === 0,
+    packageMetadataIncomplete,
+    hasValidChecksum: isValidChecksum(checksumText),
+  };
 }
 
 function isMissingRelationError(message: string) {

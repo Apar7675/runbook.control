@@ -18,7 +18,13 @@ import {
   saveSoftwareReleaseAction,
   saveSoftwareRolloutAction,
 } from "@/app/(authed)/software-updates/actions";
-import { buildDemoSoftwareUpdatesData, type SoftwareUpdatesWorkspaceData, type WorkspaceTabKey } from "@/lib/control/softwareUpdatesViews";
+import {
+  buildDemoSoftwareUpdatesData,
+  deriveReleasePublishReadiness,
+  type SoftwareReleasePublishReadiness,
+  type SoftwareUpdatesWorkspaceData,
+  type WorkspaceTabKey,
+} from "@/lib/control/softwareUpdatesViews";
 
 const tabItems = [
   { key: "overview", label: "Overview", href: "/software-updates?tab=overview" },
@@ -277,6 +283,20 @@ function renderBadgeRow(items: Array<{ label: string; tone: ControlStatusTone }>
       ))}
     </div>
   );
+}
+
+function toneForReadiness(state: SoftwareReleasePublishReadiness["items"][number]["state"]): ControlStatusTone {
+  if (state === "ready") return "success";
+  if (state === "missing") return "warning";
+  if (state === "review") return "info";
+  return "neutral";
+}
+
+function labelForReadiness(state: SoftwareReleasePublishReadiness["items"][number]["state"]) {
+  if (state === "ready") return "Ready";
+  if (state === "missing") return "Missing";
+  if (state === "review") return "Review";
+  return "Not tracked yet";
 }
 
 type WorkflowStep = {
@@ -668,6 +688,7 @@ function ReleasesTab({
     : [];
   const selectedTruth = selectedRelease ? releaseTruthSummary(selectedRelease, selectedReleaseRollouts) : null;
   const selectedPackageState = packageStateSummary(selectedRelease, packageRecords);
+  const selectedReadiness = selectedRelease ? deriveReleasePublishReadiness(selectedRelease) : null;
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -1032,6 +1053,57 @@ function ReleasesTab({
                 </>,
               )}
             </div>
+
+            {selectedReadiness ? (
+              <ControlPanel
+                title="Publish Readiness"
+                description="This readiness panel is guidance only. It does not publish, download, install, verify, or block updates yet."
+                padding={12}
+                actions={
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <ControlStatusChip label={`${selectedReadiness.readyCount} ready`} tone="success" />
+                    <ControlStatusChip label={`${selectedReadiness.missingCount} missing`} tone={selectedReadiness.missingCount > 0 ? "warning" : "neutral"} />
+                    <ControlStatusChip label={`${selectedReadiness.reviewCount} review`} tone={selectedReadiness.reviewCount > 0 ? "info" : "neutral"} />
+                  </div>
+                }
+              >
+                <div style={{ display: "grid", gap: 10 }}>
+                  {selectedRelease.status === "draft" && !selectedReadiness.isComplete ? (
+                    <div style={{ color: t.color.warning, fontSize: 12.5 }}>
+                      Finish the missing items before publishing.
+                    </div>
+                  ) : null}
+
+                  {selectedRelease.release_intent === "required" && selectedReadiness.packageMetadataIncomplete ? (
+                    <div style={{ color: t.color.danger, fontSize: 12.5 }}>
+                      Required releases should not be published without package and checksum metadata.
+                    </div>
+                  ) : null}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+                    {selectedReadiness.items.map((item) => (
+                      <div
+                        key={item.key}
+                        style={{
+                          display: "grid",
+                          gap: 6,
+                          padding: 10,
+                          borderRadius: t.radius.sm,
+                          border: `1px solid ${t.color.softBorder}`,
+                          background: "rgba(7, 10, 15, 0.34)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <div style={{ color: t.color.text, fontSize: 12.5, fontWeight: 700 }}>{item.label}</div>
+                          <ControlStatusChip label={labelForReadiness(item.state)} tone={toneForReadiness(item.state)} />
+                        </div>
+                        <div style={{ color: t.color.textMuted, fontSize: 12 }}>{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ControlPanel>
+            ) : null}
 
             <ControlPanel
               title="Device Version Signals"
