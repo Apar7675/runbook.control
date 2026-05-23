@@ -32,6 +32,8 @@ export type SoftwareReleaseRecord = {
   release_notes: string;
   minimum_supported_version: string;
   rollback_version: string;
+  created_at: string | null;
+  updated_at: string | null;
   published_at: string | null;
 };
 
@@ -49,6 +51,7 @@ export type SoftwarePackageRecord = {
 };
 
 export type SoftwareUpdateDeviceRow = {
+  pendingReleaseId?: string;
   device: string;
   shop: string;
   desktop: string;
@@ -82,6 +85,8 @@ export type SoftwareRolloutRecord = {
   required: boolean;
   status: string;
   starts_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 export type SoftwareTargetOption = {
@@ -118,6 +123,7 @@ type ReleaseDbRow = {
   rollback_version: string | null;
   published_at: string | null;
   created_at: string | null;
+  updated_at: string | null;
 };
 
 type PackageDbRow = {
@@ -159,6 +165,8 @@ type RolloutDbRow = {
   required: boolean | null;
   status: string | null;
   starts_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type ShopDbRow = {
@@ -273,7 +281,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
     const [releasesResult, packagesResult, deviceStatusesResult, rolloutsResult] = await Promise.all([
       admin
         .from("rb_software_releases")
-        .select("id,app_name,version,channel,status,required,release_notes,minimum_supported_version,rollback_version,published_at,created_at")
+        .select("id,app_name,version,channel,status,required,release_notes,minimum_supported_version,rollback_version,published_at,created_at,updated_at")
         .order("created_at", { ascending: false })
         .limit(200),
       admin
@@ -287,7 +295,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
         .limit(500),
       admin
         .from("rb_software_rollouts")
-        .select("id,release_id,target_type,target_shop_id,target_device_id,channel,required,status,starts_at")
+        .select("id,release_id,target_type,target_shop_id,target_device_id,channel,required,status,starts_at,created_at,updated_at")
         .order("created_at", { ascending: false })
         .limit(300),
     ]);
@@ -358,6 +366,8 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
           release_notes: asText(row.release_notes),
           minimum_supported_version: asText(row.minimum_supported_version),
           rollback_version: asText(row.rollback_version),
+          created_at: asText(row.created_at) || null,
+          updated_at: asText(row.updated_at) || null,
           published_at: asText(row.published_at) || null,
         } satisfies SoftwareReleaseRecord;
       })
@@ -398,6 +408,8 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
           required: !!row.required,
           status: asText(row.status) || "planned",
           starts_at: asText(row.starts_at),
+          created_at: asText(row.created_at) || null,
+          updated_at: asText(row.updated_at) || null,
         } satisfies SoftwareRolloutRecord;
       })
       .filter((row): row is SoftwareRolloutRecord => !!row);
@@ -420,6 +432,7 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
     }));
 
     const liveDeviceRows = deviceStatuses.map((row) => ({
+      pendingReleaseId: asText(row.pending_release_id) || undefined,
       device: asText(row.device_name) || deviceNames.get(asText(row.device_id)) || "Unnamed device",
       shop: shopNames.get(asText(row.shop_id)) ?? "Unassigned shop",
       desktop: asText(row.desktop_version) || "n/a",

@@ -145,6 +145,88 @@ function inputStyle(multiline = false): React.CSSProperties {
   };
 }
 
+function titleCase(value: string) {
+  const text = String(value ?? "").trim().toLowerCase();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Unknown";
+}
+
+function formatTruthDate(value: string | null | undefined, fallback = "Not tracked yet") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function releaseLifecycleBadges(
+  release: SoftwareUpdatesWorkspaceData["releaseRecords"][number],
+  relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"],
+) {
+  const badges: Array<{ label: string; tone: ControlStatusTone }> = [];
+  if (release.status === "draft") badges.push({ label: "Draft", tone: "neutral" });
+  if (release.published_at) badges.push({ label: "Published", tone: "success" });
+  if (relatedRollouts.some((item) => item.status === "paused")) badges.push({ label: "Paused", tone: "warning" });
+  if (release.status === "retired") badges.push({ label: "Retired", tone: "danger" });
+  if (release.status === "blocked") badges.push({ label: "Blocked", tone: "danger" });
+  if (badges.length === 0) badges.push({ label: titleCase(release.status || "unknown"), tone: toneForStatus(release.status || "unknown") });
+  return badges;
+}
+
+function requirementTruth(
+  release: SoftwareUpdatesWorkspaceData["releaseRecords"][number],
+  relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"],
+) {
+  if (release.required || relatedRollouts.some((item) => item.required)) {
+    return { label: "Required", tone: "warning" as const, detail: "Required means only for critical fixes." };
+  }
+
+  return {
+    label: "Not required",
+    tone: "neutral" as const,
+    detail: "Optional versus recommended is not tracked separately in the current schema.",
+  };
+}
+
+function rolloutTargetSummary(relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"]) {
+  if (relatedRollouts.length === 0) {
+    return "Not tracked yet";
+  }
+
+  const labels = relatedRollouts.map((item) => {
+    if (item.target_type === "all") return "All shops/devices";
+    if (item.target_type === "beta") return "Beta channel devices";
+    if (item.target_type === "shop") return "Selected shop";
+    if (item.target_type === "device") return "Selected device";
+    return "Unknown target";
+  });
+
+  return Array.from(new Set(labels)).join(" • ");
+}
+
+function releaseTruthSummary(
+  release: SoftwareUpdatesWorkspaceData["releaseRecords"][number],
+  relatedRollouts: SoftwareUpdatesWorkspaceData["rolloutRecords"],
+) {
+  const requirement = requirementTruth(release, relatedRollouts);
+  const active = release.status === "active";
+  const paused = relatedRollouts.some((item) => item.status === "paused");
+
+  return {
+    lifecycle: active ? "Active" : titleCase(release.status || "unknown"),
+    activeText: active ? "Visible to eligible devices." : release.status === "draft" ? "Draft means not available to devices." : "Not currently active for devices.",
+    targetText: rolloutTargetSummary(relatedRollouts),
+    requirement,
+    rolloutState: paused ? "Paused" : relatedRollouts.some((item) => item.status === "active") ? "Active rollout" : relatedRollouts.length > 0 ? "Rollout planned" : "No rollout tracked yet",
+  };
+}
+
+function renderBadgeRow(items: Array<{ label: string; tone: ControlStatusTone }>) {
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {items.map((item) => (
+        <ControlStatusChip key={`${item.label}-${item.tone}`} label={item.label} tone={item.tone} />
+      ))}
+    </div>
+  );
+}
+
 type WorkflowStep = {
   step: number;
   title: string;
@@ -505,6 +587,8 @@ function ReleasesTab({
   releaseRows,
   releaseRecords,
   packageRecords,
+  rolloutRecords,
+  deviceRows,
   sourceKind,
   releaseCrudEnabled,
   packageCrudEnabled,
@@ -514,6 +598,8 @@ function ReleasesTab({
   releaseRows: SoftwareUpdatesWorkspaceData["releaseRows"];
   releaseRecords: SoftwareUpdatesWorkspaceData["releaseRecords"];
   packageRecords: SoftwareUpdatesWorkspaceData["packageRecords"];
+  rolloutRecords: SoftwareUpdatesWorkspaceData["rolloutRecords"];
+  deviceRows: SoftwareUpdatesWorkspaceData["deviceRows"];
   sourceKind: SoftwareUpdatesWorkspaceData["sourceKind"];
   releaseCrudEnabled: boolean;
   packageCrudEnabled: boolean;
@@ -524,6 +610,11 @@ function ReleasesTab({
   const showPackageEditor = packageEditor.mode === "new" || packageEditor.mode === "edit";
   const selectedRelease = releaseRecords.find((item) => item.id === packageEditor.selectedReleaseId) ?? releaseRecords[0] ?? null;
   const selectedReleasePackages = selectedRelease ? packageRecords.filter((item) => item.release_id === selectedRelease.id) : [];
+  const selectedReleaseRollouts = selectedRelease ? rolloutRecords.filter((item) => item.release_id === selectedRelease.id) : [];
+  const selectedReleaseSignals = selectedRelease
+    ? deviceRows.filter((item) => item.pendingReleaseId === selectedRelease.id).slice(0, 6)
+    : [];
+  const selectedTruth = selectedRelease ? releaseTruthSummary(selectedRelease, selectedReleaseRollouts) : null;
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -641,15 +732,17 @@ function ReleasesTab({
         ) : null}
 
         <ControlTableWrap>
-          <ControlTable minWidth={1120}>
+          <ControlTable minWidth={1480}>
             <thead>
               <tr>
-                <ControlTableHeadCell>Version</ControlTableHeadCell>
+                <ControlTableHeadCell>Release</ControlTableHeadCell>
                 <ControlTableHeadCell>App</ControlTableHeadCell>
                 <ControlTableHeadCell>Channel</ControlTableHeadCell>
-                <ControlTableHeadCell>Status</ControlTableHeadCell>
-                <ControlTableHeadCell>Required</ControlTableHeadCell>
-                <ControlTableHeadCell>Released</ControlTableHeadCell>
+                <ControlTableHeadCell>Truth</ControlTableHeadCell>
+                <ControlTableHeadCell>Rollout Type</ControlTableHeadCell>
+                <ControlTableHeadCell>Target Scope</ControlTableHeadCell>
+                <ControlTableHeadCell>Dates</ControlTableHeadCell>
+                <ControlTableHeadCell>Notes</ControlTableHeadCell>
                 <ControlTableHeadCell>Package State</ControlTableHeadCell>
                 <ControlTableHeadCell align="right">Actions</ControlTableHeadCell>
               </tr>
@@ -657,18 +750,59 @@ function ReleasesTab({
             <tbody>
               {releaseRows.map((row) => {
                 const record = releaseRecords.find((item) => item.id === row.id) ?? null;
+                const relatedRollouts = record ? rolloutRecords.filter((item) => item.release_id === record.id) : [];
+                const requirement = record ? requirementTruth(record, relatedRollouts) : null;
+                const targetScope = relatedRollouts.length > 0 ? rolloutTargetSummary(relatedRollouts) : "Not tracked yet";
                 return (
                   <tr key={row.id ?? `${row.app}-${row.version}-${row.channel}`}>
-                    <ControlTableCell>{row.version}</ControlTableCell>
+                    <ControlTableCell>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <div>{row.version}</div>
+                        <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>
+                          {record?.id ? `Release id ${record.id.slice(0, 8)}...` : "Demo row"}
+                        </div>
+                      </div>
+                    </ControlTableCell>
                     <ControlTableCell>{row.app}</ControlTableCell>
                     <ControlTableCell>{row.channel}</ControlTableCell>
                     <ControlTableCell>
-                      <ControlStatusChip label={row.status} tone={toneForStatus(row.status)} />
+                      {record ? renderBadgeRow(releaseLifecycleBadges(record, relatedRollouts)) : <ControlStatusChip label="Unknown" tone="neutral" />}
                     </ControlTableCell>
                     <ControlTableCell>
-                      <ControlStatusChip label={row.required} tone={toneForStatus(row.required)} />
+                      {requirement ? (
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <ControlStatusChip label={requirement.label} tone={requirement.tone} />
+                          <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>{requirement.detail}</div>
+                        </div>
+                      ) : (
+                        <ControlStatusChip label="Not tracked yet" tone="neutral" />
+                      )}
                     </ControlTableCell>
-                    <ControlTableCell>{row.released}</ControlTableCell>
+                    <ControlTableCell>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <div>{targetScope}</div>
+                        <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>
+                          {relatedRollouts.length > 0 ? `${relatedRollouts.length} rollout record${relatedRollouts.length === 1 ? "" : "s"}` : "No rollout tracked yet"}
+                        </div>
+                      </div>
+                    </ControlTableCell>
+                    <ControlTableCell>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <div>Created: {formatTruthDate(record?.created_at, row.released)}</div>
+                        <div>Updated: {formatTruthDate(record?.updated_at)}</div>
+                        <div>Published: {formatTruthDate(record?.published_at, "Not published")}</div>
+                      </div>
+                    </ControlTableCell>
+                    <ControlTableCell>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <div>{record?.release_notes || "No summary added yet."}</div>
+                        {record?.minimum_supported_version ? (
+                          <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>
+                            Minimum supported {record.minimum_supported_version}
+                          </div>
+                        ) : null}
+                      </div>
+                    </ControlTableCell>
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 4 }}>
                         <div>{row.packageName}</div>
@@ -718,6 +852,112 @@ function ReleasesTab({
             </tbody>
           </ControlTable>
         </ControlTableWrap>
+      </ControlPanel>
+
+      <ControlPanel
+        title="Release Truth"
+        description={selectedRelease
+          ? "This summary uses only the fields currently tracked by Control for the selected release."
+          : "Select a real release to see current release truth, rollout targeting, and device version signals."}
+        actions={
+          selectedRelease
+            ? <ControlStatusChip label={`${titleCase(selectedRelease.app_name)} ${selectedRelease.version}`} tone="info" />
+            : <ControlStatusChip label="No real release selected" tone="warning" />
+        }
+      >
+        {!selectedRelease || !selectedTruth ? (
+          <div style={{ fontSize: 12.5, color: t.color.textMuted }}>
+            Release truth is not available yet because no real release row is selected on this page.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+              {plannedField(
+                <>
+                  {fieldLabel("Current Selected Release")}
+                  <div style={{ color: t.color.text, fontSize: 13.5, fontWeight: 700 }}>
+                    {titleCase(selectedRelease.app_name)} {selectedRelease.version}
+                  </div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+                    {selectedRelease.release_notes || "No summary added yet."}
+                  </div>
+                </>,
+              )}
+              {plannedField(
+                <>
+                  {fieldLabel("Who It Targets")}
+                  <div style={{ color: t.color.text, fontSize: 13.5, fontWeight: 700 }}>{selectedTruth.targetText}</div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>{selectedTruth.rolloutState}</div>
+                </>,
+              )}
+              {plannedField(
+                <>
+                  {fieldLabel("Safety / Requirement")}
+                  <div>{renderBadgeRow([{ label: selectedTruth.requirement.label, tone: selectedTruth.requirement.tone }])}</div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>{selectedTruth.requirement.detail}</div>
+                </>,
+              )}
+              {plannedField(
+                <>
+                  {fieldLabel("Current Activity")}
+                  <div>{renderBadgeRow(releaseLifecycleBadges(selectedRelease, selectedReleaseRollouts))}</div>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>{selectedTruth.activeText}</div>
+                </>,
+              )}
+            </div>
+
+            <ControlPanel
+              title="Device Version Signals"
+              description="Read-only version reporting already available on this page."
+              padding={12}
+              actions={<ControlStatusChip label="Read-only signals" tone="neutral" />}
+            >
+              {selectedReleaseSignals.length === 0 ? (
+                <div style={{ display: "grid", gap: 6, color: t.color.textMuted, fontSize: 12.5 }}>
+                  <div>Device install reporting is not wired on this page yet for this specific release.</div>
+                  <div>Readiness state is not tracked in the current software update schema.</div>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <ControlTableWrap>
+                    <ControlTable minWidth={900}>
+                      <thead>
+                        <tr>
+                          <ControlTableHeadCell>Device / Workstation</ControlTableHeadCell>
+                          <ControlTableHeadCell>Desktop Version</ControlTableHeadCell>
+                          <ControlTableHeadCell>Service Version</ControlTableHeadCell>
+                          <ControlTableHeadCell>Last Check-In</ControlTableHeadCell>
+                          <ControlTableHeadCell>Update State</ControlTableHeadCell>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedReleaseSignals.map((item) => (
+                          <tr key={`${selectedRelease.id}-${item.device}-${item.lastCheck}`}>
+                            <ControlTableCell>
+                              <div style={{ display: "grid", gap: 4 }}>
+                                <div>{item.device}</div>
+                                <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>{item.shop}</div>
+                              </div>
+                            </ControlTableCell>
+                            <ControlTableCell>{item.desktop}</ControlTableCell>
+                            <ControlTableCell>{item.service}</ControlTableCell>
+                            <ControlTableCell>{item.lastCheck}</ControlTableCell>
+                            <ControlTableCell>
+                              <ControlStatusChip label={titleCase(item.status)} tone={toneForStatus(item.status)} />
+                            </ControlTableCell>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </ControlTable>
+                  </ControlTableWrap>
+                  <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>
+                    Readiness state is not tracked in the current software update schema, so only version and check-in signals are shown here.
+                  </div>
+                </div>
+              )}
+            </ControlPanel>
+          </div>
+        )}
       </ControlPanel>
 
       <ControlPanel
@@ -1339,6 +1579,8 @@ export default function SoftwareUpdatesWorkspace({
         releaseRows={data.releaseRows}
         releaseRecords={data.releaseRecords}
         packageRecords={data.packageRecords}
+        rolloutRecords={data.rolloutRecords}
+        deviceRows={data.deviceRows}
         sourceKind={data.sourceKind}
         releaseCrudEnabled={data.releaseCrudEnabled}
         packageCrudEnabled={data.packageCrudEnabled}
