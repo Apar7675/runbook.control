@@ -17,7 +17,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 type PeopleTab = "all" | "control" | "members" | "employees" | "mobile";
 
 const PEOPLE_TABS: Array<{ key: PeopleTab; label: string }> = [
-  { key: "all", label: "All People" },
+  { key: "all", label: "All Records" },
   { key: "control", label: "Control Users" },
   { key: "members", label: "Shop Members" },
   { key: "employees", label: "Employees" },
@@ -46,6 +46,18 @@ function typeTone(type: PeopleDirectoryRow["type"]): ControlStatusTone {
   if (type === "Control User") return "info";
   if (type === "Shop Member") return "neutral";
   return "success";
+}
+
+function recordTypeLabel(type: PeopleDirectoryRow["type"]) {
+  if (type === "Control User") return "Control User - Platform Access";
+  if (type === "Shop Member") return "Shop Member - Account Access";
+  return "Employee - Shop Floor";
+}
+
+function recordTypeDetail(type: PeopleDirectoryRow["type"]) {
+  if (type === "Control User") return "Platform administration record";
+  if (type === "Shop Member") return "Account / shop access and role membership";
+  return "Shop-floor / Workstation, PIN, and mobile readiness";
 }
 
 export default async function PeoplePage({
@@ -88,8 +100,23 @@ export default async function PeoplePage({
 
       <ControlPanel
         title="People Directory"
-        description="Table-first authority view. Employee mobile and workstation access applies to Employee rows unless a linked employee record exists, while Shop Member rows represent account/shop role membership."
+        description="All Records shows account memberships and shop-floor employee records. A person may appear once as a Shop Member and once as an Employee because those rows control different access concerns."
       >
+        <div
+          style={{
+            padding: "12px 14px",
+            borderRadius: t.radius.lg,
+            border: `1px solid ${t.color.softBorder}`,
+            background: "rgba(18, 27, 40, 0.72)",
+            color: t.color.textMuted,
+            fontSize: 13,
+            lineHeight: 1.55,
+          }}
+        >
+          Shop Member rows control account access and shop role membership. Employee rows control shop-floor access, PIN,
+          mobile, and Workstation readiness.
+        </div>
+
         <form method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div
             style={{
@@ -145,7 +172,7 @@ export default async function PeoplePage({
                 <tr>
                   <ControlTableHeadCell>Name</ControlTableHeadCell>
                   <ControlTableHeadCell>Email</ControlTableHeadCell>
-                  <ControlTableHeadCell>Type</ControlTableHeadCell>
+                  <ControlTableHeadCell>Record Type</ControlTableHeadCell>
                   <ControlTableHeadCell>Shop</ControlTableHeadCell>
                   <ControlTableHeadCell>Role</ControlTableHeadCell>
                   <ControlTableHeadCell>MFA</ControlTableHeadCell>
@@ -161,12 +188,16 @@ export default async function PeoplePage({
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 4 }}>
                         <div style={{ color: t.color.text, fontWeight: 800 }}>{row.name}</div>
+                        <div style={{ fontSize: 12, color: t.color.textMuted }}>{recordTypeDetail(row.type)}</div>
                         <div style={{ fontSize: 12, color: t.color.textMuted }}>{formatMaybeDate(row.created_at)}</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>{row.email ?? "Not surfaced"}</ControlTableCell>
                     <ControlTableCell>
-                      <ControlStatusChip label={row.type} tone={typeTone(row.type)} />
+                      <div style={{ display: "grid", gap: 6 }}>
+                        <ControlStatusChip label={row.type} tone={typeTone(row.type)} />
+                        <span style={{ fontSize: 12, color: t.color.textMuted }}>{recordTypeLabel(row.type)}</span>
+                      </div>
                     </ControlTableCell>
                     <ControlTableCell>{row.shop_name ?? "Platform"}</ControlTableCell>
                     <ControlTableCell>{row.role ? row.role.replaceAll("_", " ") : "Not surfaced"}</ControlTableCell>
