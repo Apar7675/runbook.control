@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { writeAudit } from "@/lib/audit/writeAudit";
 import { hashToken } from "@/lib/device/tokens";
+import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -85,6 +86,9 @@ async function validate(req: Request) {
 
     const raw = getBearerToken(req);
     if (!raw) return NextResponse.json({ ok: false, error: "Missing Authorization: Bearer <token>" }, { status: 401 });
+
+    const body = req.method === "POST" ? await req.json().catch((): Record<string, unknown> => ({})) : {};
+    const localIdentity = readLocalDeviceIdentity(body);
 
     const tokenHash = hashToken(raw);
     const admin = supabaseAdmin();
@@ -272,7 +276,7 @@ async function validate(req: Request) {
       await admin.from("rb_device_tokens").update({ last_seen_at: now }).eq("id", tok.id);
     } catch {}
     try {
-      await admin.from("rb_devices").update({ last_seen_at: now }).eq("id", dev.id);
+      await admin.from("rb_devices").update({ last_seen_at: now, ...localIdentity }).eq("id", dev.id);
     } catch {}
 
     // 6) Audit validated (best-effort)

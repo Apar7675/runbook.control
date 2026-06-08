@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { writeAudit } from "@/lib/audit/writeAudit";
 import { hashToken } from "@/lib/device/tokens";
+import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({} as any));
     const version = String((body as any)?.version ?? "").trim() || null;
+    const localIdentity = readLocalDeviceIdentity(body);
 
     const admin = supabaseAdmin();
     const token_hash = hashToken(rawToken);
@@ -89,18 +91,20 @@ export async function POST(req: Request) {
     if (upTokErr) return NextResponse.json({ ok: false, error: upTokErr.message }, { status: 500 });
 
     // Update device last_seen/version (best-effort schema compatibility)
+    const deviceUpdate = { last_seen_at: now, ...localIdentity };
+
     if (version) {
       const { error: devErr1 } = await admin
         .from("rb_devices")
-        .update({ last_seen_at: now, reported_version: version })
+        .update({ ...deviceUpdate, reported_version: version })
         .eq("id", tok.device_id);
 
       if (devErr1) {
         // fallback
-        await admin.from("rb_devices").update({ last_seen_at: now }).eq("id", tok.device_id);
+        await admin.from("rb_devices").update(deviceUpdate).eq("id", tok.device_id);
       }
     } else {
-      await admin.from("rb_devices").update({ last_seen_at: now }).eq("id", tok.device_id);
+      await admin.from("rb_devices").update(deviceUpdate).eq("id", tok.device_id);
     }
 
     // Best-effort audit (consistent with rest of codebase)

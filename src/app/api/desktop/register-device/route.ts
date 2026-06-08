@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
+import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const shop_id = String(body.shop_id ?? "").trim();
     const device_id = String(body.device_id ?? "").trim();
+    const localIdentity = readLocalDeviceIdentity(body);
 
     if (!shop_id) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
     if (!device_id) return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
 
       const { error: updateError } = await admin
         .from("rb_devices")
-        .update({ status: "active", device_type: "desktop" })
+        .update({ status: "active", device_type: "desktop", ...localIdentity })
         .eq("id", device_id);
 
       if (updateError) {
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
         name: `Desktop ${device_id.slice(0, 8)}`,
         device_type: "desktop",
         status: "active",
+        ...localIdentity,
       });
 
     if (insertError) {

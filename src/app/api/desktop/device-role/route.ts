@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { assertUuid } from "@/lib/authz";
+import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -209,6 +210,7 @@ export async function POST(req: Request) {
     const deviceId = String(body.device_id ?? "").trim();
     const deviceRole = normalizeRole(body.role);
     const deviceName = String(body.device_name ?? "").trim();
+    const localIdentity = readLocalDeviceIdentity(body);
 
     if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
     if (!deviceId) return NextResponse.json({ ok: false, error: "Missing device_id" }, { status: 400 });
@@ -242,6 +244,7 @@ export async function POST(req: Request) {
       device_type: "desktop",
       status: "active",
       device_role: deviceRole,
+      ...localIdentity,
     };
 
     const roleColumnActive = existing?.id
