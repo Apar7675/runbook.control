@@ -18,10 +18,21 @@ function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+const DESKTOP_ONBOARDING_API_PATHS = new Set([
+  "/api/onboarding/send-email-code",
+  "/api/onboarding/verify-email-code",
+  "/api/onboarding/send-sms-code",
+  "/api/onboarding/verify-sms-code",
+]);
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname === "/api/onboarding" || pathname.startsWith("/api/onboarding/")) {
+    if (DESKTOP_ONBOARDING_API_PATHS.has(pathname)) {
+      return NextResponse.next();
+    }
+
     return NextResponse.json(
       {
         error: "RunBook Control web onboarding is disabled. Customer setup is completed from RunBook Desktop.",

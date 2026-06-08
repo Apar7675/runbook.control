@@ -30,6 +30,9 @@ export async function POST(req: Request) {
     if (!full_name) return NextResponse.json({ ok: false, error: "Full name required." }, { status: 400 });
     if (!email) return NextResponse.json({ ok: false, error: "Email required." }, { status: 400 });
     if (!phone) return NextResponse.json({ ok: false, error: "Phone number required." }, { status: 400 });
+    if (user.email && normalizeEmail(user.email) !== email) {
+      return NextResponse.json({ ok: false, error: "Verification email must match the signed-in account email." }, { status: 400 });
+    }
     if (isDisposableEmail(email)) {
       return NextResponse.json({ ok: false, error: "Disposable email addresses are not allowed." }, { status: 400 });
     }
@@ -67,6 +70,11 @@ export async function POST(req: Request) {
       ...delivery,
     });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Server error" }, { status: 500 });
+    const message = String(e?.message ?? "Server error");
+    if (/twilio sms is not configured|twilio verify is not configured/i.test(message)) {
+      return NextResponse.json({ ok: false, error: "SMS verification is not configured." }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
