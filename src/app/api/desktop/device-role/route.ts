@@ -52,7 +52,7 @@ async function requireMembership(admin: any, shopId: string, userId: string) {
 }
 
 async function loadDevice(admin: any, deviceId: string) {
-  const baseColumns = ["id", "shop_id", "name", "device_type", "status"];
+  const baseColumns = ["id", "shop_id", "name", "device_type", "status", "replaced_by_device_id", "replaced_at"];
 
   try {
     const { data, error } = await admin
@@ -190,6 +190,9 @@ export async function GET(req: Request) {
       ok: true,
       shop_id: shopId,
       device_id: deviceId,
+      status: String(device?.status ?? "").trim(),
+      replaced_by_device_id: device?.replaced_by_device_id ?? null,
+      replaced_at: device?.replaced_at ?? null,
       device_role: String(device?.device_role ?? "").trim(),
       primary_exists: !!primary?.id,
       primary_device_id: String(primary?.id ?? "").trim(),
@@ -225,6 +228,15 @@ export async function POST(req: Request) {
     const existing = loadedDevice.data;
     if (existing?.id && String(existing.shop_id ?? "").trim() !== shopId) {
       return NextResponse.json({ ok: false, error: "Device already belongs to another shop." }, { status: 403 });
+    }
+
+    if (String(existing?.status ?? "").trim().toLowerCase() === "replaced") {
+      return NextResponse.json({
+        ok: false,
+        error: "device_replaced",
+        replaced_by_device_id: existing.replaced_by_device_id ?? null,
+        replaced_at: existing.replaced_at ?? null,
+      }, { status: 403 });
     }
 
     const hasDeviceRoleColumn = loadedDevice.hasDeviceRoleColumn;

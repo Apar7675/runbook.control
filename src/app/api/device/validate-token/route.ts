@@ -111,7 +111,7 @@ async function validate(req: Request) {
     // 2) Fetch device (no existence leak)
     const { data: dev, error: devErr } = await admin
       .from("rb_devices")
-      .select("id, shop_id, name, device_type, status, created_at, reported_version, last_seen_at")
+      .select("id, shop_id, name, device_type, status, created_at, reported_version, last_seen_at, replaced_by_device_id, replaced_at")
       .eq("id", tok.device_id)
       .maybeSingle();
 
@@ -120,6 +120,15 @@ async function validate(req: Request) {
 
     rbAssertUuid("device.id", String(dev.id));
     rbAssertUuid("device.shop_id", String(dev.shop_id));
+
+    if (String(dev.status ?? "").toLowerCase() === "replaced") {
+      return NextResponse.json({
+        ok: false,
+        error: "device_replaced",
+        replaced_by_device_id: dev.replaced_by_device_id ?? null,
+        replaced_at: dev.replaced_at ?? null,
+      }, { status: 403 });
+    }
 
     if (String(dev.status ?? "").toLowerCase() !== "active") {
       return NextResponse.json({ ok: false, error: "Device inactive" }, { status: 403 });

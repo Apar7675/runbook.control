@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     const { data: existing, error: existingError } = await admin
       .from("rb_devices")
-      .select("id,shop_id,status,device_role")
+      .select("id,shop_id,status,device_role,replaced_by_device_id,replaced_at")
       .eq("id", device_id)
       .maybeSingle();
 
@@ -40,6 +40,15 @@ export async function POST(req: Request) {
     if (existing?.id) {
       if (String(existing.shop_id ?? "").trim() !== shop_id) {
         return NextResponse.json({ ok: false, error: "Device already belongs to another shop." }, { status: 403 });
+      }
+
+      if (String(existing.status ?? "").trim().toLowerCase() === "replaced") {
+        return NextResponse.json({
+          ok: false,
+          error: "device_replaced",
+          replaced_by_device_id: existing.replaced_by_device_id ?? null,
+          replaced_at: existing.replaced_at ?? null,
+        }, { status: 403 });
       }
 
       const { error: updateError } = await admin

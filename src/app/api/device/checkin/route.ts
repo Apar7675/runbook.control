@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     // Enforce device status (disabled devices should not keep checking in)
     const { data: dev, error: devErr } = await admin
       .from("rb_devices")
-      .select("id,shop_id,status,name,device_type")
+      .select("id,shop_id,status,name,device_type,replaced_by_device_id,replaced_at")
       .eq("id", tok.device_id)
       .maybeSingle();
 
@@ -79,6 +79,15 @@ export async function POST(req: Request) {
 
     rbAssertUuid("device.id", String(dev.id));
     rbAssertUuid("device.shop_id", String(dev.shop_id));
+
+    if (String(dev.status ?? "").toLowerCase() === "replaced") {
+      return NextResponse.json({
+        ok: false,
+        error: "device_replaced",
+        replaced_by_device_id: dev.replaced_by_device_id ?? null,
+        replaced_at: dev.replaced_at ?? null,
+      }, { status: 403 });
+    }
 
     if (String(dev.status ?? "").toLowerCase() !== "active") {
       return NextResponse.json({ ok: false, error: "Device inactive" }, { status: 403 });
