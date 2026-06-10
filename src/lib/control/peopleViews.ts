@@ -1,7 +1,7 @@
 import { getShopSnapshot, getViewerContext, type ShopSnapshot, type ViewerContext } from "@/lib/control/summary";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export type PersonRowType = "Control User" | "Shop Member" | "Employee";
+export type PersonRowType = "Control User" | "Shop Member" | "Employee" | "Shop Member + Employee";
 
 export type PeopleDirectoryRow = {
   key: string;
@@ -466,6 +466,7 @@ export async function loadPeopleViews(): Promise<PeopleViewsData> {
   const profilesById = await loadProfiles([...userIds]);
 
   const peopleRows: PeopleDirectoryRow[] = [];
+  const surfacedEmployeeIds = new Set<string>();
 
   if (context.isPlatformAdmin) {
     for (const row of controlAdminsRaw) {
@@ -512,29 +513,36 @@ export async function loadPeopleViews(): Promise<PeopleViewsData> {
       ? effectiveWorkstationAccess(linkedEmployee, snapshot)
       : { label: "Not surfaced", tone: "neutral" as const };
     const statusLabel = member.is_active === false ? "Inactive" : "Active";
+    if (linkedEmployee) surfacedEmployeeIds.add(linkedEmployee.employee_id);
+    const memberRole = isoOrNull(member.role);
+    const employeeRole = linkedEmployee?.role ?? null;
+    const role = linkedEmployee
+      ? [memberRole ? `member: ${memberRole}` : null, employeeRole ? `employee: ${employeeRole}` : null].filter(Boolean).join(" / ") || null
+      : memberRole;
 
     peopleRows.push({
       key: `member:${shopId}:${userId}`,
-      type: "Shop Member",
+      type: linkedEmployee ? "Shop Member + Employee" : "Shop Member",
       name,
       email: linkedEmployee?.email ?? isoOrNull(profile?.email),
       shop_id: shopId,
       shop_name: snapshot?.name ?? context.shops.find((shop) => shop.id === shopId)?.name ?? "Unknown shop",
-      role: isoOrNull(member.role),
+      role,
       mfa_label: "Not surfaced",
-      status_label: statusLabel,
+      status_label: linkedEmployee && member.is_active !== false ? employeeStatusLabel(linkedEmployee) : statusLabel,
       mobile_access_label: mobile.label,
       workstation_access_label: workstation.label,
       mobile_access_tone: mobile.tone,
       workstation_access_tone: workstation.tone,
-      status_tone: member.is_active === false ? "danger" : "success",
+      status_tone: member.is_active === false ? "danger" : linkedEmployee ? employeeStatusTone(linkedEmployee) : "success",
       action_href: `/shops/${shopId}?tab=members`,
-      action_label: "Open membership",
-      created_at: isoOrNull(member.created_at),
+      action_label: linkedEmployee ? "Open access" : "Open membership",
+      created_at: newestIso(linkedEmployee?.created_at ?? null, isoOrNull(member.created_at)),
     });
   }
 
   for (const row of employeeSeeds) {
+    if (surfacedEmployeeIds.has(row.employee_id)) continue;
     const snapshot = shopSnapshots.get(row.shop_id) ?? null;
     const mobile = effectiveMobileAccess(row, snapshot);
     const workstation = effectiveWorkstationAccess(row, snapshot);

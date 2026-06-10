@@ -1,4 +1,5 @@
 import BillingControlPanel from "@/components/shops/billing/BillingControlPanel";
+import ShopDangerZone from "@/components/shops/ShopDangerZone";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
 import ControlKeyValueGrid from "@/components/control/ControlKeyValueGrid";
@@ -1202,20 +1203,26 @@ export default async function ShopPage({ params, searchParams }: Props) {
       ) : null}
 
       {activeTab === "settings" ? (
-        <ControlPanel
-          title="Settings and Policies"
-          description="Shop-specific policy surfaces stay scoped and can expand further in a later phase."
-          actions={<ControlActionLink href={`/shops/${shop.id}/policy`} tone="secondary">Open policy page</ControlActionLink>}
-        >
-          <ControlKeyValueGrid
-            items={[
-              { label: "Desktop mode", value: renderAccessModeLabel(snapshot.access.desktop_mode) },
-              { label: "Mobile mode", value: renderAccessModeLabel(snapshot.access.mobile_mode) },
-              { label: "Workstation mode", value: renderAccessModeLabel(snapshot.access.workstation_mode) },
-              { label: "Last device activity", value: formatMaybeDate(snapshot.health.last_device_activity_at) },
-            ]}
-          />
-        </ControlPanel>
+        <div style={{ display: "grid", gap: 18 }}>
+          <ControlPanel
+            title="Settings and Policies"
+            description="Shop-specific policy surfaces stay scoped and can expand further in a later phase."
+            actions={<ControlActionLink href={`/shops/${shop.id}/policy`} tone="secondary">Open policy page</ControlActionLink>}
+          >
+            <ControlKeyValueGrid
+              items={[
+                { label: "Desktop mode", value: renderAccessModeLabel(snapshot.access.desktop_mode) },
+                { label: "Mobile mode", value: renderAccessModeLabel(snapshot.access.mobile_mode) },
+                { label: "Workstation mode", value: renderAccessModeLabel(snapshot.access.workstation_mode) },
+                { label: "Last device activity", value: formatMaybeDate(snapshot.health.last_device_activity_at) },
+              ]}
+            />
+          </ControlPanel>
+
+          {context.isPlatformAdmin ? (
+            <ShopDangerZone shopId={shop.id} shopName={snapshot.name} />
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

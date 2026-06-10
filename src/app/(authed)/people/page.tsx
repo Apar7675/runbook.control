@@ -17,7 +17,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 type PeopleTab = "all" | "control" | "members" | "employees" | "mobile";
 
 const PEOPLE_TABS: Array<{ key: PeopleTab; label: string }> = [
-  { key: "all", label: "All Records" },
+  { key: "all", label: "All People" },
   { key: "control", label: "Control Users" },
   { key: "members", label: "Shop Members" },
   { key: "employees", label: "Employees" },
@@ -45,19 +45,30 @@ function formatMaybeDate(value: string | null | undefined) {
 function typeTone(type: PeopleDirectoryRow["type"]): ControlStatusTone {
   if (type === "Control User") return "info";
   if (type === "Shop Member") return "neutral";
+  if (type === "Shop Member + Employee") return "info";
   return "success";
 }
 
 function recordTypeLabel(type: PeopleDirectoryRow["type"]) {
   if (type === "Control User") return "Control User - Platform Access";
   if (type === "Shop Member") return "Shop Member - Account Access";
+  if (type === "Shop Member + Employee") return "Account Access + Shop Floor";
   return "Employee - Shop Floor";
 }
 
 function recordTypeDetail(type: PeopleDirectoryRow["type"]) {
   if (type === "Control User") return "Platform administration record";
   if (type === "Shop Member") return "Account / shop access and role membership";
+  if (type === "Shop Member + Employee") return "Account membership plus shop-floor readiness";
   return "Shop-floor / Workstation, PIN, and mobile readiness";
+}
+
+function hasMembershipRecord(row: PeopleDirectoryRow) {
+  return row.type === "Shop Member" || row.type === "Shop Member + Employee";
+}
+
+function hasEmployeeRecord(row: PeopleDirectoryRow) {
+  return row.type === "Employee" || row.type === "Shop Member + Employee";
 }
 
 export default async function PeoplePage({
@@ -75,8 +86,8 @@ export default async function PeoplePage({
   const filteredRows = data.peopleRows.filter((row) => {
     if (shopFilter && row.shop_id !== shopFilter) return false;
     if (activeTab === "control") return row.type === "Control User";
-    if (activeTab === "members") return row.type === "Shop Member";
-    if (activeTab === "employees") return row.type === "Employee";
+    if (activeTab === "members") return hasMembershipRecord(row);
+    if (activeTab === "employees") return hasEmployeeRecord(row);
     if (activeTab === "mobile") return row.mobile_access_label !== "Not surfaced";
     return true;
   });
@@ -86,7 +97,7 @@ export default async function PeoplePage({
       <ControlPageHeader
         eyebrow="People"
         title="People & Access"
-        description="Cloud authority view of Control users, shop members, and employee records. Shop Member means account-to-shop access, while Employee means the shop-floor record that drives workstation readiness."
+        description="Cloud authority view of Control users, shop memberships, and employee access. Linked membership and employee records are shown as one person row."
         actions={<ControlActionLink href="/mobile-access">Open mobile access</ControlActionLink>}
       />
 
@@ -100,7 +111,7 @@ export default async function PeoplePage({
 
       <ControlPanel
         title="People Directory"
-        description="All Records shows account memberships and shop-floor employee records. A person may appear once as a Shop Member and once as an Employee because those rows control different access concerns."
+        description="All People shows each person once per shop. When a membership and employee record are linked, Control combines them into one row while keeping both authority concerns visible."
       >
         <div
           style={{
@@ -113,8 +124,8 @@ export default async function PeoplePage({
             lineHeight: 1.55,
           }}
         >
-          Shop Member rows control account access and shop role membership. Employee rows control shop-floor access, PIN,
-          mobile, and Workstation readiness.
+          Shop membership controls account access and shop role membership. Employee access controls shop-floor access,
+          PIN, mobile, and Workstation readiness.
         </div>
 
         <form method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
