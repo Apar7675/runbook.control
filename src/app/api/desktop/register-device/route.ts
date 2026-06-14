@@ -6,6 +6,102 @@ import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function formatSbError(error: any) {
+  if (!error) return "Unknown error";
+  const msg = String(error.message ?? error ?? "");
+  const code = error.code ? ` code=${String(error.code)}` : "";
+  const details = error.details ? ` details=${String(error.details)}` : "";
+  const hint = error.hint ? ` hint=${String(error.hint)}` : "";
+  return `${msg}${code}${details}${hint}`;
+}
+
+function tryExtractMissingColumn(msg: string): string | null {
+  const text = String(msg ?? "");
+  const relationMatch = text.match(/column\s+"([^"]+)"\s+of\s+relation/i);
+  if (relationMatch?.[1]) return relationMatch[1];
+
+  const schemaCacheMatch = text.match(/could not find the\s+'([^']+)'\s+column/i);
+  if (schemaCacheMatch?.[1]) return schemaCacheMatch[1];
+
+  const qualifiedColumnMatch = text.match(/column\s+([a-z0-9_]+\.){0,2}([a-z0-9_]+)\s+does not exist/i);
+  if (qualifiedColumnMatch?.[2]) return qualifiedColumnMatch[2];
+
+  return null;
+}
+
+async function loadExistingDevice(admin: ReturnType<typeof supabaseAdmin>, deviceId: string) {
+  let columns = ["id", "shop_id", "status", "device_role", "replaced_by_device_id", "replaced_at"];
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const { data, error } = await admin
+      .from("rb_devices")
+      .select(columns.join(","))
+      .eq("id", deviceId)
+      .maybeSingle();
+
+    if (!error) return data as any;
+
+    const missing = tryExtractMissingColumn(formatSbError(error));
+    if (missing && columns.includes(missing)) {
+      columns = columns.filter((entry) => entry !== missing);
+      continue;
+    }
+
+    throw new Error(formatSbError(error));
+  }
+
+  throw new Error("Device lookup failed after stripping missing columns.");
+}
+
+async function updateDeviceWithAutoStrip(admin: ReturnType<typeof supabaseAdmin>, deviceId: string, values: Record<string, any>) {
+  let patch = { ...values };
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { error } = await admin
+      .from("rb_devices")
+      .update(patch)
+      .eq("id", deviceId);
+
+    if (!error) return;
+
+    const missing = tryExtractMissingColumn(formatSbError(error));
+    if (missing && Object.prototype.hasOwnProperty.call(patch, missing)) {
+      const rest = { ...patch };
+      delete rest[missing];
+      patch = rest;
+      continue;
+    }
+
+    throw new Error(formatSbError(error));
+  }
+
+  throw new Error("Device update failed after stripping missing columns.");
+}
+
+async function insertDeviceWithAutoStrip(admin: ReturnType<typeof supabaseAdmin>, values: Record<string, any>) {
+  let payload = { ...values };
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { error } = await admin
+      .from("rb_devices")
+      .insert(payload);
+
+    if (!error) return;
+
+    const missing = tryExtractMissingColumn(formatSbError(error));
+    if (missing && Object.prototype.hasOwnProperty.call(payload, missing)) {
+      const rest = { ...payload };
+      delete rest[missing];
+      payload = rest;
+      continue;
+    }
+
+    throw new Error(formatSbError(error));
+  }
+
+  throw new Error("Device registration failed after stripping missing columns.");
+}
+
 export async function POST(req: Request) {
   try {
     const { user } = await requireSessionUser(req);
@@ -27,15 +123,7 @@ export async function POST(req: Request) {
 
     if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
 
-    const { data: existing, error: existingError } = await admin
-      .from("rb_devices")
-      .select("id,shop_id,status,device_role,replaced_by_device_id,replaced_at")
-      .eq("id", device_id)
-      .maybeSingle();
-
-    if (existingError) {
-      return NextResponse.json({ ok: false, error: existingError.message }, { status: 500 });
-    }
+    const existing = await loadExistingDevice(admin, device_id);
 
     if (existing?.id) {
       if (String(existing.shop_id ?? "").trim() !== shop_id) {
@@ -51,32 +139,19 @@ export async function POST(req: Request) {
         }, { status: 403 });
       }
 
-      const { error: updateError } = await admin
-        .from("rb_devices")
-        .update({ status: "active", device_type: "desktop", ...localIdentity })
-        .eq("id", device_id);
-
-      if (updateError) {
-        return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
-      }
+      await updateDeviceWithAutoStrip(admin, device_id, { status: "active", device_type: "desktop", ...localIdentity });
 
       return NextResponse.json({ ok: true, existing: true, device_id, shop_id, status: "active", device_role: String(existing.device_role ?? "").trim() });
     }
 
-    const { error: insertError } = await admin
-      .from("rb_devices")
-      .insert({
-        id: device_id,
-        shop_id,
-        name: `Desktop ${device_id.slice(0, 8)}`,
-        device_type: "desktop",
-        status: "active",
-        ...localIdentity,
-      });
-
-    if (insertError) {
-      return NextResponse.json({ ok: false, error: insertError.message }, { status: 500 });
-    }
+    await insertDeviceWithAutoStrip(admin, {
+      id: device_id,
+      shop_id,
+      name: `Desktop ${device_id.slice(0, 8)}`,
+      device_type: "desktop",
+      status: "active",
+      ...localIdentity,
+    });
 
     return NextResponse.json({ ok: true, existing: false, device_id, shop_id, status: "active", device_role: "" });
   } catch (e: any) {
