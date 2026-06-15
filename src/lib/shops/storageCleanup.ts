@@ -65,11 +65,8 @@ async function removePathsWithRetry(bucket: string, paths: string[]) {
 async function collectBucketPaths(bucket: string, prefix: string, paths: string[] = []) {
   const admin = supabaseAdmin();
   const normalizedPrefix = text(prefix).replace(/^\/+|\/+$/g, "");
-  const slashIndex = normalizedPrefix.lastIndexOf("/");
-  const listPath = slashIndex >= 0 ? normalizedPrefix.slice(0, slashIndex) : "";
-  const targetName = slashIndex >= 0 ? normalizedPrefix.slice(slashIndex + 1) : normalizedPrefix;
 
-  const { data, error } = await admin.storage.from(bucket).list(listPath || "", {
+  const { data, error } = await admin.storage.from(bucket).list(normalizedPrefix, {
     limit: 1000,
     offset: 0,
     sortBy: { column: "name", order: "asc" },
@@ -81,9 +78,8 @@ async function collectBucketPaths(bucket: string, prefix: string, paths: string[
     const item = raw as StorageListItem;
     const name = text(item.name);
     if (!name) continue;
-    if (targetName && name !== targetName) continue;
 
-    const fullPath = joinPath(listPath, name);
+    const fullPath = joinPath(normalizedPrefix, name);
     if (looksLikeFolder(item)) {
       await collectBucketPaths(bucket, fullPath, paths);
       continue;
@@ -96,7 +92,6 @@ async function collectBucketPaths(bucket: string, prefix: string, paths: string[
 }
 
 export async function deleteShopAvatars(shopId: string) {
-  const admin = supabaseAdmin();
   const prefix = `shops/${shopId}`;
   const paths = [...new Set(await collectBucketPaths("avatars", prefix))];
 

@@ -49,6 +49,7 @@ export default function ShopDeleteControlV2({
   const [loading, setLoading] = React.useState(true);
   const [refreshToken, setRefreshToken] = React.useState(0);
   const [operation, setOperation] = React.useState<DeleteOperation | null>(null);
+  const [freshStartReset, setFreshStartReset] = React.useState(false);
 
   async function loadOperation() {
     const response = await safeFetch<DeleteOperationResponse>(`/api/shops/delete-operation?shop_id=${encodeURIComponent(shopId)}`, {
@@ -86,7 +87,7 @@ export default function ShopDeleteControlV2({
       credentials: "include",
       cache: "no-store",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ shopId, confirmName }),
+      body: JSON.stringify({ shopId, confirmName, freshStartReset }),
     });
     if (!response.ok || !response.data?.ok) {
       setStatus(response.ok ? response.data?.error ?? "Delete failed." : `${response.status}: ${response.error}`);
@@ -111,6 +112,19 @@ export default function ShopDeleteControlV2({
           <ControlInputV2 value={confirmName} onChange={(e) => setConfirmName(e.target.value)} placeholder={`Type ${shopName}`} style={{ maxWidth: 260 }} />
           <ControlActionButtonV2 tone="danger" onClick={startDelete} disabled={busy}>{busy ? "Starting..." : "Delete shop"}</ControlActionButtonV2>
         </div>
+
+        <label style={{ display: "flex", gap: 8, alignItems: "flex-start", maxWidth: 680, color: t.color.textMuted, fontSize: 12, lineHeight: 1.45 }}>
+          <input
+            type="checkbox"
+            checked={freshStartReset}
+            onChange={(event) => setFreshStartReset(event.target.checked)}
+            disabled={busy}
+            style={{ marginTop: 2 }}
+          />
+          <span>
+            Allow a full fresh start for this customer. This removes trial eligibility history tied to this shop so the customer can create a new 30-day trial after the delete completes.
+          </span>
+        </label>
 
         {status ? <div style={{ fontSize: 12, color: t.color.textMuted }}>{status}</div> : null}
 

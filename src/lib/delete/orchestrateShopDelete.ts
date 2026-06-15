@@ -9,6 +9,7 @@ import {
   updateDeleteOperation,
 } from "@/lib/delete/operations";
 import { isPlatformAdminEmail } from "@/lib/platformAdmin";
+import { recordTrialUsage } from "@/lib/onboarding/state";
 import { getShopAuthUsers } from "@/lib/shops/authUsers";
 import { deleteShopAvatars, deleteSupportBundles } from "@/lib/shops/storageCleanup";
 import { getStripe } from "@/lib/stripe/server";
@@ -30,6 +31,11 @@ type DeleteSnapshot = {
     name: string;
     stripe_customer_id: string | null;
     stripe_subscription_id: string | null;
+    trial_device_id: string | null;
+    trial_email_hash: string | null;
+    trial_phone_hash: string | null;
+    trial_restricted: boolean;
+    trial_restriction_reason: string | null;
     deletion_status: string | null;
     deletion_started_at: string | null;
   };
@@ -116,7 +122,7 @@ async function buildDeleteSnapshot(shopId: string) {
   const [shopRow, membershipRows, employeeRows, deviceRows, supportBundles, authUsers] = await Promise.all([
     admin
       .from("rb_shops")
-      .select("id,name,stripe_customer_id,stripe_subscription_id,deletion_status,deletion_started_at")
+      .select("id,name,stripe_customer_id,stripe_subscription_id,trial_device_id,trial_email_hash,trial_phone_hash,trial_restricted,trial_restriction_reason,deletion_status,deletion_started_at")
       .eq("id", shopId)
       .maybeSingle(),
     admin.from("rb_shop_members").select("user_id").eq("shop_id", shopId),
@@ -148,6 +154,11 @@ async function buildDeleteSnapshot(shopId: string) {
       name: text((shop as any).name),
       stripe_customer_id: text((shop as any).stripe_customer_id) || null,
       stripe_subscription_id: text((shop as any).stripe_subscription_id) || null,
+      trial_device_id: text((shop as any).trial_device_id) || null,
+      trial_email_hash: text((shop as any).trial_email_hash) || null,
+      trial_phone_hash: text((shop as any).trial_phone_hash) || null,
+      trial_restricted: Boolean((shop as any).trial_restricted),
+      trial_restriction_reason: text((shop as any).trial_restriction_reason) || null,
       deletion_status: text((shop as any).deletion_status) || null,
       deletion_started_at: text((shop as any).deletion_started_at) || null,
     },
@@ -295,6 +306,70 @@ async function queueRemoteCleanup(snapshot: DeleteSnapshot) {
   }
 
   return { issued };
+}
+
+async function preserveTrialUsage(snapshot: DeleteSnapshot) {
+  const admin = supabaseAdmin();
+  const hasTrialMarker = Boolean(
+    snapshot.shop.trial_device_id ||
+    snapshot.shop.trial_email_hash ||
+    snapshot.shop.trial_phone_hash
+  );
+
+  if (!hasTrialMarker) {
+    return { recorded: false, reason: "no_trial_markers" };
+  }
+
+  await recordTrialUsage({
+    sourceShopId: snapshot.shop.id,
+    shopName: "",
+    userId: snapshot.memberships.user_ids[0] ?? null,
+    deviceId: snapshot.shop.trial_device_id,
+    emailHash: snapshot.shop.trial_email_hash,
+    phoneHash: snapshot.shop.trial_phone_hash,
+    outcome: snapshot.shop.trial_restricted ? "restricted_trial" : "clean_trial",
+    eligibilityReason: snapshot.shop.trial_restriction_reason ?? "shop_delete_preserved_trial_usage",
+  });
+
+  const { error } = await admin
+    .from("rb_trial_usage_history")
+    .update({ shop_name: "", updated_at: nowIso() })
+    .eq("source_shop_id", snapshot.shop.id);
+  if (error) throw new Error(error.message);
+
+  return { recorded: true, reason: "trial_usage_preserved" };
+}
+
+async function clearTrialUsageForFreshStart(snapshot: DeleteSnapshot) {
+  const admin = supabaseAdmin();
+  const deleted: Record<string, number | null> = {};
+
+  const deleteWhere = async (key: string, column: string, values: string[]) => {
+    const uniqueValues = [...new Set(values.map(text).filter(Boolean))];
+    if (uniqueValues.length === 0) {
+      deleted[key] = 0;
+      return;
+    }
+
+    const { count, error } = await admin
+      .from("rb_trial_usage_history")
+      .delete({ count: "exact" })
+      .in(column, uniqueValues);
+    if (error) throw new Error(error.message);
+    deleted[key] = count ?? null;
+  };
+
+  await deleteWhere("source_shop_id", "source_shop_id", [snapshot.shop.id]);
+  await deleteWhere("user_id", "user_id", snapshot.memberships.user_ids);
+  await deleteWhere("device_id", "device_id", [snapshot.shop.trial_device_id ?? ""]);
+  await deleteWhere("email_hash", "email_hash", [snapshot.shop.trial_email_hash ?? ""]);
+  await deleteWhere("phone_hash", "phone_hash", [snapshot.shop.trial_phone_hash ?? ""]);
+
+  return {
+    cleared: true,
+    reason: "fresh_start_requested",
+    deleted,
+  };
 }
 
 async function cleanupSingleShopAuthUser(args: {
@@ -533,6 +608,7 @@ export async function orchestrateShopDelete(args: {
   shopId: string;
   confirmName: string;
   actorUserId: string;
+  freshStartReset?: boolean;
 }) {
   const admin = supabaseAdmin();
   const resultJson: Record<string, any> = {
@@ -660,6 +736,21 @@ export async function orchestrateShopDelete(args: {
         error: "confirmation name did not match",
       };
     }
+
+    resultJson.phase = args.freshStartReset ? "clearing_trial_usage" : "preserving_trial_usage";
+    const trialUsage = args.freshStartReset
+      ? await clearTrialUsageForFreshStart(initialSnapshot)
+      : await preserveTrialUsage(initialSnapshot);
+    resultJson.trial_usage = trialUsage;
+    log(
+      "trial_usage",
+      "info",
+      args.freshStartReset
+        ? "Trial eligibility records cleared for admin-approved fresh start."
+        : "Trial eligibility record preserved before shop wipe.",
+      trialUsage
+    );
+    await persist("running");
 
     resultJson.phase = "freezing_shop";
     const frozen = await freezeShop({

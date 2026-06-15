@@ -24,6 +24,7 @@ export default function ShopDangerZone({
   const [busy, setBusy] = React.useState(false);
   const [status, setStatus] = React.useState("");
   const [refreshToken, setRefreshToken] = React.useState(0);
+  const [freshStartReset, setFreshStartReset] = React.useState(false);
 
   async function deleteShop() {
     setStatus("");
@@ -39,7 +40,7 @@ export default function ShopDangerZone({
       credentials: "include",
       cache: "no-store",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ shopId, confirmName }),
+      body: JSON.stringify({ shopId, confirmName, freshStartReset }),
     });
 
     if (!response.ok || !response.data?.ok) {
@@ -82,6 +83,19 @@ export default function ShopDangerZone({
               {busy ? "Starting Delete..." : "Delete Shop"}
             </ControlButton>
           </div>
+
+          <label style={{ display: "flex", gap: 8, alignItems: "flex-start", color: theme.text.secondary, fontSize: 12.5, lineHeight: 1.55 }}>
+            <input
+              type="checkbox"
+              checked={freshStartReset}
+              onChange={(event) => setFreshStartReset(event.target.checked)}
+              disabled={busy}
+              style={{ marginTop: 3 }}
+            />
+            <span>
+              Allow a full fresh start for this customer. This removes trial eligibility history tied to this shop so the customer can create a new 30-day trial after the delete completes.
+            </span>
+          </label>
 
           {status ? <div style={{ color: theme.text.secondary, fontSize: 12.5, lineHeight: 1.55 }}>{status}</div> : null}
         </div>

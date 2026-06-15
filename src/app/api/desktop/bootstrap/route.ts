@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { hashIdentityValue, normalizeEmail, normalizePhone } from "@/lib/onboarding/identity";
-import { findTrialReuseRisk, getOnboardingState, upsertOnboardingState } from "@/lib/onboarding/state";
+import { findTrialReuseRisk, getOnboardingState, recordTrialUsage, upsertOnboardingState } from "@/lib/onboarding/state";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 
@@ -159,12 +159,10 @@ async function findExistingOwnedShop(admin: any, userId: string) {
   return data?.shop_id ? String(data.shop_id) : null;
 }
 
-function duplicateTrialResponse(field: "email" | "phone" | "device_id") {
+function duplicateTrialResponse(field: "email" | "device_id") {
   const message =
     field === "email"
       ? "This email already has a RunBook trial. Sign in instead."
-      : field === "phone"
-      ? "This phone number has already been used for a RunBook trial. Sign in instead or contact RunBook support."
       : "This device has already been used for a RunBook trial. Sign in instead or contact RunBook support.";
 
   return NextResponse.json(
@@ -365,6 +363,16 @@ export async function POST(req: Request) {
 
     const shop = await createShop(admin, shopPayload);
     await createMembership(admin, shop.id, user.id);
+    await recordTrialUsage({
+      sourceShopId: shop.id,
+      shopName: shop.name ?? company_name,
+      userId: user.id,
+      deviceId: trialDeviceId,
+      emailHash: trialEmailHash,
+      phoneHash: trialPhoneHash,
+      outcome: "clean_trial",
+      eligibilityReason: "clean_trial",
+    });
     await upsertOnboardingState(user.id, {
       full_name: `${first_name} ${last_name}`.trim(),
       email: normalizedEmail,

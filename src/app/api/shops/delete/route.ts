@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const shopId = String((body as any)?.shopId ?? "").trim();
     const confirmName = String((body as any)?.confirmName ?? "").trim();
+    const freshStartReset = Boolean((body as any)?.freshStartReset);
 
     if (!shopId) return NextResponse.json({ ok: false, error: "Missing shopId" }, { status: 400 });
     assertUuid("shopId", shopId);
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
       shopId,
       confirmName,
       actorUserId: user.id,
+      freshStartReset,
     });
 
     if (!result.ok) {

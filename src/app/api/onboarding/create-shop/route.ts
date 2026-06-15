@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { hashIdentityValue } from "@/lib/onboarding/identity";
-import { findTrialReuseRisk, getOnboardingState, upsertOnboardingState } from "@/lib/onboarding/state";
+import { findTrialReuseRisk, getOnboardingState, recordTrialUsage, upsertOnboardingState } from "@/lib/onboarding/state";
 import { resolveOnboardingPath } from "@/lib/onboarding/flow";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -360,6 +360,17 @@ export async function POST(req: Request) {
       phone: state.phone,
       companyName: shop.name ?? shopName,
       sourceDeviceId: trialDeviceId,
+    });
+
+    await recordTrialUsage({
+      sourceShopId: shop.id,
+      shopName: shop.name ?? shopName,
+      userId: user.id,
+      deviceId: trialDeviceId,
+      emailHash: trialEmailHash,
+      phoneHash: trialPhoneHash,
+      outcome: restricted ? "restricted_trial" : "clean_trial",
+      eligibilityReason: restrictionReason ?? "clean_trial",
     });
 
     await upsertOnboardingState(user.id, {

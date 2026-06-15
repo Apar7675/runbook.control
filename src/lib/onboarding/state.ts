@@ -356,19 +356,59 @@ export async function findTrialReuseRisk(args: {
     const { data, error } = await admin.from("rb_shops").select("id,name").eq("trial_device_id", args.deviceId).limit(1).maybeSingle();
     if (error) throw new Error(error.message);
     if (data?.id) return { field: "device_id" as const, shop_id: data.id as string, shop_name: String(data.name ?? "") };
+
+    const history = await admin
+      .from("rb_trial_usage_history")
+      .select("source_shop_id,shop_name")
+      .eq("device_id", args.deviceId)
+      .order("consumed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (history.error) throw new Error(history.error.message);
+    if (history.data) return { field: "device_id" as const, shop_id: String(history.data.source_shop_id ?? ""), shop_name: String(history.data.shop_name ?? "") };
   }
 
   if (args.emailHash) {
     const { data, error } = await admin.from("rb_shops").select("id,name").eq("trial_email_hash", args.emailHash).limit(1).maybeSingle();
     if (error) throw new Error(error.message);
     if (data?.id) return { field: "email" as const, shop_id: data.id as string, shop_name: String(data.name ?? "") };
-  }
 
-  if (args.phoneHash) {
-    const { data, error } = await admin.from("rb_shops").select("id,name").eq("trial_phone_hash", args.phoneHash).limit(1).maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data?.id) return { field: "phone" as const, shop_id: data.id as string, shop_name: String(data.name ?? "") };
+    const history = await admin
+      .from("rb_trial_usage_history")
+      .select("source_shop_id,shop_name")
+      .eq("email_hash", args.emailHash)
+      .order("consumed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (history.error) throw new Error(history.error.message);
+    if (history.data) return { field: "email" as const, shop_id: String(history.data.source_shop_id ?? ""), shop_name: String(history.data.shop_name ?? "") };
   }
 
   return null;
+}
+
+export async function recordTrialUsage(args: {
+  sourceShopId?: string | null;
+  shopName?: string | null;
+  userId?: string | null;
+  deviceId?: string | null;
+  emailHash?: string | null;
+  phoneHash?: string | null;
+  outcome?: "clean_trial" | "restricted_trial" | "billing_required";
+  eligibilityReason?: string | null;
+}) {
+  const admin = supabaseAdmin();
+  const { error } = await admin.from("rb_trial_usage_history").insert({
+    source_shop_id: args.sourceShopId ?? null,
+    shop_name: args.shopName ?? "",
+    user_id: args.userId ?? null,
+    device_id: args.deviceId ?? null,
+    email_hash: args.emailHash ?? null,
+    phone_hash: args.phoneHash ?? null,
+    outcome: args.outcome ?? "clean_trial",
+    eligibility_reason: args.eligibilityReason ?? args.outcome ?? "clean_trial",
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) throw new Error(error.message);
 }
