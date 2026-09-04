@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "db:push": "node scripts/run-migrations.js",
-    "test:f04:static": "node scripts/verify-f04-legacy-lockdown.js"
+    "test:f04:static": "node scripts/verify-f04-legacy-lockdown.js",
+    "test:f05:static": "node scripts/verify-f05-employee-boundary.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
