@@ -1,158 +1,155 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
+import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { supabaseForAccessToken } from "@/lib/supabase/bearer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function text(v: any) {
-  return String(v ?? "").trim();
-}
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAXIMUM_SUMMARY_ROWS = 500;
+const MAXIMUM_JSON_RESPONSE_BYTES = 512 * 1024;
+const MAXIMUM_SUMMARY_PAYLOAD_BYTES = 480 * 1024;
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+  Pragma: "no-cache",
+};
 
-function isLocalDesktopRequest(req: Request) {
-  const host = text(req.headers.get("host")).toLowerCase();
-  return host.includes("localhost") || host.includes("127.0.0.1");
-}
+class MessagingSummaryError extends Error {
+  readonly status: number;
 
-async function ensureMembership(admin: any, shopId: string, userId: string) {
-  const { data, error } = await admin
-    .from("rb_shop_members")
-    .select("shop_id, user_id, role")
-    .eq("shop_id", shopId)
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data?.shop_id) throw new Error("Not authorized for this shop.");
-  return data;
-}
-
-async function getEmployee(admin: any, shopId: string, employeeId: string) {
-  const { data, error } = await admin
-    .from("employees")
-    .select("id, shop_id, display_name")
-    .eq("shop_id", shopId)
-    .eq("id", employeeId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data?.id) throw new Error("Employee not found in this shop.");
-  return data;
-}
-
-async function authorizeDesktop(req: Request, admin: any, shopId: string, senderEmployeeId: string) {
-  try {
-    const { user } = await requireSessionUser(req);
-    await ensureMembership(admin, shopId, user.id);
-    return { mode: "user", userId: user.id } as const;
-  } catch (error: any) {
-    if (!isLocalDesktopRequest(req)) throw error;
-    const sender = await getEmployee(admin, shopId, senderEmployeeId);
-    if (!sender?.id) throw error;
-    return { mode: "local-dev", userId: null } as const;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "MessagingSummaryError";
+    this.status = status;
   }
+}
+
+function text(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function boundedText(value: unknown, maximumCharacters: number) {
+  return Array.from(text(value)).slice(0, maximumCharacters).join("");
+}
+
+function requireUuid(value: unknown, field: string) {
+  const normalized = text(value);
+  if (!UUID_PATTERN.test(normalized)) {
+    throw new MessagingSummaryError(`${field} must be a UUID.`, 400);
+  }
+  return normalized;
+}
+
+function noStoreJson(value: unknown, status = 200) {
+  if (new TextEncoder().encode(JSON.stringify(value)).byteLength > MAXIMUM_JSON_RESPONSE_BYTES) {
+    return NextResponse.json(
+      { ok: false, error: "The messaging response exceeded the safe size limit." },
+      { status: 503, headers: NO_STORE_HEADERS },
+    );
+  }
+  return NextResponse.json(value, { status, headers: NO_STORE_HEADERS });
+}
+
+function errorResponse(error: unknown) {
+  if (error instanceof MessagingSummaryError) {
+    return noStoreJson({ ok: false, error: error.message }, error.status);
+  }
+  return noStoreJson({ ok: false, error: "Messaging is temporarily unavailable." }, 500);
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const admin = supabaseAdmin();
-    const shopId = text(req.nextUrl.searchParams.get("shop_id"));
-    const senderEmployeeId = text(req.nextUrl.searchParams.get("sender_employee_id"));
-
-    if (!shopId) return NextResponse.json({ ok: false, error: "shop_id required" }, { status: 400 });
-    if (!senderEmployeeId) return NextResponse.json({ ok: false, error: "sender_employee_id required" }, { status: 400 });
-
-    const auth = await authorizeDesktop(req, admin, shopId, senderEmployeeId);
-
-    const { data: memberRows, error: memberError } = await admin
-      .from("conversation_members")
-      .select("conversation_id, employee_id")
-      .eq("shop_id", shopId);
-
-    if (memberError) throw new Error(memberError.message);
-
-    const grouped = new Map<string, string[]>();
-    for (const row of memberRows || []) {
-      const conversationId = text((row as any).conversation_id);
-      const employeeId = text((row as any).employee_id);
-      if (!conversationId || !employeeId) continue;
-      const list = grouped.get(conversationId) ?? [];
-      list.push(employeeId);
-      grouped.set(conversationId, list);
-    }
-
-    const dmConversationIds = Array.from(grouped.entries())
-      .filter(([, employeeIds]) => employeeIds.includes(senderEmployeeId) && employeeIds.length === 2)
-      .map(([conversationId]) => conversationId);
-
-    if (dmConversationIds.length === 0) {
-      return NextResponse.json({ ok: true, auth_mode: auth.mode, conversations: [] });
-    }
-
-    const { data: messageRows, error: messageError } = await admin
-      .from("messages")
-      .select("id, conversation_id, sender_employee_id, body, created_at, deleted_at")
-      .eq("shop_id", shopId)
-      .in("conversation_id", dmConversationIds)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(300);
-
-    if (messageError) throw new Error(messageError.message);
-
-    const latestByConversation = new Map<string, any>();
-    for (const row of messageRows || []) {
-      const conversationId = text((row as any).conversation_id);
-      if (!conversationId || latestByConversation.has(conversationId)) continue;
-      latestByConversation.set(conversationId, row);
-    }
-
-    const otherEmployeeIds = Array.from(new Set(dmConversationIds.map((conversationId) => {
-      const members = grouped.get(conversationId) ?? [];
-      return members.find((id) => id !== senderEmployeeId) ?? "";
-    }).filter(Boolean)));
-
-    const employeeNameMap = new Map<string, string>();
-    if (otherEmployeeIds.length > 0) {
-      const { data: employees, error: employeeError } = await admin
-        .from("employees")
-        .select("id, display_name")
-        .eq("shop_id", shopId)
-        .in("id", otherEmployeeIds);
-
-      if (employeeError) throw new Error(employeeError.message);
-      for (const employee of employees || []) {
-        employeeNameMap.set(text((employee as any).id), text((employee as any).display_name));
+    let session: Awaited<ReturnType<typeof requireSessionUser>>;
+    try {
+      session = await requireSessionUser(req);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (/not authenticated|invalid jwt|jwt expired/i.test(message)) {
+        throw new MessagingSummaryError("Authentication required.", 401);
       }
+      throw new MessagingSummaryError("Authentication is temporarily unavailable.", 503);
     }
 
-    const conversations = dmConversationIds
-      .map((conversationId) => {
-        const members = grouped.get(conversationId) ?? [];
-        const recipientEmployeeId = members.find((id) => id !== senderEmployeeId) ?? "";
-        const last = latestByConversation.get(conversationId);
-        return {
-          conversation_id: conversationId,
-          recipient_employee_id: recipientEmployeeId,
-          recipient_display_name: employeeNameMap.get(recipientEmployeeId) || "Employee",
-          last_message_id: text(last?.id),
-          last_message_body: text(last?.body),
-          last_message_created_at: text(last?.created_at),
-          last_sender_employee_id: text(last?.sender_employee_id),
-        };
-      })
-      .filter((row) => row.recipient_employee_id && row.last_message_id)
-      .sort((a, b) => String(b.last_message_created_at).localeCompare(String(a.last_message_created_at)));
+    try {
+      rateLimitOrThrow({
+        key: `f06:desktop-messaging:summary:${session.user.id.toLowerCase()}`,
+        limit: 240,
+        windowMs: 60_000,
+      });
+    } catch {
+      throw new MessagingSummaryError("Messaging is temporarily rate limited.", 429);
+    }
 
-    return NextResponse.json({
+    const shopId = requireUuid(req.nextUrl.searchParams.get("shop_id"), "shop_id");
+    const senderEmployeeId = requireUuid(
+      req.nextUrl.searchParams.get("sender_employee_id"),
+      "sender_employee_id",
+    );
+    const client = supabaseForAccessToken(session.accessToken);
+
+    const { error: assertionError } = await client.rpc(
+      "rb_messaging_assert_actor_employee_id",
+      {
+        p_shop_id: shopId,
+        p_asserted_employee_id: senderEmployeeId,
+      },
+    );
+    if (assertionError) {
+      const status = text(assertionError.code) === "42501" ? 403 : 503;
+      throw new MessagingSummaryError(
+        status === 403
+          ? "Desktop messaging is limited to the active employee bound to this authenticated Control account."
+          : "Messaging is temporarily unavailable.",
+        status,
+      );
+    }
+
+    const { data, error } = await client.rpc("rb_messaging_dm_summary", {
+      p_shop_id: shopId,
+    });
+    if (error) {
+      const status = text(error.code) === "42501" ? 403 : 503;
+      throw new MessagingSummaryError(
+        status === 403 ? "Messaging access is not authorized." : "Messaging is temporarily unavailable.",
+        status,
+      );
+    }
+
+    const rows = Array.isArray(data) ? data.slice(0, MAXIMUM_SUMMARY_ROWS) : [];
+    const sanitized = rows.map((row: any) => ({
+      conversation_id: boundedText(row.conversation_id, 36),
+      recipient_employee_id: boundedText(row.recipient_employee_id, 36),
+      recipient_display_name: boundedText(row.recipient_display_name, 200) || "Employee",
+      last_message_id: boundedText(row.last_message_id, 36),
+      last_message_body: row.last_message_body == null
+        ? null
+        : boundedText(row.last_message_body, 10_000),
+      last_message_created_at: row.last_message_created_at == null
+        ? null
+        : boundedText(row.last_message_created_at, 64),
+      last_sender_employee_id: row.last_sender_employee_id == null
+        ? null
+        : boundedText(row.last_sender_employee_id, 36),
+    }));
+    const conversations: typeof sanitized = [];
+    let payloadBytes = 2;
+    for (const conversation of sanitized) {
+      const conversationBytes = new TextEncoder().encode(JSON.stringify(conversation)).byteLength + 1;
+      if (conversations.length > 0 && payloadBytes + conversationBytes > MAXIMUM_SUMMARY_PAYLOAD_BYTES) {
+        break;
+      }
+      conversations.push(conversation);
+      payloadBytes += conversationBytes;
+    }
+
+    return noStoreJson({
       ok: true,
-      auth_mode: auth.mode,
+      auth_mode: "user",
       shop_id: shopId,
       conversations,
     });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message ?? e) }, { status: /authorized|authenticated/i.test(String(e?.message ?? e)) ? 401 : 500 });
+  } catch (error) {
+    return errorResponse(error);
   }
 }
-
