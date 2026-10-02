@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { getShopEntitlement, type BillingStatus } from "@/lib/billing/entitlement";
+import { describeShopAccess } from "@/lib/billing/access";
 import { formatCleanupResponse, loadPendingCleanup } from "@/lib/control/cleanup";
 
 export const runtime = "nodejs";
@@ -172,6 +173,7 @@ export async function POST(req: Request) {
     }
 
     const entitlement = await getShopEntitlement(shop_id);
+    const access = describeShopAccess(entitlement);
     const shop = await loadShopTrialEndsWithAutoStrip(admin, shop_id);
 
     const nowIso = new Date().toISOString();
@@ -201,6 +203,14 @@ export async function POST(req: Request) {
         restricted: entitlement.restricted,
         reason: entitlement.reason,
         grace_active: entitlement.grace_active,
+      },
+      access: {
+        state: access.state,
+        display_status: access.display_status,
+        summary: access.summary,
+        desktop_mode: access.desktop_mode,
+        mobile_mode: access.mobile_mode,
+        workstation_mode: access.workstation_mode,
       },
     };
 

@@ -3,6 +3,7 @@ import { assertUuid } from "@/lib/authz";
 import { writeAudit } from "@/lib/audit/writeAudit";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +44,8 @@ async function requireShopDeviceManager(admin: ReturnType<typeof supabaseAdmin>,
 function statusForError(message: string) {
   if (/not authenticated/i.test(message)) return 401;
   if (/access denied/i.test(message)) return 403;
+  const billingStatus = statusForBillingWriteError(message, 0);
+  if (billingStatus) return billingStatus;
   if (/must be a uuid|missing|required|integer/i.test(message)) return 400;
   if (/new_device_not_registered/i.test(message)) return 409;
   return 500;
@@ -66,6 +69,7 @@ export async function POST(req: Request) {
     const admin = supabaseAdmin();
 
     await requireShopDeviceManager(admin, shopId, user.id);
+    await requireShopEntitlementWriteAllowed(shopId, "desktop.main_desktop_replacement");
 
     const { data, error } = await admin.rpc("rb_register_main_desktop_replacement", {
       p_shop_id: shopId,

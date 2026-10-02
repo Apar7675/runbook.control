@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { assertUuid, isPlatformAdmin, requireAal2 } from "@/lib/authz";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
     }
 
+    await requireShopEntitlementWriteAllowed(shopId, "people.remove");
     const { data, error } = await admin.rpc("rb_disable_employee_authoritative", {
       p_shop_id: shopId,
       p_employee_id: employeeId,
@@ -70,12 +72,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, result: data ?? null }, { status: 200 });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status =
-      /not authenticated/i.test(msg) ? 401
+    const billingStatus = statusForBillingWriteError(msg, 0);
+    const status = billingStatus
+      || (/not authenticated/i.test(msg) ? 401
       : /mfa required/i.test(msg) ? 403
       : /access denied/i.test(msg) ? 403
       : /must be a uuid/i.test(msg) ? 400
-      : 500;
+      : 500);
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

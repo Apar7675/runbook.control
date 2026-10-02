@@ -4,6 +4,7 @@ import { writeAudit } from "@/lib/audit/writeAudit";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { requireShopAdminOrPlatformAdmin } from "@/lib/shopAdminAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
     assertUuid("employee_id", employeeId);
 
     const { user } = await requireShopAdminOrPlatformAdmin(shopId);
+    await requireShopEntitlementWriteAllowed(shopId, "admin.users.mobile_timeclock.update");
     const patch = {
       mobile_timeclock_enabled: (body as any).mobile_timeclock_enabled === true,
       mobile_timeclock_requires_review: (body as any).mobile_timeclock_requires_review === true,
@@ -65,11 +67,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, employee: updated });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status =
-      /not authenticated/i.test(msg) ? 401 :
-      /mfa required|access denied/i.test(msg) ? 403 :
-      /uuid|missing/i.test(msg) ? 400 :
-      500;
+    const billingStatus = statusForBillingWriteError(msg, 0);
+    const status = billingStatus
+      || (/not authenticated/i.test(msg) ? 401
+      : /mfa required|access denied/i.test(msg) ? 403
+      : /uuid|missing/i.test(msg) ? 400
+      : 500);
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

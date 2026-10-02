@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { auditLog } from "@/lib/audit";
+import { isPlatformAdmin, requireAal2 } from "@/lib/authz";
 
 export async function POST(req: Request) {
   try {
+    const { user } = await requireAal2();
+    if (!(await isPlatformAdmin(user.id))) {
+      console.warn(`[Auth] updates/package blocked: user=${user.id} reason=platform_admin_required`);
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
     const channel = String(body.channel ?? "stable");
     const version = String(body.version ?? "").trim();
@@ -13,15 +20,13 @@ export async function POST(req: Request) {
     if (!version || !path) return NextResponse.json({ error: "Missing version or path" }, { status: 400 });
 
     const supabase = await supabaseServer();
-    const { data: me } = await supabase.auth.getUser();
-    if (!me.user?.id) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { data: row, error } = await supabase.from("rb_update_packages").insert({
       channel,
       version,
       file_path: path,
       notes,
-      created_by: me.user.id,
+      created_by: user.id,
       sha256: null,
     }).select("*").single();
 
@@ -37,6 +42,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? String(e) }, { status: 500 });
+    const msg = e?.message ?? String(e);
+    const status =
+      /not authenticated/i.test(msg) ? 401 :
+      /mfa required|not a platform admin/i.test(msg) ? 403 :
+      500;
+    return NextResponse.json({ error: status === 500 ? msg : "Forbidden" }, { status });
   }
 }

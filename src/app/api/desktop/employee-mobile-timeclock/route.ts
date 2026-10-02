@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit/writeAudit";
 import { requireDesktopShopAdmin } from "@/lib/desktopShopAdminAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ function text(value: unknown) {
 function statusFor(message: string) {
   if (/not authenticated/i.test(message)) return 401;
   if (/access denied/i.test(message)) return 403;
+  const billingStatus = statusForBillingWriteError(message, 0);
+  if (billingStatus) return billingStatus;
   if (/uuid|missing/i.test(message)) return 400;
   return 500;
 }
@@ -55,6 +58,7 @@ export async function POST(req: Request) {
     if (!employeeId) return NextResponse.json({ ok: false, error: "Missing employee_id" }, { status: 400 });
 
     const { user } = await requireDesktopShopAdmin(req, shopId);
+    await requireShopEntitlementWriteAllowed(shopId, "desktop.employee_mobile_timeclock.update");
     const patch = {
       mobile_timeclock_enabled: (body as any).mobile_timeclock_enabled === true,
       mobile_timeclock_requires_review: (body as any).mobile_timeclock_requires_review === true,

@@ -128,7 +128,7 @@ async function ensureAdminEmployee(
     throw new Error(`[${EMPLOYEE_TABLE}] ${formatSbError(lookupError)}`);
   }
 
-  if (existingEmployee?.id) {
+  if (s(existingEmployee?.id)) {
     const { error: updateError } = await admin.from(EMPLOYEE_TABLE).update(employeePayload).eq("id", existingEmployee.id);
     if (updateError) {
       throw new Error(`[${EMPLOYEE_TABLE}] ${formatSbError(updateError)}`);

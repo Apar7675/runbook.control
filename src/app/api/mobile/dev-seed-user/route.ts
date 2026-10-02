@@ -20,6 +20,22 @@ function ensureLocalhost(req: Request) {
   }
 }
 
+function ensureDevelopmentSeedAccess(req: Request) {
+  if (process.env.NODE_ENV !== "development") {
+    const notFound = new Error("Not found");
+    (notFound as Error & { status?: number }).status = 404;
+    throw notFound;
+  }
+
+  const expectedSecret = s(process.env.RUNBOOK_DEV_SEED_SECRET);
+  const suppliedSecret = s(req.headers.get("x-runbook-dev-secret"));
+  if (!expectedSecret || suppliedSecret !== expectedSecret) {
+    const denied = new Error("Forbidden");
+    (denied as Error & { status?: number }).status = 403;
+    throw denied;
+  }
+}
+
 async function findAuthUserByEmail(admin: ReturnType<typeof supabaseAdmin>, email: string) {
   const normalized = s(email).toLowerCase();
   for (let page = 1; page <= 25; page++) {
@@ -86,6 +102,7 @@ async function resolveShop(admin: ReturnType<typeof supabaseAdmin>, queryRaw: st
 
 export async function POST(req: Request) {
   try {
+    ensureDevelopmentSeedAccess(req);
     ensureLocalhost(req);
 
     const body = await req.json().catch(() => ({}));
@@ -190,6 +207,8 @@ export async function POST(req: Request) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error?.message ?? "Seed failed" }, { status: 500 });
+    const status = (error as any)?.status ?? 500;
+    const message = status === 404 ? "Not found" : status === 403 ? "Forbidden" : error?.message ?? "Seed failed";
+    return NextResponse.json({ ok: false, error: message }, { status });
   }
 }

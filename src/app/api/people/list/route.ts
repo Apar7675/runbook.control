@@ -26,6 +26,7 @@ type DirectoryUser = {
   mobile_access_enabled: boolean;
   workstation_access_enabled: boolean;
   runbook_access_enabled: boolean;
+  can_administrative_complete_close: boolean;
   created_at: string | null;
   membership_created_at: string | null;
   source: "employee" | "membership_only";
@@ -49,7 +50,7 @@ export async function GET(req: Request) {
     const [{ data: employeesRaw, error: employeeError }, { data: membersRaw, error: memberError }] = await Promise.all([
       admin
         .from("employees")
-        .select("id,auth_user_id,employee_code,display_name,full_name,email,phone,role,status,is_active,mobile_access_enabled,workstation_access_enabled,runbook_access_enabled,created_at")
+        .select("id,auth_user_id,employee_code,display_name,full_name,email,phone,role,status,is_active,mobile_access_enabled,workstation_access_enabled,runbook_access_enabled,can_administrative_complete_close,created_at")
         .eq("shop_id", shopId)
         .order("display_name", { ascending: true }),
       admin
@@ -120,6 +121,7 @@ export async function GET(req: Request) {
         mobile_access_enabled: Boolean(employee?.mobile_access_enabled),
         workstation_access_enabled: Boolean(employee?.workstation_access_enabled),
         runbook_access_enabled: Boolean(employee?.runbook_access_enabled),
+        can_administrative_complete_close: employee?.can_administrative_complete_close === true,
         created_at: employee?.created_at ?? null,
         membership_created_at: membership?.created_at ?? null,
         source: "employee",

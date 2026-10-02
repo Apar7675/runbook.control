@@ -10,6 +10,7 @@ import {
   type MobilePunchPolicy,
 } from "@/lib/mobileTimeclockPolicy";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,6 +113,8 @@ function normalizePatch(body: any) {
 function statusFor(message: string) {
   if (/not authenticated/i.test(message)) return 401;
   if (/access denied/i.test(message)) return 403;
+  const billingStatus = statusForBillingWriteError(message, 0);
+  if (billingStatus) return billingStatus;
   if (/uuid|valid|positive|required|cidr|latitude|longitude/i.test(message)) return 400;
   return 500;
 }
@@ -147,6 +150,7 @@ export async function POST(req: Request) {
     if (!shopId) return NextResponse.json({ ok: false, error: "Missing shop_id" }, { status: 400 });
 
     const { user } = await requireDesktopShopAdmin(req, shopId);
+    await requireShopEntitlementWriteAllowed(shopId, "desktop.mobile_timeclock_policy.update");
     const patch = normalizePatch(body);
     const admin = supabaseAdmin();
 

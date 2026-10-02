@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { assertUuid, isPlatformAdmin } from "@/lib/authz";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,16 +16,46 @@ function sanitizeSegment(value: string, fallback: string) {
   return cleaned || fallback;
 }
 
-async function ensureMembership(admin: any, shopId: string, userId: string) {
-  const { data, error } = await admin
+async function authorizeAvatarUpload(admin: any, shopId: string, employeeCode: string, userId: string) {
+  assertUuid("shop_id", shopId);
+
+  if (await isPlatformAdmin(userId)) {
+    return { isPlatformAdmin: true, reason: "platform_admin" };
+  }
+
+  const { data: membership, error: membershipError } = await admin
     .from("rb_shop_members")
     .select("shop_id,user_id,role")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
-  if (!data?.shop_id) throw new Error("Not authorized for this shop.");
+  if (membershipError) throw new Error(membershipError.message);
+  if (!membership?.shop_id) {
+    console.warn(`[Auth] desktop/upload-avatar blocked: user=${userId} shop_id=${shopId} reason=shop_access_required`);
+    throw new Error("Access denied");
+  }
+
+  const role = s(membership.role).toLowerCase();
+  if (role === "owner" || role === "admin") {
+    return { isPlatformAdmin: false, reason: "shop_admin" };
+  }
+
+  const { data: employee, error: employeeError } = await admin
+    .from("employees")
+    .select("id,auth_user_id")
+    .eq("shop_id", shopId)
+    .eq("employee_code", employeeCode)
+    .maybeSingle();
+
+  if (employeeError) throw new Error(employeeError.message);
+  if (s(employee?.auth_user_id) === userId) {
+    return { isPlatformAdmin: false, reason: "self" };
+  }
+
+  console.warn(`[Auth] desktop/upload-avatar blocked: user=${userId} shop_id=${shopId} reason=self_or_shop_admin_required`);
+  throw new Error("Access denied");
 }
 
 export async function POST(req: Request) {
@@ -41,7 +73,10 @@ export async function POST(req: Request) {
     if (!imageBase64) return NextResponse.json({ ok: false, error: "image_base64 required" }, { status: 400 });
 
     const admin = supabaseAdmin();
-    await ensureMembership(admin, shopId, user.id);
+    const auth = await authorizeAvatarUpload(admin, shopId, employeeCode, user.id);
+    if (!auth.isPlatformAdmin) {
+      await requireShopEntitlementWriteAllowed(shopId, "desktop/upload-avatar");
+    }
 
     const bytes = Buffer.from(imageBase64, "base64");
     const safeEmployeeCode = sanitizeSegment(employeeCode, "employee");
@@ -60,6 +95,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, path });
   } catch (e: any) {
     const msg = String(e?.message ?? e);
-    return NextResponse.json({ ok: false, error: msg }, { status: /authorized|authenticated/i.test(msg) ? 401 : 500 });
+    const status = /not authenticated/i.test(msg) ? 401 : /access denied|authorized/i.test(msg) ? 403 : /must be a uuid/i.test(msg) ? 400 : statusForBillingWriteError(msg, 500);
+    return NextResponse.json({ ok: false, error: status === 500 || status === 400 ? msg : "Forbidden" }, { status });
   }
 }

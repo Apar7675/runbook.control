@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { assertUuid } from "@/lib/authz";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
+import { requireDesktopShopAdmin } from "@/lib/desktopShopAdminAuth";
 import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
 
 export const runtime = "nodejs";
@@ -207,7 +209,6 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { user } = await requireSessionUser(req);
     const body = await req.json().catch(() => ({}));
     const shopId = String(body.shop_id ?? "").trim();
     const deviceId = String(body.device_id ?? "").trim();
@@ -222,7 +223,18 @@ export async function POST(req: Request) {
     assertUuid("device_id", deviceId);
 
     const admin = supabaseAdmin();
-    await requireMembership(admin, shopId, user.id);
+    let authContext: Awaited<ReturnType<typeof requireDesktopShopAdmin>>;
+    try {
+      authContext = await requireDesktopShopAdmin(req, shopId);
+    } catch (error: any) {
+      const { user } = await requireSessionUser(req).catch(() => ({ user: { id: "unknown" } as any }));
+      console.warn(`[Auth] desktop/device-role blocked: user=${user.id} shop_id=${shopId} reason=shop_admin_required`);
+      throw error;
+    }
+
+    if (!authContext.isPlatformAdmin) {
+      await requireShopEntitlementWriteAllowed(shopId, "desktop/device-role");
+    }
 
     const loadedDevice = await loadDevice(admin, deviceId);
     const existing = loadedDevice.data;
@@ -279,7 +291,7 @@ export async function POST(req: Request) {
     });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status = /not authenticated/i.test(msg) ? 401 : /access denied/i.test(msg) ? 403 : /must be a uuid/i.test(msg) ? 400 : 500;
+    const status = /not authenticated/i.test(msg) ? 401 : /access denied/i.test(msg) ? 403 : /must be a uuid/i.test(msg) ? 400 : statusForBillingWriteError(msg, 500);
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

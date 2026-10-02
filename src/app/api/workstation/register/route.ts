@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
 
     const admin = supabaseAdmin();
     await getShopMembership(admin, shop_id, user.id);
+    await requireShopEntitlementWriteAllowed(shop_id, "workstation.register");
 
     const { data: existing, error: existingError } = await admin
       .from("rb_devices")
@@ -68,7 +70,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, workstation: { id: workstation_id, shop_id, name: workstation_name, status: "active", device_type: "workstation" }, existing: false });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status = /not authenticated/i.test(msg) ? 401 : /access denied/i.test(msg) ? 403 : 400;
+    const status = statusForBillingWriteError(msg, 0) || (/not authenticated/i.test(msg) ? 401 : /access denied/i.test(msg) ? 403 : 400);
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

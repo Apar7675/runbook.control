@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
 import { readLocalDeviceIdentity } from "@/lib/device/localIdentity";
+import { requireShopEntitlementWriteAllowed, statusForBillingWriteError } from "@/lib/billing/writeGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -122,6 +123,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
+    await requireShopEntitlementWriteAllowed(shop_id, "desktop.register_device");
 
     const existing = await loadExistingDevice(admin, device_id);
 
@@ -156,7 +158,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, existing: false, device_id, shop_id, status: "active", device_role: "" });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
-    const status = /not authenticated/i.test(msg) ? 401 : 400;
+    const status = statusForBillingWriteError(msg, 0) || (/not authenticated/i.test(msg) ? 401 : 400);
     return NextResponse.json({ ok: false, error: msg }, { status });
   }
 }

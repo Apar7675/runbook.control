@@ -125,10 +125,14 @@ async function getShopMembership(admin: any, shopId: string, userId: string) {
     .select("id, role")
     .eq("shop_id", shopId)
     .eq("user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!data?.id) throw new Error("Access denied");
+  const role = s(data?.role).toLowerCase();
+  if (!data?.id || (role !== "owner" && role !== "admin")) {
+    throw new Error("Access denied");
+  }
   return data;
 }
 
@@ -432,6 +436,9 @@ export async function POST(req: Request) {
     if (remoteEmployeeId) assertUuid("remote_employee_id", remoteEmployeeId);
 
     const admin = supabaseAdmin();
+    // This exact active owner/admin gate is necessary but is not a fresh-auth
+    // step-up. Production enablement still requires an approved provisioning
+    // step-up contract; the F03 completion grant is intentionally not reused.
     await getShopMembership(admin, shopId, user.id);
 
     const entitlement = await getShopEntitlement(shopId);
