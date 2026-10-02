@@ -13,6 +13,12 @@ import {
   issueAdministrativeAuthorizationGrant,
   MAXIMUM_ADMINISTRATIVE_TARGET_ID,
 } from "@/lib/administrativeAuthorizationGrant";
+import {
+  administrativeAuthorityIsStable,
+  AdministrativeCompletionAuthorityError,
+  requireCanonicalAdministrativeUuid,
+  resolveAdministrativeCompletionAuthority,
+} from "@/lib/administrativeCompletionAuthority";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,16 +32,6 @@ const ISSUE_REQUEST_SCHEMA = {
   reason: "string",
   password: "string",
 } as const;
-
-class AdministrativeMembershipError extends Error {
-  readonly status: 403 | 503;
-
-  constructor(status: 403 | 503) {
-    super("Active owner or administrator authority could not be verified.");
-    this.name = "AdministrativeMembershipError";
-    this.status = status;
-  }
-}
 
 function noStoreJson(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(body, {
@@ -62,27 +58,6 @@ function createPublicClient() {
   });
 }
 
-async function requireActiveAdministrativeMembership(
-  admin: ReturnType<typeof supabaseAdmin>,
-  shopId: string,
-  userId: string,
-): Promise<"owner" | "admin"> {
-  const { data, error } = await admin
-    .from("rb_shop_members")
-    .select("id,role")
-    .eq("shop_id", shopId)
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) throw new AdministrativeMembershipError(503);
-  const role = String(data?.role ?? "").trim().toLowerCase();
-  if (!data?.id || (role !== "owner" && role !== "admin")) {
-    throw new AdministrativeMembershipError(403);
-  }
-  return role;
-}
-
 export async function POST(req: Request) {
   try {
     const { user } = await requireSessionUser(req);
@@ -96,6 +71,8 @@ export async function POST(req: Request) {
     const password = body.password as string;
     assertUuid("authorization_id", authorizationId);
     assertUuid("shop_id", shopId);
+    requireCanonicalAdministrativeUuid("authorization_id", authorizationId);
+    requireCanonicalAdministrativeUuid("shop_id", shopId);
     if (
       scope !== ADMINISTRATIVE_COMPLETION_SCOPE ||
       !Number.isSafeInteger(workOrderId) ||
@@ -114,7 +91,11 @@ export async function POST(req: Request) {
     }
 
     const admin = supabaseAdmin();
-    await requireActiveAdministrativeMembership(admin, shopId, user.id);
+    const authorityBeforeFreshAuthentication = await resolveAdministrativeCompletionAuthority(
+      admin,
+      shopId,
+      user.id,
+    );
 
     // Defense in depth only: this bucket is process-local and resets across instances/restarts.
     // Production rollout must separately verify the deployed Supabase Auth sign-in rate limits.
@@ -139,7 +120,19 @@ export async function POST(req: Request) {
       return noStoreJson({ ok: false, error: "Fresh administrator credentials were rejected." }, 401);
     }
 
-    const role = await requireActiveAdministrativeMembership(admin, shopId, user.id);
+    const authorityAfterFreshAuthentication = await resolveAdministrativeCompletionAuthority(
+      admin,
+      shopId,
+      user.id,
+    );
+    if (
+      !administrativeAuthorityIsStable(
+        authorityBeforeFreshAuthentication,
+        authorityAfterFreshAuthentication,
+      )
+    ) {
+      throw new AdministrativeCompletionAuthorityError(403, "ADMINISTRATIVE_AUTHORITY_CHANGED");
+    }
 
     const issued = issueAdministrativeAuthorizationGrant(
       {
@@ -151,7 +144,8 @@ export async function POST(req: Request) {
       },
       {
         userId: user.id,
-        role,
+        employeeId: authorityAfterFreshAuthentication.employeeId,
+        role: authorityAfterFreshAuthentication.role,
       },
     );
 
@@ -164,14 +158,14 @@ export async function POST(req: Request) {
     if (error instanceof SecurityJsonRequestError) {
       return noStoreJson({ ok: false, error: "The administrative authorization request is invalid." }, error.status);
     }
-    if (error instanceof AdministrativeMembershipError) {
+    if (error instanceof AdministrativeCompletionAuthorityError) {
       return noStoreJson(
         {
           ok: false,
           error:
             error.status === 503
               ? "Administrative authority could not be verified."
-              : "Active owner or administrator authority is required.",
+              : "Active, explicitly capable owner or administrator authority is required.",
         },
         error.status,
       );
@@ -181,7 +175,7 @@ export async function POST(req: Request) {
       ? 401
       : /rate limit exceeded/i.test(message)
         ? 429
-        : /must be a uuid|uuid is invalid/i.test(message)
+        : /must be a uuid|uuid is invalid|canonical uuid/i.test(message)
           ? 400
           : /signing is not configured/i.test(message)
             ? 503

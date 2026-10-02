@@ -10,6 +10,9 @@
     "db:push": "node scripts/run-migrations.js",
     "test:f04:static": "node scripts/verify-f04-legacy-lockdown.js",
     "test:f05:static": "node scripts/verify-f05-employee-boundary.js",
+    "test:f06:static": "node scripts/verify-f06-messaging-boundary.js",
+    "test:f06:api": "node scripts/verify-f06-api-boundary.js",
+    "test:f06": "npm run test:f06:static && npm run test:f06:api",
     "test:f03:authorization": "node scripts/verify-f03-administrative-authorization.js"
   },
   "dependencies": {

@@ -9,6 +9,12 @@ import {
   MAXIMUM_ADMINISTRATIVE_TARGET_ID,
   verifyAdministrativeAuthorizationGrant,
 } from "@/lib/administrativeAuthorizationGrant";
+import {
+  AdministrativeCompletionAuthorityError,
+  requireCanonicalAdministrativeUuid,
+  resolveAdministrativeCompletionAuthority,
+} from "@/lib/administrativeCompletionAuthority";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +51,8 @@ export async function POST(req: Request) {
 
     assertUuid("authorization_id", authorizationId);
     assertUuid("shop_id", shopId);
+    requireCanonicalAdministrativeUuid("authorization_id", authorizationId);
+    requireCanonicalAdministrativeUuid("shop_id", shopId);
     if (
       grant.length === 0 ||
       grant.length > 4096 ||
@@ -68,6 +76,17 @@ export async function POST(req: Request) {
       operationId,
       reason,
     });
+    const currentAuthority = await resolveAdministrativeCompletionAuthority(
+      supabaseAdmin(),
+      claims.shop_id,
+      claims.user_id,
+    );
+    if (
+      currentAuthority.employeeId !== claims.employee_id ||
+      currentAuthority.role !== claims.role
+    ) {
+      throw new AdministrativeCompletionAuthorityError(403, "ADMINISTRATIVE_SIGNED_IDENTITY_STALE");
+    }
 
     return noStoreJson({
       ok: true,
@@ -78,7 +97,11 @@ export async function POST(req: Request) {
       operation_id: claims.operation_id,
       reason,
       user_id: claims.user_id,
+      employee_id: claims.employee_id,
       role: claims.role,
+      capability_code: claims.capability_code,
+      capability_version: claims.capability_version,
+      action: claims.action,
       authenticated_utc: claims.authenticated_utc,
       expires_utc: claims.expires_utc,
     });
@@ -89,19 +112,35 @@ export async function POST(req: Request) {
         error.status,
       );
     }
+    if (error instanceof AdministrativeCompletionAuthorityError) {
+      return noStoreJson(
+        {
+          ok: false,
+          error:
+            error.status === 503
+              ? "Administrative authorization verification is unavailable."
+              : "Administrative authorization grant was rejected.",
+        },
+        error.status,
+      );
+    }
     const message = error instanceof Error ? error.message : String(error);
     const status = /signing is not configured/i.test(message)
       ? 503
-      : /uuid|invalid|signature|expired|match/i.test(message)
-        ? 403
-        : 500;
+      : /must be a uuid|canonical uuid/i.test(message)
+        ? 400
+        : /invalid|signature|expired|match/i.test(message)
+          ? 403
+          : 500;
     return noStoreJson(
       {
         ok: false,
         error:
           status === 503
             ? "Administrative authorization verification is unavailable."
-            : "Administrative authorization grant was rejected.",
+            : status === 400
+              ? "The administrative authorization grant request is invalid."
+              : "Administrative authorization grant was rejected.",
       },
       status,
     );

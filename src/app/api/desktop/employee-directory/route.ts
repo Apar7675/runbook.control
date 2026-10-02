@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
+import {
+  ADMINISTRATIVE_COMPLETION_CAPABILITY_CODE,
+  ADMINISTRATIVE_COMPLETION_CAPABILITY_VERSION,
+  ADMINISTRATIVE_COMPLETION_DIRECTORY_CONTRACT_VERSION,
+} from "@/lib/administrativeCompletionAuthority";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function noStoreJson(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
+}
 
 function text(v: any) {
   return String(v ?? "").trim();
@@ -61,7 +74,7 @@ export async function GET(req: NextRequest) {
     const shopId = text(req.nextUrl.searchParams.get("shop_id"));
 
     if (!shopId) {
-      return NextResponse.json({ ok: false, error: "shop_id required" }, { status: 400 });
+      return noStoreJson({ ok: false, error: "shop_id required" }, 400);
     }
 
     const auth = await authorizeDesktop(req, admin, shopId);
@@ -69,7 +82,7 @@ export async function GET(req: NextRequest) {
     let employees: any[] = [];
     const modern = await admin
       .from("employees")
-      .select("id, shop_id, auth_user_id, source_device_id, source_local_employee_id, employee_code, display_name, full_name, preferred_name, username, email, phone, department, job_title, company_name, status, home_address_1, home_address_2, home_city, home_state, home_postal_code, social_security_number, avatar_url_256, avatar_url_512, role, is_active, runbook_access_enabled, mobile_access_enabled, mobile_timeclock_enabled, mobile_timeclock_requires_review, workstation_access_enabled, can_dashboard, can_po_entry, can_components, can_ballooning, can_inspection, can_gcoding, can_routing_db, can_work_orders, can_messaging, can_library, can_hr_department, can_settings, can_timeclock, can_dashboard_view, can_jobs_module, can_inspection_entry, can_camera_view, workstation_session_timeout_minutes, mobile_pin_salt_base64, mobile_pin_hash_base64")
+      .select("id, shop_id, auth_user_id, source_device_id, source_local_employee_id, employee_code, display_name, full_name, preferred_name, username, email, phone, department, job_title, company_name, status, home_address_1, home_address_2, home_city, home_state, home_postal_code, social_security_number, avatar_url_256, avatar_url_512, role, is_active, runbook_access_enabled, mobile_access_enabled, mobile_timeclock_enabled, mobile_timeclock_requires_review, workstation_access_enabled, can_dashboard, can_po_entry, can_components, can_ballooning, can_inspection, can_gcoding, can_routing_db, can_work_orders, can_messaging, can_library, can_hr_department, can_settings, can_timeclock, can_dashboard_view, can_jobs_module, can_inspection_entry, can_camera_view, can_administrative_complete_close, workstation_session_timeout_minutes, mobile_pin_salt_base64, mobile_pin_hash_base64")
       .eq("shop_id", shopId)
       .order("display_name", { ascending: true });
 
@@ -126,12 +139,14 @@ export async function GET(req: NextRequest) {
         can_jobs_module: true,
         can_inspection_entry: false,
         can_camera_view: false,
+        can_administrative_complete_close: false,
         workstation_session_timeout_minutes: 30,
         mobile_pin_salt_base64: "",
         mobile_pin_hash_base64: text(employee.employee_code),
       }));
     }
 
+    const administrativeProjectionEligible = auth.mode === "user" && !modern.error;
     const rows = await Promise.all(
       (employees || []).map(async (employee: any) => {
         const avatar256 = text(employee.avatar_url_256);
@@ -169,7 +184,7 @@ export async function GET(req: NextRequest) {
           avatar_url_512: avatar512,
           avatar_display_url_256: displayUrl256,
           role: text(employee.role),
-          is_active: !!employee.is_active,
+          is_active: employee.is_active === true,
           runbook_access_enabled: !!employee.runbook_access_enabled,
           mobile_access_enabled: !!employee.mobile_access_enabled,
           mobile_timeclock_enabled: !!employee.mobile_timeclock_enabled,
@@ -192,6 +207,15 @@ export async function GET(req: NextRequest) {
           can_jobs_module: !!employee.can_jobs_module,
           can_inspection_entry: !!employee.can_inspection_entry,
           can_camera_view: !!employee.can_camera_view,
+          administrative_capabilities:
+            administrativeProjectionEligible && employee.can_administrative_complete_close === true
+              ? [
+                  {
+                    code: ADMINISTRATIVE_COMPLETION_CAPABILITY_CODE,
+                    version: ADMINISTRATIVE_COMPLETION_CAPABILITY_VERSION,
+                  },
+                ]
+              : [],
           workstation_session_timeout_minutes: Number(employee.workstation_session_timeout_minutes ?? 15) || 15,
           mobile_pin_salt_base64: text(employee.mobile_pin_salt_base64),
           mobile_pin_hash_base64: text(employee.mobile_pin_hash_base64),
@@ -199,16 +223,21 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    return NextResponse.json({
+    return noStoreJson({
       ok: true,
       auth_mode: auth.mode,
       shop_id: shopId,
+      administrative_completion_contract_version: administrativeProjectionEligible
+        ? ADMINISTRATIVE_COMPLETION_DIRECTORY_CONTRACT_VERSION
+        : 0,
+      administrative_completion_snapshot_id: randomUUID(),
+      administrative_completion_snapshot_issued_utc: new Date().toISOString(),
       employees: rows,
     });
   } catch (e: any) {
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: String(e?.message ?? e) },
-      { status: /authorized|authenticated/i.test(String(e?.message ?? e)) ? 401 : 500 }
+      /authorized|authenticated/i.test(String(e?.message ?? e)) ? 401 : 500,
     );
   }
 }

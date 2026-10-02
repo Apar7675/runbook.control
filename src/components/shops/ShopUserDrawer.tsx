@@ -26,6 +26,7 @@ export type ShopUserRow = {
   mobile_timeclock_requires_review: boolean;
   workstation_access_enabled: boolean;
   runbook_access_enabled: boolean;
+  can_administrative_complete_close: boolean;
   created_at: string | null;
   membership_created_at: string | null;
   source: "employee" | "membership_only";
@@ -58,22 +59,26 @@ export default function ShopUserDrawer({
   const [busy, setBusy] = React.useState(false);
   const [timeclockBusy, setTimeclockBusy] = React.useState(false);
   const [workstationBusy, setWorkstationBusy] = React.useState(false);
+  const [administrativeCompletionBusy, setAdministrativeCompletionBusy] = React.useState(false);
   const [status, setStatus] = React.useState("");
   const [mobileTimeclockEnabled, setMobileTimeclockEnabled] = React.useState(false);
   const [mobileTimeclockRequiresReview, setMobileTimeclockRequiresReview] = React.useState(false);
   const [workstationAccessEnabled, setWorkstationAccessEnabled] = React.useState(false);
+  const [administrativeCompletionEnabled, setAdministrativeCompletionEnabled] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) {
       setBusy(false);
       setTimeclockBusy(false);
       setWorkstationBusy(false);
+      setAdministrativeCompletionBusy(false);
       setStatus("");
     }
     setMobileTimeclockEnabled(Boolean(user?.mobile_timeclock_enabled));
     setMobileTimeclockRequiresReview(Boolean(user?.mobile_timeclock_requires_review));
     setWorkstationAccessEnabled(Boolean(user?.workstation_access_enabled));
-  }, [open, user?.employee_id, user?.mobile_timeclock_enabled, user?.mobile_timeclock_requires_review, user?.workstation_access_enabled]);
+    setAdministrativeCompletionEnabled(user?.can_administrative_complete_close === true);
+  }, [open, user?.employee_id, user?.mobile_timeclock_enabled, user?.mobile_timeclock_requires_review, user?.workstation_access_enabled, user?.can_administrative_complete_close]);
 
   if (!open || !user) return null;
 
@@ -179,6 +184,39 @@ export default function ShopUserDrawer({
     onRemoved();
   }
 
+  async function saveAdministrativeCompletionCapability() {
+    if (!activeUser.employee_id) return;
+    setAdministrativeCompletionBusy(true);
+    setStatus("");
+
+    const response = await safeFetch<{
+      ok?: boolean;
+      error?: string;
+      employee?: { enabled?: boolean };
+    }>("/api/admin/users/administrative-completion", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        shop_id: shopId,
+        employee_id: activeUser.employee_id,
+        enabled: administrativeCompletionEnabled,
+      }),
+    });
+
+    if (!response.ok || !response.data?.ok) {
+      setStatus(response.ok ? response.data?.error ?? "Could not save administrative completion capability." : `${response.status}: ${response.error}`);
+      setAdministrativeCompletionBusy(false);
+      return;
+    }
+
+    setAdministrativeCompletionEnabled(response.data.employee?.enabled === true);
+    setStatus("Administrative completion capability saved.");
+    setAdministrativeCompletionBusy(false);
+    onRemoved();
+  }
+
   return (
     <div
       style={{
@@ -228,6 +266,7 @@ export default function ShopUserDrawer({
           <DetailRow label="Mobile" value={activeUser.mobile_access_enabled ? "Ready" : "Not ready"} />
           <DetailRow label="Mobile Time Clock" value={mobileTimeclockEnabled ? "Phone punching allowed" : "Phone punching not allowed"} />
           <DetailRow label="Workstation" value={workstationAccessEnabled ? "Ready" : "Not ready"} />
+          <DetailRow label="Admin Complete / Close" value={administrativeCompletionEnabled ? "Explicitly enabled" : "Not enabled"} />
           <DetailRow label="Created" value={activeUser.created_at ? formatDateTime(activeUser.created_at) : activeUser.membership_created_at ? formatDateTime(activeUser.membership_created_at) : "Unknown"} />
           <DetailRow label="Auth User" value={activeUser.auth_user_id ?? "Not linked"} />
         </ControlPanelV2>
@@ -259,6 +298,54 @@ export default function ShopUserDrawer({
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <ControlActionButtonV2 tone="primary" disabled={workstationBusy || !activeUser.employee_id} onClick={saveWorkstationAccess}>
                 {workstationBusy ? "Saving..." : "Save Workstation Access"}
+              </ControlActionButtonV2>
+            </div>
+          </div>
+        </ControlPanelV2>
+
+        <ControlPanelV2
+          title="Administrative Complete / Close"
+          description="Action-specific authority for administrative completion or closure of released work. Full Admin and other roles or permissions do not imply this capability. Saving requires an AAL2 owner/admin session."
+        >
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: activeUser.employee_id ? "pointer" : "not-allowed" }}>
+              <input
+                type="checkbox"
+                checked={administrativeCompletionEnabled}
+                disabled={
+                  !activeUser.employee_id ||
+                  administrativeCompletionBusy ||
+                  (!administrativeCompletionEnabled && (
+                    !activeUser.auth_user_id ||
+                    !activeUser.is_active ||
+                    activeUser.membership_is_active === false ||
+                    (activeUser.membership_role !== "owner" && activeUser.membership_role !== "admin")
+                  ))
+                }
+                onChange={(event) => setAdministrativeCompletionEnabled(event.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span style={{ display: "grid", gap: 3 }}>
+                <span style={{ color: t.color.text, fontSize: 13, fontWeight: 700 }}>Allow administrative completion and closure</span>
+                <span style={{ color: t.color.textQuiet, fontSize: 12, lineHeight: 1.45 }}>
+                  The employee must remain active, linked to one exact Control account, and backed by an active owner/admin shop membership.
+                </span>
+              </span>
+            </label>
+
+            {!activeUser.auth_user_id || !activeUser.is_active || activeUser.membership_is_active === false || (activeUser.membership_role !== "owner" && activeUser.membership_role !== "admin") ? (
+              <div style={{ color: t.color.warning, fontSize: 12 }}>
+                This employee is not currently eligible to enable the capability. An existing grant can still be disabled.
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <ControlActionButtonV2
+                tone="primary"
+                disabled={!activeUser.employee_id || administrativeCompletionBusy}
+                onClick={saveAdministrativeCompletionCapability}
+              >
+                {administrativeCompletionBusy ? "Saving..." : "Save Administrative Capability"}
               </ControlActionButtonV2>
             </div>
           </div>
