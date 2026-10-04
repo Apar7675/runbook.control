@@ -76,4 +76,4 @@ Architecture violations are not allowed even if the code compiles.
 
 ## 9. Instruction For Missing Context
 
-If a change depends on architecture details not present in the current context, do not guess. Ask for the relevant System Bible or app bible section before proceeding.
+If a change depends on architecture details not present locally, fetch the relevant System Bible or app bible from `Apar7675/runbook-desktop/Docs/Architecture/` on GitHub before proceeding. Do not guess and do not require access to a particular workstation.
