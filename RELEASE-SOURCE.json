@@ -1,0 +1,1013 @@
+{
+  "version": 4,
+  "scope": "Approved compact Control presentation on the existing production runtime",
+  "runtimeSourceCommit": "0ea2b1d6d360bd928285028a7749cec3def2dfd5",
+  "approvedPresentationPreviewCommit": "62b576ff4b9e1630d4e853538ca5795369abef4e",
+  "historyPolicy": "Prepared for independent-root publication. This preparation changes no Git branch or history.",
+  "sourcePolicy": "197 reviewed files; seven backup/test files omitted; one hashed contact annotation neutralized. Other candidate bytes and line endings retained.",
+  "behaviorScope": "Reviewed existing production authentication, MFA, onboarding, roles, loaders and backend retained. No business-grant migration or activation.",
+  "verification": {
+    "productionBuild": "Passed",
+    "syntheticActualSourceBrowserChecks": "Passed",
+    "browserHarnessVersion": 2,
+    "browserConfigSHA256": "C76F319F95797746825AEA88A5E6C1985D73B7363CEAEAEAE4A1BB19C24519C7",
+    "browserImplementation": "Existing pinned Chromium headless shell; synthetic fixture",
+    "productionBuildResultSHA256": "E6AA5B18BCBFC6AD82D875415A1F4957146CB9E14B0C50495542E5908AF87B00",
+    "browserResultSHA256": "7640582432F66C09F69A9047443572E02E09549E6294CFDD6602672317115CEF",
+    "browserCaptureCount": 33,
+    "browserBaseCaptureCount": 28,
+    "browserCheckCount": 442,
+    "fixtureCaseCount": 15,
+    "liveAuthenticatedSessionClaimed": false,
+    "nextHydrationClaimed": false,
+    "fixtureProvenance": "Actual production React RootLayout/AuthedLayout/DashboardPage/SideNav plus candidate presentation; synthetic boundary data; static SSR with native browser controls, not Next hydration or an authenticated live session",
+    "inertSyntheticAccountControls": true
+  },
+  "files": [
+    {
+      "path": ".eslintrc.cjs",
+      "sha256": "4570AB7D82CFC2452EA36DFE721CEF382097113F03C28A907A55B2795A638507",
+      "bytes": 563
+    },
+    {
+      "path": "middleware.ts",
+      "sha256": "A98C8A5D856D00D92909DB50A89CB0BD98326F81255E3815C11C3E3E87604F2F",
+      "bytes": 1762
+    },
+    {
+      "path": "next.config.ts",
+      "sha256": "A972C4F0FFA6DD714E7909B02D1AC19D2F2FE3D01F191EFD2C5054BD6F142EC1",
+      "bytes": 140
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "8E361764F885BED9130303C2D03EEF4D119206E90D9C3B177D1CF91B5C38BDFE",
+      "bytes": 218388
+    },
+    {
+      "path": "package.json",
+      "sha256": "81E981142103BCDEE21B5B87004C310990219D2B6850643B5EDBDE1133985242",
+      "bytes": 654
+    },
+    {
+      "path": "public/file.svg",
+      "sha256": "2B67812C325C199A02536CDBEEA0C593A72F707D323B72EE3E08DBAB06753BD4",
+      "bytes": 391
+    },
+    {
+      "path": "public/globe.svg",
+      "sha256": "B614B9BF183925957661AC851498FE1D8029FD43A62FBFED86F9E2624A57E7CF",
+      "bytes": 1035
+    },
+    {
+      "path": "public/images/chatgpt_space_bg.png",
+      "sha256": "4EDA2E9943018E97C18CA537AFC5BB28CDF48C08D2EF55297F78FBEA94F41098",
+      "bytes": 1967472
+    },
+    {
+      "path": "public/next.svg",
+      "sha256": "55995DFAD6ECB4945A1E856DDCA03C5E16AA5BF13FD21B4DF6A74AE79357BCFC",
+      "bytes": 1375
+    },
+    {
+      "path": "public/runbook-splash.png",
+      "sha256": "278DEAA9ED920F4254F581D3FD98235B4F325EFE209D7E2D41DFEC852B129E21",
+      "bytes": 2548669
+    },
+    {
+      "path": "public/vercel.svg",
+      "sha256": "F081337B2FEE635B455B63275406A3E7F39D6A014E25AD90DAB5A67E62A12AC4",
+      "bytes": 128
+    },
+    {
+      "path": "public/window.svg",
+      "sha256": "644768C4AAEB4767BCE293344EEB0C125FB804A94D801440424072202D85E3A1",
+      "bytes": 385
+    },
+    {
+      "path": "scripts/run-migrations.js",
+      "sha256": "FFB18088497A8715CF67408B1A4D1366BF8FAA8723C228A1C4D8926C7BAFB9A9",
+      "bytes": 1516
+    },
+    {
+      "path": "src/app/(authed)/apps/page.tsx",
+      "sha256": "C0F9D37ED1504A8E0524041A086B4843AC5E4FEB0F0C6D180CBEB3353A81913A",
+      "bytes": 4780
+    },
+    {
+      "path": "src/app/(authed)/audit/page.tsx",
+      "sha256": "2E0FC5335AE29A3B4AD02AB642D7E2A6CDB671163725F6DABD4B3F87D8AF1560",
+      "bytes": 7357
+    },
+    {
+      "path": "src/app/(authed)/billing-access/page.tsx",
+      "sha256": "CBF5434E700B40812436467F0AB6C65C7306E2F0123A6921C1DDF9C6E2ADB5A8",
+      "bytes": 5003
+    },
+    {
+      "path": "src/app/(authed)/dashboard/page.tsx",
+      "sha256": "108535323001D8D5973F072EE05BDE2B183700B74BE9D6E0AB8A00DC88547FE6",
+      "bytes": 5410
+    },
+    {
+      "path": "src/app/(authed)/devices/[deviceId]/page.tsx",
+      "sha256": "CFFB337231AFC963A19F9F023F0F4F2D2BBE758B9305896AE3C5B5A8840D9C5F",
+      "bytes": 18847
+    },
+    {
+      "path": "src/app/(authed)/devices/page.tsx",
+      "sha256": "4E8FC5A563A9101BC540EAA0D99A718A7394F5A04FFFB68BAE636A991497584D",
+      "bytes": 12861
+    },
+    {
+      "path": "src/app/(authed)/layout.tsx",
+      "sha256": "F6F6BA739D18D7548B9AF36C630E152395593FDEECFF186BBF725CE30E717D9C",
+      "bytes": 3990
+    },
+    {
+      "path": "src/app/(authed)/people/page.tsx",
+      "sha256": "AF448715310F224FE02098ACB7BC51DB7884D91CFA8830888D3B08A6E815A8B4",
+      "bytes": 4864
+    },
+    {
+      "path": "src/app/(authed)/settings/page.tsx",
+      "sha256": "20548FF6C92A9BA3DBD4AE4E897D6905F63CFE29A97BD44738FFBAF7DAFF10F3",
+      "bytes": 1735
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/audit/page.tsx",
+      "sha256": "8C68018D02545B60614320CFFFC6E0879C63F51FCB1628C6D2F9B7C9E4A2053F",
+      "bytes": 4258
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/billing/page.tsx",
+      "sha256": "3910E423580C1A4A49A0EFAB85E891EB8D95026352CCE3EA4B4E959C9FC8C109",
+      "bytes": 10338
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/devices/page.tsx",
+      "sha256": "BD5B1C3C42509926A383A439D62017A5784167234ED0E1D6E706C0D12094E555",
+      "bytes": 4042
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/layout.tsx",
+      "sha256": "CCC547C4915E8850D40B35313AC3FF0EB58CE7626AC8B6ACBF410F4A54FEDB23",
+      "bytes": 6912
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/members/page.tsx",
+      "sha256": "FEFF9CFB17A84D03C60D3718FBD575532C5C66AD5C899CBAB5859E064C9B5D48",
+      "bytes": 296
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/page.tsx",
+      "sha256": "F320E2A45730ED4E5EA95D4F5004ADB82C9280FEDA10962BF739B57DD6EBD25B",
+      "bytes": 5100
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/policy/page.tsx",
+      "sha256": "1B9F2BDCA4F9BD44B4A574A726ACA56EEE49FCAF042753D2F103DB9059C77697",
+      "bytes": 2223
+    },
+    {
+      "path": "src/app/(authed)/shops/new/page.tsx",
+      "sha256": "4FF79ED53D8402CEAD79ED75D6842028F4AFF112B9487101FADA08761BB971D3",
+      "bytes": 2035
+    },
+    {
+      "path": "src/app/(authed)/shops/page.tsx",
+      "sha256": "C92A8F628F16DBA38E3274011376363AA41CB60769C802DBAA7B0E280DEC2CD3",
+      "bytes": 6071
+    },
+    {
+      "path": "src/app/(authed)/status/page.tsx",
+      "sha256": "9CE92D56BAFCF3D2C09BFE633E2D9709553A33799FF357A7A93E6E7D7354350D",
+      "bytes": 13604
+    },
+    {
+      "path": "src/app/(authed)/support/page.tsx",
+      "sha256": "8CFFE595A651A43DAC75BC55D9FD0B08F1A6B07D32FFABE2CF2FBFBFF5601CDE",
+      "bytes": 1972
+    },
+    {
+      "path": "src/app/(authed)/updates/packages/page.tsx",
+      "sha256": "AD04E6D8BFD3832E292FA86154102E4FDBB6034B7826A103022B3575E062F6B7",
+      "bytes": 1776
+    },
+    {
+      "path": "src/app/(authed)/updates/page.tsx",
+      "sha256": "653F0499E063FA7820E19E5D1106C8DB498491C5898645284CF49D5B712D2C57",
+      "bytes": 4241
+    },
+    {
+      "path": "src/app/api/admin/schema-summary/route.ts",
+      "sha256": "C91BDDF64AD96618BBB997F4CA645B785DB802754B033F2EBFB6C49435751D38",
+      "bytes": 2370
+    },
+    {
+      "path": "src/app/api/admin/shop-summary/route.ts",
+      "sha256": "CCA592BB1FA7844F11A694CF8AA4F33DD709472BA65CA1D00CC82B7368A30531",
+      "bytes": 4918
+    },
+    {
+      "path": "src/app/api/audit/export/route.ts",
+      "sha256": "BEB1ABD1969C5E36604CF2E045A91E9A95F37D8ED71A2324987F4AF2F04F8669",
+      "bytes": 3662
+    },
+    {
+      "path": "src/app/api/audit/list/route.ts",
+      "sha256": "79CFC6A3C930348BE6C9348574ECB6E1DF4BAB9E6D6DDDD240FE9A6814306907",
+      "bytes": 2895
+    },
+    {
+      "path": "src/app/api/auth/session/login/route.ts",
+      "sha256": "6171F590D85F0940B37F075E591B77BCC84D201917C1F2B624A04504CB636269",
+      "bytes": 2167
+    },
+    {
+      "path": "src/app/api/auth/session/me/route.ts",
+      "sha256": "2F72FBB3B6C4A1A34FF419E49C00E4F375F22F6DEA47BC84D5623C8E1B653F7D",
+      "bytes": 1521
+    },
+    {
+      "path": "src/app/api/auth/session/refresh/route.ts",
+      "sha256": "DB12B9C75FA7C6A038E37E22EFCD8A1CBB37C750D064CA3015EB39F5E696D7B2",
+      "bytes": 2001
+    },
+    {
+      "path": "src/app/api/auth/session/resend/route.ts",
+      "sha256": "422F67AE085A5944AEA7A895CF1ADC8E7349BD0E7F2D1582681BA02C7C52F464",
+      "bytes": 1293
+    },
+    {
+      "path": "src/app/api/auth/session/signup/route.ts",
+      "sha256": "30A3A62434A22DBC1B51C6D74A833A014B4A393E64D3AD7B38889A8B3BFDD411",
+      "bytes": 2049
+    },
+    {
+      "path": "src/app/api/billing/backfill-period-end/route.ts",
+      "sha256": "36098052D17E7A17BFA8047E123883B74544742257D0B5D51DEDF246589BF7ED",
+      "bytes": 2969
+    },
+    {
+      "path": "src/app/api/billing/create-checkout/route.ts",
+      "sha256": "7DCDFF13E3B421D9885544879433882C628D46D7BD2C0AF91AA260028B10A618",
+      "bytes": 3832
+    },
+    {
+      "path": "src/app/api/billing/create-portal/route.ts",
+      "sha256": "48A3A62E0CB92ED9E49A94E597650405E1C36D6EE4BC3FBC2A3FE46A0BAB6A84",
+      "bytes": 2431
+    },
+    {
+      "path": "src/app/api/billing/debug-session/route.ts",
+      "sha256": "3E35822A905DF9AD645742477B2CD81FF09D993CB72B92D89B374C88C30DC34F",
+      "bytes": 2558
+    },
+    {
+      "path": "src/app/api/billing/shop-status/route.ts",
+      "sha256": "3AF74E29C0F5604B807FD869C3583EDCAB30F1D4BEB99ACFF937ED842D98F82B",
+      "bytes": 3214
+    },
+    {
+      "path": "src/app/api/billing/sync-from-checkout-return/route.ts",
+      "sha256": "AA10DC370050D545C9EA080BAFA477AE405EBC2753FADFDB7B0DB1E8FDCDF62F",
+      "bytes": 6861
+    },
+    {
+      "path": "src/app/api/billing/sync-from-session-browser/route.ts",
+      "sha256": "9BFEB0505DA4A6B294BB9621F83C0253CBD842E49DFABF94D893753573B4527C",
+      "bytes": 1890
+    },
+    {
+      "path": "src/app/api/billing/sync-from-session/route.ts",
+      "sha256": "8514B8860F1FA3A2082C04509283257848580188EB7A2CE9550545B9D0C253C2",
+      "bytes": 6879
+    },
+    {
+      "path": "src/app/api/billing/webhook/route.ts",
+      "sha256": "6529C71441A49A98089DB23F5FD359830394FD04AEF2C88E1EAC644C57E323B7",
+      "bytes": 12013
+    },
+    {
+      "path": "src/app/api/desktop/bootstrap/route.ts",
+      "sha256": "595C22F4370DE9DFE002C93C1320E9DB377A3DCD07AC7A6025FE4916EE0F94A9",
+      "bytes": 9468
+    },
+    {
+      "path": "src/app/api/desktop/create-checkout/route.ts",
+      "sha256": "401FC22219BC3CE10AFD4D91E733827B0E8C02EAE05E8E8D24E273C7C06BD46E",
+      "bytes": 2187
+    },
+    {
+      "path": "src/app/api/desktop/current-shop/route.ts",
+      "sha256": "221361F7AFE92EB9ADCF97D03D63EF7525A15BEE540C80B8FFC0A8BDE7CE1838",
+      "bytes": 1996
+    },
+    {
+      "path": "src/app/api/desktop/device-role/route.ts",
+      "sha256": "25C8A54F42979494036281653F0F59C319D22DA09C80DB1EBAD89ABC25BA22C6",
+      "bytes": 9581
+    },
+    {
+      "path": "src/app/api/desktop/employee-directory/route.ts",
+      "sha256": "B49A68A0F198428B9D5B33BC89C3D1E02682961DB6AA98FC2247B7CD4FD0EABF",
+      "bytes": 8630
+    },
+    {
+      "path": "src/app/api/desktop/entitlement/route.ts",
+      "sha256": "601B6CAB92325947D97B892F802186C549DDB088CD76F761FC3E54BF7F151F0D",
+      "bytes": 7679
+    },
+    {
+      "path": "src/app/api/desktop/issue-license/route.ts",
+      "sha256": "C4D68BB3BC71B910F138AA5918F025C88E265BACCD7AB6AC3AADEA75C2393492",
+      "bytes": 3580
+    },
+    {
+      "path": "src/app/api/desktop/messaging-summary/route.ts",
+      "sha256": "92D2B149E73D99825085F7112F702DBE9DA204B9B3DB0A731D4DFC8C41BB0E8C",
+      "bytes": 6166
+    },
+    {
+      "path": "src/app/api/desktop/messaging/route.ts",
+      "sha256": "1D648D35078BFEF2B0E42CD4E8FE53EE3F2299F9BEB45FF436B760E57921A1C7",
+      "bytes": 9532
+    },
+    {
+      "path": "src/app/api/desktop/onboarding-policy/route.ts",
+      "sha256": "2ECD0338F976FBA2A7CB22153EC71640BA9DAE8715E71FA0C14B4D78D4F89EF1",
+      "bytes": 500
+    },
+    {
+      "path": "src/app/api/desktop/provision-employee/route.ts",
+      "sha256": "D2330A45FF13B92EE8D035F5272304D4E743458253A515C2B0E191C83FF25A14",
+      "bytes": 27090
+    },
+    {
+      "path": "src/app/api/desktop/register-device/route.ts",
+      "sha256": "32F1E62F2D9562CFA0D3CD6FAD31BE9962C092E512ECEEA95F064D627A035586",
+      "bytes": 2763
+    },
+    {
+      "path": "src/app/api/desktop/shop-status/route.ts",
+      "sha256": "4D99D075CA33FB0063667617629AAFEE0921F0EAE0FDBD3F5D4CA2124C036514",
+      "bytes": 3754
+    },
+    {
+      "path": "src/app/api/desktop/upload-avatar/route.ts",
+      "sha256": "1C719D30375D29F314D1AF6E90E70B96F75170D1D64674420A31EDA507EB6065",
+      "bytes": 2522
+    },
+    {
+      "path": "src/app/api/desktop/workstation-sync-employee/route.ts",
+      "sha256": "F81E79852E59813A61DB093851347A960694D645CFC9BDF73B50D489F10D14CC",
+      "bytes": 6351
+    },
+    {
+      "path": "src/app/api/desktop/workstations/route.ts",
+      "sha256": "A103F20F2FB87A31863940479B3B481941312242A8963DB7E96AA75FD5DE61E2",
+      "bytes": 1776
+    },
+    {
+      "path": "src/app/api/device/activate/route.ts",
+      "sha256": "00498D44739F85B8FC69E62398FFBC2F00AC4501187711880C3899D83D4867E5",
+      "bytes": 4051
+    },
+    {
+      "path": "src/app/api/device/admin/route.ts",
+      "sha256": "AC8E1B53F0BF49C594B9DECB810FE7A9CE81C818EB458EB085554896B354F684",
+      "bytes": 4420
+    },
+    {
+      "path": "src/app/api/device/checkin-legacy/route.ts",
+      "sha256": "FD612ABECCF493C637E30D1503994922ADE86455035999E4DF15F01F954C99DC",
+      "bytes": 557
+    },
+    {
+      "path": "src/app/api/device/checkin/route.ts",
+      "sha256": "09C5D6621F7BB8338A111B8D3AAE4B21EEE525E0FE6BDC41134CFED3020B7749",
+      "bytes": 4973
+    },
+    {
+      "path": "src/app/api/device/create/route.ts",
+      "sha256": "B68E9CA82FA7D169B1EA3A8E2B17ED1229ECAD6E62B3AC6A9245ED20EC711A47",
+      "bytes": 2215
+    },
+    {
+      "path": "src/app/api/device/delete/route.ts",
+      "sha256": "7FEC63BEEDC2972ECB2A119E4AFE0A55AF4FF1BE910F3C69A155A7C702D35B10",
+      "bytes": 2301
+    },
+    {
+      "path": "src/app/api/device/enroll-token/route.ts",
+      "sha256": "B891D0103F8C115640B10E3C0DA5DF684E8481EBC6F6D76D98B0E36F68C24C9B",
+      "bytes": 2690
+    },
+    {
+      "path": "src/app/api/device/issue-token/route.ts",
+      "sha256": "39E8B15E15A1416A48C0F16B15A40ABCDE095968A15A84762AABA61AF9B26DF8",
+      "bytes": 4832
+    },
+    {
+      "path": "src/app/api/device/list/route.ts",
+      "sha256": "F442A958B7CA5B6A6775002CBA3231FE38B353BE73BB94A97FA2DF92C986D40A",
+      "bytes": 3374
+    },
+    {
+      "path": "src/app/api/device/page.tsx",
+      "sha256": "F941A1DDDD2778CFC07D2429DB2351FF99BA0D2087C239ACA08F56D336F0B038",
+      "bytes": 8126
+    },
+    {
+      "path": "src/app/api/device/revoke-token/route.ts",
+      "sha256": "0248B0043CD8C4F55129515AF34346A2CB2E0D446AD5D67C574D1C067FB44693",
+      "bytes": 2306
+    },
+    {
+      "path": "src/app/api/device/set-status/route.ts",
+      "sha256": "B9638B35566BF9004F61A1B0183E85C44DB899FE3BC5234350AA4BCE68F172BB",
+      "bytes": 2678
+    },
+    {
+      "path": "src/app/api/device/update/route.ts",
+      "sha256": "0A72EA5F7C23F59D78E7AE47814E139F4E4A6224A2BD38F0FFC867BA613056BE",
+      "bytes": 6511
+    },
+    {
+      "path": "src/app/api/device/validate-token/route.ts",
+      "sha256": "81DECC13C90E05266C63F2291EB34807BA6DF32F58FD399598764444AA05A959",
+      "bytes": 11461
+    },
+    {
+      "path": "src/app/api/mobile/dev-seed-user/route.ts",
+      "sha256": "B984236DEBF7D9662F049F7FBE3DF8CB1FC7DF13488F88382EC5FFF75E4AD6B6",
+      "bytes": 6403
+    },
+    {
+      "path": "src/app/api/mobile/resolve-shop/route.ts",
+      "sha256": "064C4E80835A89D6FA31CF97FCEEC777A08EE1259BB431AEE3CF6E78844D466F",
+      "bytes": 3136
+    },
+    {
+      "path": "src/app/api/mobile/shop-access/route.ts",
+      "sha256": "35C83900B3DB782203D97AE9537F19933CEE503608DD085BBE76C7B62BE04D8E",
+      "bytes": 3339
+    },
+    {
+      "path": "src/app/api/onboarding/complete/route.ts",
+      "sha256": "1B3B894A24CF9EB3FC29DA3D0D90ED46FC08349DC79292FDA0249BED75DDC2A4",
+      "bytes": 783
+    },
+    {
+      "path": "src/app/api/onboarding/create-shop/route.ts",
+      "sha256": "F552D5D29621C7E3A67F91661151AF144184D6B3FC3B9F7CA7BE1B0BD2F5E34C",
+      "bytes": 14046
+    },
+    {
+      "path": "src/app/api/onboarding/debug/route.ts",
+      "sha256": "11F1DE4F98B932763B4131B7BB0FE04656F4C35CCF51F0C2322C388A18900FE6",
+      "bytes": 1017
+    },
+    {
+      "path": "src/app/api/onboarding/save-profile/route.ts",
+      "sha256": "55A1C92F4DBB9B821736AAFEB359CB34DA39B0A556AAA8BA498780ED6FF91570",
+      "bytes": 2624
+    },
+    {
+      "path": "src/app/api/onboarding/send-email-code/route.ts",
+      "sha256": "7A2E46C66FA5CDB045355B06C96AD0A6356A9D10D6E9CF4AE9C5A04A070E153A",
+      "bytes": 3397
+    },
+    {
+      "path": "src/app/api/onboarding/send-sms-code/route.ts",
+      "sha256": "A4782574794137B20F2E73E77F83C979016E284735BB7B34C370C5926597C332",
+      "bytes": 3517
+    },
+    {
+      "path": "src/app/api/onboarding/setup-status/route.ts",
+      "sha256": "A3A47B22C276BB19DEF79DD738C0EB71F06E09055B79F308A3452FEA49B4D799",
+      "bytes": 1013
+    },
+    {
+      "path": "src/app/api/onboarding/state/route.ts",
+      "sha256": "4776E8016520C98D59FEC58B56E25C60679AC2236CEA1C025C600B56EF69CF80",
+      "bytes": 1590
+    },
+    {
+      "path": "src/app/api/onboarding/verify-email-code/route.ts",
+      "sha256": "B3EF673B5E20D461E9F6287F35778B31DF3F3229AB908D0BEC741F5F0EDE2C56",
+      "bytes": 2556
+    },
+    {
+      "path": "src/app/api/onboarding/verify-sms-code/route.ts",
+      "sha256": "2E407197E95E3A2DFF43EA47261BE5C02A0979A701D334DC3CE12EE7D3B465A8",
+      "bytes": 2490
+    },
+    {
+      "path": "src/app/api/people/remove/route.ts",
+      "sha256": "455478234F12F1BFDC65ECDB881173C63B2AE4EED676CC74D11C2C6C202829CD",
+      "bytes": 2879
+    },
+    {
+      "path": "src/app/api/shops/delete/route.ts",
+      "sha256": "D1AF6471BA2E096812F719941C3DB931E8CE0F2093C8931032490A4D554A00EC",
+      "bytes": 2663
+    },
+    {
+      "path": "src/app/api/shops/list-simple/route.ts",
+      "sha256": "07630148F4D5AC9EE51913ED929B02567F768A55E5EE934B23CA697B794F02E3",
+      "bytes": 1497
+    },
+    {
+      "path": "src/app/api/support/bundle/route.ts",
+      "sha256": "0A17574257260B0C0BDBC2132DC3569B812D7265933F0D5488D8AD816215EC0C",
+      "bytes": 1381
+    },
+    {
+      "path": "src/app/api/updates/package/route.ts",
+      "sha256": "6C1DEA8348AECFC90BBBB12D9A0C86113678B6B8629AE77374D259A7D1741CF9",
+      "bytes": 1469
+    },
+    {
+      "path": "src/app/api/user/ensure-device-id/route.ts",
+      "sha256": "5260AAB4C8DBD4A4E332F871D22795FCD7D0DFD1EB632C1E978F81EFA8868C1C",
+      "bytes": 820
+    },
+    {
+      "path": "src/app/api/user/grant-platform-admin/route.ts",
+      "sha256": "DCBEFA991EBB277788583D5F188F3A6F3D1A3E868AB7D7B2798BD5275E4B6778",
+      "bytes": 2143
+    },
+    {
+      "path": "src/app/api/user/prefs/route.ts",
+      "sha256": "B78D8839C9747AA7990DF5DCA2655AF3B724CE52214B0D81FC8986230F8EEA49",
+      "bytes": 975
+    },
+    {
+      "path": "src/app/api/user/revoke-platform-admin/route.ts",
+      "sha256": "7F7A2DD31ECF570B6B8DA008D9C7AA1212F2AED48A3DA81214DCE5EEB5FAC2B6",
+      "bytes": 1852
+    },
+    {
+      "path": "src/app/api/user/trust-device/route.ts",
+      "sha256": "2E9F6AD5770D49874A4B904064D727056F9D14909B0E74337F2DAE401FEC5F55",
+      "bytes": 2499
+    },
+    {
+      "path": "src/app/api/workstation/login/route.ts",
+      "sha256": "4710F3BDBCD1EED769A6206FDFA71C73A28382DB41549E0E886EB09056BACFCA",
+      "bytes": 9459
+    },
+    {
+      "path": "src/app/api/workstation/register/route.ts",
+      "sha256": "09506D436097F1672C14BD06FD333D732EDE631BDC54082C0033EFC05663F823",
+      "bytes": 3415
+    },
+    {
+      "path": "src/app/api/workstation/timeclock/route.ts",
+      "sha256": "ACE667424A2DDD365687208BBA927D6AE278690DEEFE45F8ABEA98B71BA70F76",
+      "bytes": 6289
+    },
+    {
+      "path": "src/app/billing/cancel/page.tsx",
+      "sha256": "AE8C2B307EE48F04B46D2A9BF3BEBEAA3A8843E9C3F556B5F248CAC8B29DF5CC",
+      "bytes": 1587
+    },
+    {
+      "path": "src/app/billing/complete/page.tsx",
+      "sha256": "D9B60C8E2A87D38697DCB6615CB4CBDA38FF02AFBEA2710D800AE047D5BD98C1",
+      "bytes": 3431
+    },
+    {
+      "path": "src/app/create-shop/page.tsx",
+      "sha256": "0F97F41FF79F6B0469BFF9DC6758D754A3597B727A1CC88617FC8376CA206979",
+      "bytes": 173
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "sha256": "A5ED5D26CF2FE4014359B1DE226127AB4D3D4883C3D167C1DABF5D6997028E97",
+      "bytes": 467
+    },
+    {
+      "path": "src/app/login/page.tsx",
+      "sha256": "4433790B2DC2D1BFD3BA907C510B5F9DFF9129F5191025C596232EBAD7D535DF",
+      "bytes": 5357
+    },
+    {
+      "path": "src/app/member/page.tsx",
+      "sha256": "200F4E9A9865F582B1A6934A29690909FF3E892C40D550CA46D89F74B00CD0AC",
+      "bytes": 168
+    },
+    {
+      "path": "src/app/mfa/layout.tsx",
+      "sha256": "B0C011D0E8286C72B27FC22A8BB155A1BC772A0C189A8D802A19758F85032127",
+      "bytes": 1011
+    },
+    {
+      "path": "src/app/mfa/page.tsx",
+      "sha256": "23AE9A61D9390AD43D7624AE9C3A23E87A14DA88DF0398767277B1F24FA763DD",
+      "bytes": 4334
+    },
+    {
+      "path": "src/app/onboarding/company/page.tsx",
+      "sha256": "C0A836542A6CC9BD589EFB8CDF53A848359BD65E094EC97E5CA7FD50E5196404",
+      "bytes": 504
+    },
+    {
+      "path": "src/app/onboarding/layout.tsx",
+      "sha256": "0A8FD0A8D35344847C7247CD800F063DE516227EC2AB62765DE02CF6F15ED404",
+      "bytes": 1221
+    },
+    {
+      "path": "src/app/onboarding/page.tsx",
+      "sha256": "A96F488CE6DF54B7B35DBD82A8AA50E7AEE81157CBD04813B7D407B33C048B98",
+      "bytes": 305
+    },
+    {
+      "path": "src/app/onboarding/profile/page.tsx",
+      "sha256": "096A22A15485A939F9446E871373FB28E1931034A36A08D3C2CAB28BD51C382F",
+      "bytes": 504
+    },
+    {
+      "path": "src/app/onboarding/setup/page.tsx",
+      "sha256": "2BFD3949C87685CF788362969DE22FBB14A92E3F68135B205788A979B53F6153",
+      "bytes": 8061
+    },
+    {
+      "path": "src/app/page.tsx",
+      "sha256": "19D9A9A22BA007EAEBBA7A1C6D665EE8661D801D0F70EF8D4F8F4B10D2100006",
+      "bytes": 2092
+    },
+    {
+      "path": "src/app/signup/page.tsx",
+      "sha256": "6AE33F08B21C115D6D8BE466EA196421B1793AF7A33EB9192CC19613CD7B9279",
+      "bytes": 3657
+    },
+    {
+      "path": "src/app/support/bundle/route.ts",
+      "sha256": "624B5A388E1F2D7B46AF6571386FDE1074391BF4C328D89207A6E8B12EC05A2F",
+      "bytes": 1110
+    },
+    {
+      "path": "src/components/DataTable.tsx",
+      "sha256": "718EA41970C4FAB3602B06D6A82D8BD570BBC8B37A48703F238CCF02B4A3BF4E",
+      "bytes": 2074
+    },
+    {
+      "path": "src/components/DeleteShopButton.tsx",
+      "sha256": "DD151BDA17C6991D0D29901A7CF8642D64692ABEFD71D8C3C21AA76520109867",
+      "bytes": 1340
+    },
+    {
+      "path": "src/components/DeviceActionsTableClient.tsx",
+      "sha256": "52964AEA5DA338301850A2C5D2271127338142661DFEDE22EC523B53209A0111",
+      "bytes": 6845
+    },
+    {
+      "path": "src/components/DeviceIdBootstrap.tsx",
+      "sha256": "E86312802F595A79BDE06D39AC65BA88D46C01038D64014A6CB848C4CE9AD5D4",
+      "bytes": 401
+    },
+    {
+      "path": "src/components/DismissNoviceButton.tsx",
+      "sha256": "FEF738B2126058AF639D127EE51B00A65FD0B4A7DEBB28C288181C4623594B19",
+      "bytes": 1124
+    },
+    {
+      "path": "src/components/EnableMFAClient.tsx",
+      "sha256": "78E76FD481991D0BDC708EF568CAF96E945FD659FF36867E98DB138C2C9C0259",
+      "bytes": 2737
+    },
+    {
+      "path": "src/components/EnrollTokenPanel.tsx",
+      "sha256": "C8891C83C0B82C63503D2D58606F53898547BA994DB33A7ADD5915F6724F5171",
+      "bytes": 5749
+    },
+    {
+      "path": "src/components/FileUpload.tsx",
+      "sha256": "E2246EC8EE9A75C3E0A0D9BC41EF9A0D44A77BD6A9F76BB754EAFAF4C7410E9C",
+      "bytes": 1986
+    },
+    {
+      "path": "src/components/GlassCard.tsx",
+      "sha256": "6A8D7A0DD75C097D1D9C58B7B375ACB2511B702469DFB14A3D2D0EAE085B4D57",
+      "bytes": 3618
+    },
+    {
+      "path": "src/components/HeaderDateTime.tsx",
+      "sha256": "3AB9E51E16B827689E76CA7FB381B5C04CC973EF63BDE206643926D239CD2A71",
+      "bytes": 1782
+    },
+    {
+      "path": "src/components/NoviceModeToggle.tsx",
+      "sha256": "ECA4D99C8F84F331A8A21C1622D90A24AFD7FBDB84BA87F04BF9611E6232EA05",
+      "bytes": 2017
+    },
+    {
+      "path": "src/components/PackageUploaderClient.tsx",
+      "sha256": "27426BE0DE425FE2EDDFD6D2B5C2FD07F7D5BC2CAE9DF157436754963B2A3E33",
+      "bytes": 2018
+    },
+    {
+      "path": "src/components/RevealSecretModal.tsx",
+      "sha256": "7B9FA9EA8EA81969E6B17B5322F8969948BD1E50ED4EFCE42A304BDE8583D758",
+      "bytes": 5279
+    },
+    {
+      "path": "src/components/SetupChecklist.tsx",
+      "sha256": "97CDEC68EA5BF48D60FF4F5419F44E0D9DD3B3BAAEA57BA79EE1E1D4C2A1DFCB",
+      "bytes": 3251
+    },
+    {
+      "path": "src/components/SideNav.tsx",
+      "sha256": "541011B31D12167F5DD609B9C0EFD6B2F45F5AAE92C726C17546967284EBCE2E",
+      "bytes": 9918
+    },
+    {
+      "path": "src/components/SignOutButton.tsx",
+      "sha256": "2756EA5C3BBA4091BAEA053E6E8CCA48498B39FCFB518D1C75A4346C65DE10B9",
+      "bytes": 1209
+    },
+    {
+      "path": "src/components/billing/BillingGate.tsx",
+      "sha256": "E0B43E8DB2446591898A5A4B15259B00CA85A19F64278C50E6345A6AB7953E7F",
+      "bytes": 9896
+    },
+    {
+      "path": "src/components/billing/WriteLock.tsx",
+      "sha256": "42B56C13CA8F8BDB87CB34E9A57185B58188C20517E5BF594928F847CF163F02",
+      "bytes": 1520
+    },
+    {
+      "path": "src/components/control/ControlActionButton.tsx",
+      "sha256": "235F2D08358AFCE03E1F7E2272A373861EB8D3F9DA106936934A0783D7AC4D9E",
+      "bytes": 2139
+    },
+    {
+      "path": "src/components/control/ControlMetricCard.tsx",
+      "sha256": "14DB3DB89066F8D4D65B675882AD61F92FA5B7D4157EEF943749E7138CAD52F9",
+      "bytes": 2308
+    },
+    {
+      "path": "src/components/control/ControlPageHeader.tsx",
+      "sha256": "ED2C69884450BDF01BA5447EC55332B7EF86ED397B602E632294521278205E74",
+      "bytes": 1379
+    },
+    {
+      "path": "src/components/control/ControlPanel.tsx",
+      "sha256": "CC4C59B12EB9E2D3274EC72B2D984A998BCD64937D1917159C99EA86D83AC677",
+      "bytes": 1420
+    },
+    {
+      "path": "src/components/control/ControlStatusChip.tsx",
+      "sha256": "4557889B3FD3C0D1EBEE783A0F4C6928EF5115FC3D19806E092F54CA58C43A1B",
+      "bytes": 1778
+    },
+    {
+      "path": "src/components/control/ProductionControlShell.tsx",
+      "sha256": "A713D2BAF1FC13874F1A7F851FE0D5875D9DD475991B1D5C13438BAE57C1A4F4",
+      "bytes": 6914
+    },
+    {
+      "path": "src/components/control/controlTheme.ts",
+      "sha256": "546DE19068B823D6E11672416F862F02EF7A663F96CE4C17A42091B47CEEB201",
+      "bytes": 712
+    },
+    {
+      "path": "src/components/control/dashboard/ProductionDashboardModel.ts",
+      "sha256": "2D2A0D8545F6E52EE8E550ABF6AFC38920FA66B94DA0EA5B937E7E25FFB77F97",
+      "bytes": 5421
+    },
+    {
+      "path": "src/components/control/dashboard/ProductionDashboardOverview.tsx",
+      "sha256": "5AF69980A792EC7A3117130E7C377304D75532A5728A888AA4D96CF3CF4AD6F6",
+      "bytes": 8050
+    },
+    {
+      "path": "src/components/control/ui.tsx",
+      "sha256": "798074EA9C1B5D0D0D9CA779640F39151FAD3DBD5B0D10BB6C93535A5039DE21",
+      "bytes": 16607
+    },
+    {
+      "path": "src/components/onboarding/CompanyOnboardingClient.tsx",
+      "sha256": "C3AE61586B58ABA8CB74C58CBFEF9CD9B49580D1E095EDB5743B002411748F57",
+      "bytes": 4610
+    },
+    {
+      "path": "src/components/onboarding/ProfileOnboardingClient.tsx",
+      "sha256": "52C5703380C9CBC998703EE9C6AF75D1EE9E970CD3E5CD19B92AD9B1063ED6DD",
+      "bytes": 14205
+    },
+    {
+      "path": "src/components/onboarding/SetupLaunchButton.tsx",
+      "sha256": "B8BAB80EE8320A66F7855CDD74581D31708BEE80B8ED8C11B4DDBF6B58DB2A5A",
+      "bytes": 1630
+    },
+    {
+      "path": "src/components/onboarding/SetupStatusClient.tsx",
+      "sha256": "1F666F1C37239A85DA0703F15AEDF840AF5EBFE4A06453D88E3F35DF59B7F0AD",
+      "bytes": 6979
+    },
+    {
+      "path": "src/components/runbook/primitives.tsx",
+      "sha256": "9E44403427CBDB8D396DA0083D0BD712EEED8BCF0C25869E3948CC389DCE53DF",
+      "bytes": 11445
+    },
+    {
+      "path": "src/lib/audit.ts",
+      "sha256": "5A30EC233D95792BC521806DA6C576B39B5B55F014E55DFE86C2FCC2EB344ECA",
+      "bytes": 1245
+    },
+    {
+      "path": "src/lib/audit/writeAudit.ts",
+      "sha256": "E5C4ED84561CC650EBAFADE6BFAD0A51A434990462D2E08AA5AF40E53E6CF159",
+      "bytes": 869
+    },
+    {
+      "path": "src/lib/authz.ts",
+      "sha256": "1FE885192FE8FDD509DBFE516D232C758FB72F147657F1CE0B56223E97B71DDE",
+      "bytes": 3972
+    },
+    {
+      "path": "src/lib/billing/access.ts",
+      "sha256": "B407E7AE8CEF7941F9AC029636A304507ED567C2BBB32E39BCF8125959C38F03",
+      "bytes": 3674
+    },
+    {
+      "path": "src/lib/billing/entitlement.ts",
+      "sha256": "5B31902493C814F54DF9E82C19C1A34315E8E906FED9FFE3E8112067B224D2FB",
+      "bytes": 5943
+    },
+    {
+      "path": "src/lib/billing/feature.ts",
+      "sha256": "CD823E0B662CEF1613708834D966F7E31E0DEF55EBCC5286F6EFA52C6591AD9C",
+      "bytes": 449
+    },
+    {
+      "path": "src/lib/billing/features.ts",
+      "sha256": "6FFB716A8493E44D252960CF632D848A692380837B367470F47105000926D2EF",
+      "bytes": 188
+    },
+    {
+      "path": "src/lib/billing/logic.ts",
+      "sha256": "90A419539E88599B60FD5FE572ADAFEBDD77A830FD414C2CB8C622BCC60F7086",
+      "bytes": 1253
+    },
+    {
+      "path": "src/lib/connection-status.ts",
+      "sha256": "B3F7A79B81C1894C751923D185EBF780B5BC2F43E879A50C1F8942F06509200E",
+      "bytes": 1692
+    },
+    {
+      "path": "src/lib/control/cleanup.ts",
+      "sha256": "AA035519BA1093C6F7A0790637B596B6F65782896D95A945C18B518921CB9BBC",
+      "bytes": 3442
+    },
+    {
+      "path": "src/lib/control/summary.ts",
+      "sha256": "152A5C4D70BF35DA9B0BB7B5175D4F0C0DD5A51AE522C4AA10362224160307B3",
+      "bytes": 10690
+    },
+    {
+      "path": "src/lib/crypto.ts",
+      "sha256": "2641687974D5BDFB1AD34150C21AA90D66C9FBFC3EA7BDC4818AACC12DAAE850",
+      "bytes": 259
+    },
+    {
+      "path": "src/lib/desktopAuth.ts",
+      "sha256": "5C5F59C9160E4B5A3F2B4343F4C5E502E188FAAE649DCC1A62F7D9FAF72701BC",
+      "bytes": 903
+    },
+    {
+      "path": "src/lib/device/tokens.ts",
+      "sha256": "AEF8D7FFF14248FB354638FCB55D98B079B37A2C026BDF57A3B7B675744065CA",
+      "bytes": 295
+    },
+    {
+      "path": "src/lib/env/supabase.ts",
+      "sha256": "28F3DC9EB6DC5E6C948DE5DF8BF7C4A33B451183BBB87A062AAFE79D4E2C7FEB",
+      "bytes": 252
+    },
+    {
+      "path": "src/lib/http/safeFetch.ts",
+      "sha256": "A991AB89CF441547B91AFF4B07075F7CF55D71C87064189DFEE482A32A2FE4FA",
+      "bytes": 1352
+    },
+    {
+      "path": "src/lib/onboarding/flow.ts",
+      "sha256": "0A08AE89B9F6E7308685D8CE4F4422B691ED019F3991C5FA5E1BF879746B79C1",
+      "bytes": 9374
+    },
+    {
+      "path": "src/lib/onboarding/identity.ts",
+      "sha256": "060B35D78884E7D437E82D60C72E97511CB99E4C43BD4955D4480085F7686FFE",
+      "bytes": 2895
+    },
+    {
+      "path": "src/lib/onboarding/messaging.ts",
+      "sha256": "5C66BA03477C85F34EA3EFBD31910FBB5868F4E4F49B2CB4E79C28CB859E6F90",
+      "bytes": 9963
+    },
+    {
+      "path": "src/lib/onboarding/state.ts",
+      "sha256": "0720A0350DBEA6970E1E839373A76F35F3CC0422CD14AB775471DF9829ADBB50",
+      "bytes": 13232
+    },
+    {
+      "path": "src/lib/onboarding/validate.ts",
+      "sha256": "471366DE2AC4EE0E053098BF108D48A6CEAF088B7CF6CBBE4E4BDAD0BFBC22D2",
+      "bytes": 898
+    },
+    {
+      "path": "src/lib/platformAdmin.ts",
+      "sha256": "0DCB150CFE6AD9C18BBEB24523AE40AAC15936B353D3C86185510ABFB7673068",
+      "bytes": 1073
+    },
+    {
+      "path": "src/lib/rb.ts",
+      "sha256": "1BEEE778F21EAA5C336AB134F7D09CC004D34A2A0250DCEF10D1C93706C0FE6D",
+      "bytes": 6038
+    },
+    {
+      "path": "src/lib/security/rateLimit.ts",
+      "sha256": "F78158575E996DB2F2F6F9213CC0A46147DB58396D9AEA29B4BA71ED3A925D84",
+      "bytes": 846
+    },
+    {
+      "path": "src/lib/stripe/server.ts",
+      "sha256": "19167C6CB6428FA74F3F24CD2DEDCB3070A6184F990DC6BE03747C1F327BEE82",
+      "bytes": 996
+    },
+    {
+      "path": "src/lib/supabase/admin.ts",
+      "sha256": "7B0E31951CBCC741E6623FCFDDA1799FB6FE7617B5A58B0CB705AD53A3768744",
+      "bytes": 598
+    },
+    {
+      "path": "src/lib/supabase/browser.ts",
+      "sha256": "DB6CA05187286915C155B917CEA4F642F21CD13D29C8F139007E1E8287B8B4B0",
+      "bytes": 607
+    },
+    {
+      "path": "src/lib/supabase/client.ts",
+      "sha256": "0485E47A03F2692930B45DD2DF773563905D856BEA3214E82E4BF8F84EBF5812",
+      "bytes": 216
+    },
+    {
+      "path": "src/lib/supabase/routeAuth.ts",
+      "sha256": "E22F837B3514DF56B9ACC8BA58204F68449BA50796D5BC372293C79F3CBEC475",
+      "bytes": 1086
+    },
+    {
+      "path": "src/lib/supabase/server.ts",
+      "sha256": "8285C8E2B0E3A5BE477D266AFD03DC0DFB04AEFF0277E0F82411119AE3C2018E",
+      "bytes": 1166
+    },
+    {
+      "path": "src/lib/ui/dates.ts",
+      "sha256": "7906ED201C937784DEDF68BAF85F80F3EACB0156B76095653D61F6F8A75DCFE6",
+      "bytes": 1425
+    },
+    {
+      "path": "src/lib/ui/onboardingDeviceId.ts",
+      "sha256": "514108F4AFD634DF14958B27ECF8E423B1E06D67CAE17B92C0D9A36D71D5ABE4",
+      "bytes": 871
+    },
+    {
+      "path": "src/lib/ui/runbookTheme.ts",
+      "sha256": "0A6D572E6521267B941EE5F662079B0CB78E724DC8EEE78F16DA485D28F31D8F",
+      "bytes": 2200
+    },
+    {
+      "path": "src/lib/ui/theme.ts",
+      "sha256": "232C5BFB989B499FB97D9F78B9D2727C5FE19B7D4C37D253D08CCEACF6583A6E",
+      "bytes": 2419
+    },
+    {
+      "path": "src/lib/ui/useIsMounted.ts",
+      "sha256": "96ABBC8C4DBD5D68574B64D8697197774A1A40BCF9C0421493C560BD60B1C2EC",
+      "bytes": 230
+    },
+    {
+      "path": "src/lib/workstationAuth.ts",
+      "sha256": "7E8128DB35A6F9C4CFCDE7B407BF7BE734736E83CB3F9CB699315608D1918CDE",
+      "bytes": 3279
+    },
+    {
+      "path": "src/middleware.disabled.ts",
+      "sha256": "BC3EC407C73D46D9938CCAF35F58C2272CDCDA78701A1871470AEC75D1A2BA88",
+      "bytes": 1693
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "2E25CCBCE9F0C372DAB31EF97CF6A9E467C4C3E1C9838B4D2EE929FC432C17BB",
+      "bytes": 764
+    },
+    {
+      "path": "vercel.json",
+      "sha256": "B2CA3677C797F6006864CF604EEE0AD15713D2D2B5F8B8B8B6F74A683095F428",
+      "bytes": 104
+    }
+  ]
+}
