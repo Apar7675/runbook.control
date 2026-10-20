@@ -6,7 +6,7 @@ import {
   normalizeEmail,
   normalizePhone,
 } from "@/lib/onboarding/identity";
-import { isDirectEmailProviderConfigured, isTwilioVerifyConfigured, sendOnboardingEmailCode } from "@/lib/onboarding/messaging";
+import { EmailDeliveryError, isDirectEmailProviderConfigured, isTwilioVerifyConfigured, sendOnboardingEmailCode } from "@/lib/onboarding/messaging";
 import { issueVerificationCode, upsertOnboardingState } from "@/lib/onboarding/state";
 import { getRouteUser } from "@/lib/supabase/routeAuth";
 
@@ -66,6 +66,9 @@ export async function POST(req: Request) {
       ...delivery,
     });
   } catch (e: any) {
+    if (e instanceof EmailDeliveryError) {
+      return NextResponse.json({ ok: false, error: e.message, error_code: e.errorCode }, { status: e.httpStatus });
+    }
     return NextResponse.json({ ok: false, error: e?.message ?? "Server error" }, { status: 500 });
   }
 }

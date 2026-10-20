@@ -15,7 +15,7 @@ Architecture violations are not allowed even if the code compiles.
 - `Docs/Architecture/RunBook-System-Bible.md` is the top authority.
 - App bibles in `Docs/Architecture/` are secondary authorities for app-local boundaries.
 - If this file conflicts with the System Bible, the System Bible wins.
-- This repo does not carry `Docs/Architecture/` locally. Reference the shared architecture docs at `D:\RunBook.Desktop\Docs\Architecture\`.
+- This repo does not carry `Docs/Architecture/` locally. Reference the shared architecture docs at `D:\RunBook-Office\RunBook.Desktop\Docs\Architecture\`.
 
 ## 3. Non-Negotiable Architecture Rules
 
@@ -76,4 +76,8 @@ Architecture violations are not allowed even if the code compiles.
 
 ## 9. Instruction For Missing Context
 
-If a change depends on architecture details not present in the current context, do not guess. Ask for the relevant System Bible or app bible section before proceeding.
+If a change depends on architecture details not present locally, fetch the relevant System Bible or app bible from `Apar7675/runbook-desktop/Docs/Architecture/` on GitHub before proceeding. Do not guess and do not require access to a particular workstation.
+
+## Office migration directive — October 5, 2026
+
+For development authority and the current recovery-only pause, follow the coordinated Desktop `Docs/Architecture/RunBook-AI-Cloud-Workflow.md` and `D:\RunBook-Office\LOCAL-HANDOFF.md`. Earlier cloud dispatch, idle continuation, automatic checkpoint push and GitHub-only development rules are superseded by the owner direction recorded there. Architecture and application/data ownership rules remain in force.

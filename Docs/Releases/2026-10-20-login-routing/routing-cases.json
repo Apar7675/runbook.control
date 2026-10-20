@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "status": "Passed",
+  "kind": "Synthetic inputs evaluated against exact pure routing expressions extracted from public served JavaScript",
+  "casesPerVersion": 15,
+  "realUserSignInPerformed": false,
+  "cases": [
+    {
+      "input": null,
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "   ",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "/dashboard",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "/dashboard?scope=platform",
+      "previous": "/dashboard?scope=platform",
+      "deployed": "/dashboard?scope=platform",
+      "passed": true
+    },
+    {
+      "input": "/shops",
+      "previous": "/shops",
+      "deployed": "/shops",
+      "passed": true
+    },
+    {
+      "input": "/shops/known-shop",
+      "previous": "/shops/known-shop",
+      "deployed": "/shops/known-shop",
+      "passed": true
+    },
+    {
+      "input": "/devices",
+      "previous": "/devices",
+      "deployed": "/devices",
+      "passed": true
+    },
+    {
+      "input": "/billing-access",
+      "previous": "/billing-access",
+      "deployed": "/billing-access",
+      "passed": true
+    },
+    {
+      "input": "/login",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "/login?next=/shops",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "/signup",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "/signup?next=/shops",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "https://example.invalid",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    },
+    {
+      "input": "dashboard",
+      "previous": "/shops",
+      "deployed": "/dashboard",
+      "passed": true
+    }
+  ]
+}

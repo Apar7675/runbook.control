@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireSessionUser } from "@/lib/desktopAuth";
+import { BUSINESS_FOREGROUND_PROJECTION, businessForegroundMetadata } from "@/lib/business/businessForegroundIdentity";
 import {
   ADMINISTRATIVE_COMPLETION_CAPABILITY_CODE,
   ADMINISTRATIVE_COMPLETION_CAPABILITY_VERSION,
@@ -20,11 +21,6 @@ function noStoreJson(body: Record<string, unknown>, status = 200) {
 
 function text(v: any) {
   return String(v ?? "").trim();
-}
-
-function isLocalDesktopRequest(req: Request) {
-  const host = text(req.headers.get("host")).toLowerCase();
-  return host.includes("localhost") || host.includes("127.0.0.1");
 }
 
 function looksLikeUrl(value: string) {
@@ -46,15 +42,26 @@ async function ensureMembership(admin: any, shopId: string, userId: string) {
   return data;
 }
 
+class DesktopDirectoryAccessError extends Error {
+  constructor(readonly status: 401 | 403, message: string) { super(message); }
+}
+
 async function authorizeDesktop(req: Request, admin: any, shopId: string) {
+  let authenticated: Awaited<ReturnType<typeof requireSessionUser>>;
   try {
-    const { user } = await requireSessionUser(req);
-    await ensureMembership(admin, shopId, user.id);
-    return { mode: "user", userId: user.id } as const;
-  } catch (error: any) {
-    if (!isLocalDesktopRequest(req)) throw error;
-    return { mode: "local-dev", userId: null } as const;
+    authenticated = await requireSessionUser(req);
+  } catch {
+    throw new DesktopDirectoryAccessError(401, "Sign in to read the employee directory.");
   }
+  const user = authenticated.user;
+  if (!user?.id || user.is_anonymous === true)
+    throw new DesktopDirectoryAccessError(401, "Sign in to read the employee directory.");
+  try {
+    await ensureMembership(admin, shopId, user.id);
+  } catch {
+    throw new DesktopDirectoryAccessError(403, "Not authorized for this shop.");
+  }
+  return { mode: "user", userId: user.id } as const;
 }
 
 async function createAvatarDisplayUrl(admin: any, path: string) {
@@ -71,6 +78,8 @@ async function createAvatarDisplayUrl(admin: any, path: string) {
 export async function GET(req: NextRequest) {
   try {
     const admin = supabaseAdmin();
+    if (req.nextUrl.searchParams.get("projection") === BUSINESS_FOREGROUND_PROJECTION)
+      return businessForegroundMetadata(req, admin);
     const shopId = text(req.nextUrl.searchParams.get("shop_id"));
 
     if (!shopId) {
@@ -237,7 +246,7 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     return noStoreJson(
       { ok: false, error: String(e?.message ?? e) },
-      /authorized|authenticated/i.test(String(e?.message ?? e)) ? 401 : 500,
+      e instanceof DesktopDirectoryAccessError ? e.status : /authorized|authenticated/i.test(String(e?.message ?? e)) ? 401 : 500,
     );
   }
 }

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "b453a7c8ac8fc599d93a81b317250a021c5b04f1",
+  "candidateGitTreeSha1": "ed0f92a09c155f9e6653687dd914d3dccb412730",
+  "deploymentSubmissionKind": "content-addressed-file-manifest-api",
+  "deploymentGitCommitMetadataClaimed": false,
+  "productionDeploymentId": "dpl_GqB5NuT3Pk6tUvqos3scSzc8Z32t",
+  "productionUrl": "https://runbook-control.vercel.app",
+  "immutableDeploymentUrl": "https://runbook-control-3yhmsmhqk-angelo-parizas-projects.vercel.app",
+  "rollbackDeploymentId": "dpl_2bDwWXYV1iMqwBKXGHGfRfVVNfcM",
+  "rollbackDeploymentUrl": "https://runbook-control-1hno70eyi-angelo-parizas-projects.vercel.app",
+  "modifiedPath": "src/app/login/page.tsx",
+  "baselineLoginGitBlobSha1": "15f7fbeeb0c8c91dbcabb763c82bbfd667b3cdaa",
+  "candidateLoginGitBlobSha1": "bb81d9c23f3b9f5fa75aa0dde7f09ed4342430ff",
+  "candidateLoginSHA256": "818983431E8B4BD336126DE453804A95C7A2B08C9A819422596F8CC5C6303DA4",
+  "candidateLoginRawSHA1": "d94780aaf38467282c4678fe9b81fc3bea156159",
+  "candidateSourceFiles": 199,
+  "gitDeploymentEnabled": false,
+  "productionBuild": "Passed: Next.js 16.1.6 default Turbopack",
+  "compiledRoutingCasesPerVersion": 15,
+  "publicVerification": "Passed",
+  "realUserSignInPerformed": false
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "created": "2026-10-16T15:16:01.050Z",
+  "newStandaloneGraphics": 0,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2442,
+      "sha256": "c81fbd735678256aa1965c3bbd6373ba80ded25afc49fb364aa7c6a80081b666"
+    },
+    {
+      "path": "reference-1366x768.png",
+      "bytes": 89762,
+      "sha256": "60d8cb3c81b0e7254e239a3ec3a50f7266d76d0b335c61c76fba04644e4ffa34"
+    },
+    {
+      "path": "reference.html",
+      "bytes": 7780,
+      "sha256": "1c7309a5d60fdc184f7042ac7fd2f1fab4339812c60b34e3a7e7c21a56be07ad"
+    },
+    {
+      "path": "tokens.json",
+      "bytes": 898,
+      "sha256": "312b7ee63f143c9541a0f0ad607001028310dee1fde92ba2362104bbe8c6884b"
+    }
+  ]
+}

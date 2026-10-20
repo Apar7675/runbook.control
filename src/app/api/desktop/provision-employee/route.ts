@@ -328,7 +328,7 @@ async function upsertShopMember(admin: any, args: {
 
   const { data: existing, error: lookupErr } = await admin
     .from("rb_shop_members")
-    .select("id")
+    .select("id,role")
     .eq("shop_id", args.shopId)
     .eq("user_id", args.userId)
     .maybeSingle();
@@ -336,6 +336,8 @@ async function upsertShopMember(admin: any, args: {
   if (lookupErr) throw new Error(lookupErr.message);
 
   if ((existing as any)?.id) {
+    if (s((existing as any).role).toLowerCase() === "owner") return;
+
     const { error: updateErr } = await admin
       .from("rb_shop_members")
       .update({ role: desiredRole })
@@ -706,7 +708,8 @@ export async function POST(req: Request) {
       auth_email: authEmail,
       employee_code: s((remoteEmployee as any)?.employee_code),
       display_name: s((remoteEmployee as any)?.display_name),
-      role: s((remoteEmployee as any)?.role),
+      role: requestedRole,
+      employee_role: s((remoteEmployee as any)?.role),
       status,
       is_active: !!(remoteEmployee as any)?.is_active,
       mobile_ready: !!(remoteEmployee as any)?.auth_user_id && !!(remoteEmployee as any)?.is_active && !needsAuthRepair,

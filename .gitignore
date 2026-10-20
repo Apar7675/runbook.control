@@ -71,3 +71,8 @@ dashboard-action-cards-verify*.png
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Portable consolidation: local generated state and preserved historical payloads
+/.vs/
+/stripe.exe
+/_filetree.txt

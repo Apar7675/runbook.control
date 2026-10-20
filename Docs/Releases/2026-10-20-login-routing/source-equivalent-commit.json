@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-20T14:18:23.709623+00:00",
+  "baseline": "b453a7c8ac8fc599d93a81b317250a021c5b04f1",
+  "commit": "ba0ae4683dcde7a6a26aaaaf75b71531b64e423d",
+  "tree": "ed0f92a09c155f9e6653687dd914d3dccb412730",
+  "tag": "production/login-routing-20261020",
+  "fileCount": 199,
+  "onlyChangedPath": "src/app/login/page.tsx",
+  "deploymentId": "dpl_GqB5NuT3Pk6tUvqos3scSzc8Z32t",
+  "deploymentSubmittedBy": "content-addressed file manifest; commit created afterward and verified equivalent"
+}

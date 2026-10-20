@@ -1,12 +1,11 @@
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { rbGetShop } from "@/lib/rb";
-import { BillingGate, BillingGateMode } from "@/components/billing/BillingGate";
 import { theme } from "@/lib/ui/theme";
 
 export const dynamic = "force-dynamic";
@@ -30,23 +29,6 @@ async function isTrustedDevice(supabase: any, userId: string) {
   } catch {
     return false;
   }
-}
-
-function getGateMode(): BillingGateMode {
-  const mode = (process.env.RUNBOOK_BILLING_GATE_MODE ?? "").trim().toLowerCase();
-  if (mode === "hard" || mode === "soft" || mode === "hybrid") return mode;
-  return "hybrid";
-}
-
-function getGraceDays() {
-  const value = Number.parseInt(process.env.RUNBOOK_BILLING_GRACE_DAYS ?? "14", 10);
-  if (!Number.isFinite(value) || value < 0 || value > 120) return 14;
-  return value;
-}
-
-function getEmergencyUnlock() {
-  const raw = (process.env.RUNBOOK_BILLING_EMERGENCY_UNLOCK ?? "false").trim().toLowerCase();
-  return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
 type Props = {
@@ -80,19 +62,6 @@ export default async function ShopLayout({ params, children }: Props) {
 
   const shop = await rbGetShop(shopId);
   const shopName = shop?.name ?? "Shop";
-
-  const gateMode = getGateMode();
-  const graceDays = getGraceDays();
-  const emergencyUnlock = getEmergencyUnlock();
-  const unlockShopsCsv = (process.env.RUNBOOK_BILLING_UNLOCK_SHOPS ?? "").trim();
-
-  const requestHeaders: any = await headers();
-  const path =
-    requestHeaders?.get?.("x-url") ??
-    requestHeaders?.get?.("x-original-url") ??
-    requestHeaders?.get?.("next-url") ??
-    "";
-  const isBillingPath = String(path).includes(`/shops/${shopId}/billing`);
 
   return (
     <div
@@ -194,19 +163,9 @@ export default async function ShopLayout({ params, children }: Props) {
         }}
       >
         <main style={{ minWidth: 0, display: "grid", gap: 18 }}>
-          {isBillingPath ? (
-            children
-          ) : (
-            <BillingGate
-              shopId={shopId}
-              mode={gateMode}
-              graceDays={graceDays}
-              emergencyUnlock={emergencyUnlock}
-              unlockShopsCsv={unlockShopsCsv}
-            >
-              {children}
-            </BillingGate>
-          )}
+          {/* The parent layout authenticates platform admins. Shop billing must stay
+              reachable here so admins can restore access for an expired shop. */}
+          {children}
         </main>
       </div>
     </div>

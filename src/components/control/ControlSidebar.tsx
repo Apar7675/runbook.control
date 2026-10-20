@@ -49,49 +49,37 @@ export default function ControlSidebar({
 
   return (
     <aside
+      className="control-sidebar"
       style={{
         display: "grid",
         gridTemplateRows: "auto auto minmax(0, 1fr) auto",
-        gap: 14,
+        gap: 12,
         height: "100dvh",
-        padding: 12,
+        boxSizing: "border-box",
+        padding: "18px 14px 14px",
         borderRight: `1px solid ${t.color.softBorder}`,
         background: `linear-gradient(180deg, rgba(11, 16, 24, 0.98), rgba(7, 10, 15, 0.98))`,
         position: "sticky",
         top: 0,
-        overflow: "hidden",
+        overflowY: "auto",
       }}
     >
       <div style={{ display: "grid", gap: 5 }}>
-        <div style={{ color: t.color.text, fontSize: 25, fontWeight: 800, letterSpacing: -0.8 }}>
+        <div style={{ color: t.color.text, fontSize: 22, fontWeight: 800, letterSpacing: -0.8 }}>
           RunBook <span style={{ color: "#A78BFA" }}>Control</span>
         </div>
-        <div style={{ color: t.color.textMuted, fontSize: 12 }}>Remote cloud authority for shops, devices, access, and billing.</div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gap: 8,
-          padding: 11,
-          borderRadius: t.radius.md,
-          border: `1px solid ${t.color.softBorder}`,
-          background: "linear-gradient(180deg, rgba(16, 23, 34, 0.98), rgba(11, 16, 24, 0.98))",
-        }}
-      >
-        <div style={{ display: "grid", gap: 4 }}>
-          <div style={{ color: t.color.textSecondary, fontSize: 11.5, fontWeight: 800, letterSpacing: 0.3 }}>Cloud Authority</div>
-          <div style={{ color: t.color.textMuted, fontSize: 12 }}>Authenticated admin shell. Server authority stays server-side.</div>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div>
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
           {statuses.map((status) => (
             <ControlStatusChip key={status.key} label={status.label} tone={status.tone} />
           ))}
         </div>
       </div>
 
-      <nav style={{ overflowY: "auto", paddingRight: 3 }}>
-        <div style={{ display: "grid", gap: 4 }}>
+      <nav aria-label="Control navigation" style={{ overflowY: "auto", padding: 3, margin: -3 }}>
+        <div style={{ display: "grid", gap: 3 }}>
           {navItems.map((item) => {
             const querySpecificSiblingActive =
               !item.matchQuery &&
@@ -101,12 +89,13 @@ export default function ControlSidebar({
               <Link
                 key={item.label}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 9,
-                  minHeight: 34,
-                  padding: "0 10px",
+                  minHeight: 32,
+                  padding: "3px 10px",
                   borderRadius: t.radius.sm,
                   border: `1px solid ${active ? "rgba(124, 58, 237, 0.34)" : "transparent"}`,
                   color: active ? t.color.text : t.color.textSecondary,
@@ -137,13 +126,11 @@ export default function ControlSidebar({
         style={{
           display: "grid",
           gap: 4,
-          padding: 11,
-          borderRadius: t.radius.md,
-          border: `1px solid ${t.color.softBorder}`,
-          background: "rgba(18, 27, 40, 0.72)",
+          padding: "10px 0 0",
+          borderTop: `1px solid ${t.color.softBorder}`,
         }}
       >
-        <div style={{ color: t.color.text, fontSize: 12.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis" }}>{email || "Signed-in user"}</div>
+        <div style={{ color: t.color.text, fontSize: 12.5, fontWeight: 700, overflowWrap: "anywhere" }}>{email || "Signed-in user"}</div>
         <div style={{ color: t.color.textMuted, fontSize: 12 }}>{roleLabel}</div>
       </div>
     </aside>

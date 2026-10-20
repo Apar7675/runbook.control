@@ -9,12 +9,14 @@ export default function ControlMetricCard({
   meta,
   tone = "neutral",
   href,
+  compact = false,
 }: {
   label: string;
   value: string;
   meta?: string;
   tone?: ControlStatusTone;
   href?: string;
+  compact?: boolean;
 }) {
   const statusLabel =
     tone === "danger" ? "Attention" :
@@ -30,7 +32,8 @@ export default function ControlMetricCard({
         gridTemplateColumns: "minmax(0, 1fr) auto",
         alignItems: "center",
         gap: 12,
-        minHeight: 78,
+        minHeight: compact ? 72 : 78,
+        boxSizing: compact ? "border-box" : undefined,
         padding: "11px 12px",
         borderRadius: t.radius.md,
         border: `1px solid ${t.color.softBorder}`,
@@ -39,7 +42,7 @@ export default function ControlMetricCard({
     >
       <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
         <div style={{ color: t.color.textSecondary, fontSize: 12, fontWeight: 800 }}>{label}</div>
-        <div
+        {compact ? <div style={{ fontSize: 12, lineHeight: 1.35, color: "#94A3B8" }}>{meta}</div> : <div
           style={{
             fontSize: 12,
             lineHeight: 1.35,
@@ -51,11 +54,11 @@ export default function ControlMetricCard({
           }}
         >
           {meta ?? "No additional context yet."}
-        </div>
+        </div>}
       </div>
-      <div style={{ display: "grid", gap: 6, justifyItems: "end", minWidth: 76 }}>
-        <div style={{ fontSize: 22, lineHeight: 1.05, fontWeight: 800, color: t.color.text, textAlign: "right" }}>{value}</div>
-        <ControlStatusChip label={statusLabel} tone={tone} />
+      <div style={{ display: "grid", gap: 6, justifyItems: "end", minWidth: compact ? undefined : 76 }}>
+        <div style={{ fontSize: compact ? 27 : 22, lineHeight: 1.05, fontWeight: 800, color: t.color.text, textAlign: "right" }}>{value}</div>
+        {compact ? null : <ControlStatusChip label={statusLabel} tone={tone} />}
       </div>
     </div>
   );

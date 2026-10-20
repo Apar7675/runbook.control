@@ -39,7 +39,7 @@ export default function ControlAppShell({
           zIndex: 1,
           minHeight: "100vh",
           display: "grid",
-          gridTemplateColumns: `${t.layout.sidebarWidth}px minmax(0, 1fr)`,
+          gridTemplateColumns: "232px minmax(0, 1fr)",
         }}
       >
         <ControlSidebar email={email} roleLabel={roleLabel} statuses={statuses} />
@@ -65,9 +65,11 @@ export default function ControlAppShell({
         </main>
       </div>
       <style>{`
+        .control-sidebar a:focus-visible { outline:2px solid #C4B5FD; outline-offset:-2px; }
+        .control-sidebar a { box-sizing:border-box; overflow-wrap:anywhere; }
         @media (max-width: 1100px) {
           .control-shell {
-            grid-template-columns: 240px minmax(0, 1fr) !important;
+            grid-template-columns: 210px minmax(0, 1fr) !important;
           }
         }
         @media (max-width: 900px) {
@@ -77,6 +79,9 @@ export default function ControlAppShell({
           .control-shell > aside {
             position: relative !important;
             height: auto !important;
+          }
+          .control-sidebar nav > div {
+            grid-template-columns:repeat(2,minmax(0,1fr));
           }
         }
       `}</style>

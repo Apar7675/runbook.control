@@ -16,6 +16,11 @@ const adminListRoutePath = path.join(repositoryRoot, "src", "app", "api", "admin
 const userDrawerPath = path.join(repositoryRoot, "src", "components", "shops", "ShopUserDrawer.tsx");
 const migrationPath = path.join(repositoryRoot, "supabase", "migrations", "20260906120000_administrative_completion_employee_authority.sql");
 const boundedJsonPath = path.join(repositoryRoot, "src", "lib", "security", "boundedJsonRequest.ts");
+const businessLibraryRoot = path.join(repositoryRoot, "src", "lib", "business");
+const foregroundLibraryPath = path.join(businessLibraryRoot, "businessForegroundIdentity.ts");
+const foregroundDependencyPaths = [
+  "directoryAuthorization.ts", "directoryLeaseAdministration.ts", "directoryCompanyBinding.ts",
+].map((name) => path.join(businessLibraryRoot, name));
 const syntheticTempPrefix = "runbook-f03-control-";
 
 function fail(message) {
@@ -198,6 +203,8 @@ async function main() {
     userDrawerPath,
     migrationPath,
     boundedJsonPath,
+    foregroundLibraryPath,
+    ...foregroundDependencyPaths,
   ]) {
     if (!fs.existsSync(filePath)) fail(`required source is missing: ${path.relative(repositoryRoot, filePath)}`);
   }
@@ -451,6 +458,14 @@ async function main() {
       assignmentRoutePath,
       "administrativeCompletionAssignmentRoute.js",
       syntheticDirectory,
+    );
+    // Exercise the production projection and its real session binder; only external Auth/DB
+    // seams below are synthetic. Preserve relative imports, including their existing cycles.
+    for (const dependencyPath of foregroundDependencyPaths) {
+      transpileForNode20(dependencyPath, path.basename(dependencyPath, ".ts") + ".js", syntheticDirectory);
+    }
+    const foregroundModulePath = transpileForNode20(
+      foregroundLibraryPath, "businessForegroundIdentity.js", syntheticDirectory,
     );
     const authority = require(authorityModulePath);
     const grants = loadCommonJsWithMocks(grantModulePath, {
@@ -1363,21 +1378,87 @@ async function main() {
         },
       },
     };
+    const directoryAuthentication = {
+      requireSessionUser: async () => {
+        if (!directorySessionAllowed) throw new Error("Not authenticated");
+        return { user: { id: syntheticUserId } };
+      },
+    };
+    const foregroundIdentity = loadCommonJsWithMocks(foregroundModulePath, {
+      "@/lib/desktopAuth": directoryAuthentication,
+      "@/lib/supabase/admin": { supabaseAdmin: () => directoryAdmin },
+    });
     const directoryRoute = loadCommonJsWithMocks(directoryRouteModulePath, {
       "next/server": { NextResponse: { json: jsonResponse } },
       "@/lib/supabase/admin": { supabaseAdmin: () => directoryAdmin },
-      "@/lib/desktopAuth": {
-        requireSessionUser: async () => {
-          if (!directorySessionAllowed) throw new Error("Not authenticated");
-          return { user: { id: syntheticUserId } };
-        },
-      },
+      "@/lib/desktopAuth": directoryAuthentication,
+      "@/lib/business/businessForegroundIdentity": foregroundIdentity,
       "@/lib/administrativeCompletionAuthority": authority,
     });
     const directoryRequest = (host = "control.example.test") => ({
       nextUrl: new URL(`https://${host}/api/desktop/employee-directory?shop_id=${syntheticShopId}`),
       headers: new Headers({ host }),
     });
+    const foregroundNow = Date.parse("2030-04-05T12:30:00.000Z");
+    const foregroundInput = {
+      principal: { user_id: syntheticUserId, session_id: syntheticAuthorizationId,
+        expires_ms: foregroundNow + 60_000 },
+      shopId: syntheticShopId, requestId: syntheticMembershipId, snapshotId: syntheticEmployeeId,
+      memberships: [{ shop_id: syntheticShopId, user_id: syntheticUserId, is_active: true }],
+      employees: [{ id: syntheticEmployeeId, shop_id: syntheticShopId, auth_user_id: syntheticUserId,
+        is_active: true, runbook_access_enabled: true, workstation_access_enabled: true }],
+      nowMs: foregroundNow,
+    };
+    const foregroundBinding = require(path.join(syntheticDirectory.directory, "directoryAuthorization.js"));
+    const syntheticForegroundToken = ["e30", Buffer.from(JSON.stringify({
+      sub: syntheticUserId, role: "authenticated", exp: (foregroundNow + 60_000) / 1000,
+      session_id: syntheticAuthorizationId,
+    })).toString("base64url"), "c3ludGhldGlj"].join(".");
+    requireExactObject("foreground real session binding",
+      foregroundBinding.bindVerifiedControlSession(syntheticForegroundToken, syntheticUserId, foregroundNow),
+      foregroundInput.principal);
+    await requireRejected("foreground token subject mismatch", () =>
+      foregroundBinding.bindVerifiedControlSession(syntheticForegroundToken, syntheticEmployeeId, foregroundNow), 401);
+    await requireRejected("foreground expired token", () =>
+      foregroundBinding.bindVerifiedControlSession(syntheticForegroundToken, syntheticUserId, foregroundNow + 60_000), 401);
+    const foregroundReceipt = foregroundIdentity.projectBusinessForegroundMetadata(foregroundInput);
+    requireExactObject("foreground identity receipt", foregroundReceipt, {
+      ok: true, contract: "business-foreground-v1", auth_mode: "user",
+      request_id: syntheticMembershipId, snapshot_id: syntheticEmployeeId,
+      user_id: syntheticUserId, session_id: syntheticAuthorizationId, shop_id: syntheticShopId,
+      session_expires_utc: new Date(foregroundNow + 60_000).toISOString(),
+      issued_utc: new Date(foregroundNow).toISOString(),
+      expires_utc: new Date(foregroundNow + 30_000).toISOString(),
+      employee: foregroundInput.employees[0],
+    });
+    for (const [label, overrides, status] of [
+      ["missing membership", { memberships: [] }, 403],
+      ["ambiguous membership", { memberships: [...foregroundInput.memberships, ...foregroundInput.memberships] }, 403],
+      ["missing employee link", { employees: [] }, 403],
+      ["ambiguous employee link", { employees: [...foregroundInput.employees, ...foregroundInput.employees] }, 403],
+      ["inactive employee link", { employees: [{ ...foregroundInput.employees[0], is_active: false }] }, 403],
+      ["disabled RunBook access", { employees: [{ ...foregroundInput.employees[0], runbook_access_enabled: false }] }, 403],
+      ["disabled workstation access", { employees: [{ ...foregroundInput.employees[0], workstation_access_enabled: false }] }, 403],
+      ["employee from another user", { employees: [{ ...foregroundInput.employees[0], auth_user_id: syntheticMembershipId }] }, 403],
+      ["extra employee authority field", { employees: [{ ...foregroundInput.employees[0], can_administrative_complete_close: true }] }, 503],
+      ["expired session", { principal: { ...foregroundInput.principal, expires_ms: foregroundNow } }, 401],
+    ]) {
+      await requireRejected(`foreground ${label}`, () =>
+        foregroundIdentity.projectBusinessForegroundMetadata({ ...foregroundInput, ...overrides }), status);
+    }
+    // The foreground branch must use the real session boundary even on localhost and
+    // must not reach legacy directory queries when that session is unauthenticated.
+    directorySessionAllowed = false;
+    const foregroundUrl = new URL(`https://localhost/api/desktop/employee-directory?shop_id=${syntheticShopId}&request_id=${syntheticMembershipId}&projection=business-foreground-v1`);
+    const foregroundResponse = await directoryRoute.GET({
+      nextUrl: foregroundUrl, url: foregroundUrl.href, method: "GET", headers: new Headers({ host: "localhost" }),
+    });
+    const foregroundBody = await foregroundResponse.json();
+    if (foregroundResponse.status !== 401 || foregroundBody.error !== "SIGN_IN_REQUIRED" ||
+        foregroundResponse.headers.get("cache-control") !== "no-store, max-age=0" || directoryQueries.length !== 0) {
+      fail("foreground route bypassed the real identity boundary or reached legacy directory data");
+    }
+
     const syntheticDirectoryEmployee = {
       id: syntheticEmployeeId,
       shop_id: syntheticShopId,
@@ -1414,12 +1495,12 @@ async function main() {
     directoryResponse = await directoryRoute.GET(directoryRequest("localhost"));
     directoryBody = await directoryResponse.json();
     if (
-      directoryResponse.status !== 200 ||
-      directoryBody.auth_mode !== "local-dev" ||
-      directoryBody.administrative_completion_contract_version !== 0 ||
-      JSON.stringify(directoryBody.employees?.[0]?.administrative_capabilities) !== "[]"
+      directoryResponse.status !== 401 ||
+      directoryBody.ok !== false ||
+      "employees" in directoryBody ||
+      "administrative_completion_contract_version" in directoryBody
     ) {
-      fail("local-dev employee directory response qualified for administrative projection");
+      fail("unauthenticated localhost employee directory request bypassed session authentication");
     }
 
     directorySessionAllowed = true;
@@ -1579,7 +1660,7 @@ async function main() {
   }
 
   console.log(
-    "F03 Control authorization verification passed: exact employee/capability authority; stable pre/post-password identity; canonical v2 HMAC grants; live verification recheck; versioned deny-legacy directory projection; one-RPC transactional AAL2 capability assignment; deny-by-default migration.",
+    "F03 Control authorization verification passed: exact employee/capability authority; stable pre/post-password identity; canonical v2 HMAC grants; live verification recheck; versioned deny-legacy directory projection; real foreground identity projection and denial boundary; one-RPC transactional AAL2 capability assignment; deny-by-default migration.",
   );
 }
 

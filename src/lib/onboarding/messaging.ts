@@ -45,6 +45,18 @@ export function isDirectEmailProviderConfigured() {
   return Boolean(fromEmail && (env("SENDGRID_API_KEY") || env("RESEND_API_KEY")));
 }
 
+class TwilioVerifyError extends Error {
+  constructor(message: string, readonly status: number, readonly code: number | null) {
+    super(message);
+  }
+}
+
+export class EmailDeliveryError extends Error {
+  constructor(message: string, readonly errorCode: string, readonly httpStatus = 503) {
+    super(message);
+  }
+}
+
 async function postTwilioVerify(path: string, form: URLSearchParams) {
   const { accountSid, authToken, serviceSid } = twilioVerifyConfig();
   if (!accountSid || !authToken || !serviceSid) {
@@ -70,7 +82,11 @@ async function postTwilioVerify(path: string, form: URLSearchParams) {
   }
 
   if (!response.ok) {
-    throw new Error(payload?.message ?? `Twilio Verify failed (${response.status}).`);
+    throw new TwilioVerifyError(
+      payload?.message ?? `Twilio Verify failed (${response.status}).`,
+      response.status,
+      Number(payload?.code) || null,
+    );
   }
 
   return payload;
@@ -95,18 +111,33 @@ async function sendTwilioVerification(to: string, channel: "email" | "sms") {
 }
 
 async function checkTwilioVerification(to: string, code: string) {
-  const payload = await postTwilioVerify(
-    "VerificationCheck",
-    new URLSearchParams({
-      To: to,
-      Code: code,
-    })
-  );
+  try {
+    const payload = await postTwilioVerify(
+      "VerificationCheck",
+      new URLSearchParams({
+        To: to,
+        Code: code,
+      })
+    );
 
-  return {
-    ok: payload?.status === "approved",
-    status: payload?.status ?? "",
-  };
+    return {
+      ok: payload?.status === "approved",
+      status: payload?.status ?? "",
+    };
+  } catch (error) {
+    // Verify removes expired, completed, or exhausted verification resources.
+    // This is a rejected code, not a broken endpoint or successful verification.
+    if (error instanceof TwilioVerifyError && error.status === 404 &&
+        (error.code === 20404 || error.code === 60431)) {
+      return {
+        ok: false,
+        status: "expired",
+        reason: "verification_expired",
+        error: "That verification code has expired or is no longer available. Send a new code and use the latest one.",
+      };
+    }
+    throw error;
+  }
 }
 
 export async function sendOnboardingEmailCode(args: SendEmailArgs) {
@@ -168,8 +199,17 @@ export async function sendOnboardingEmailCode(args: SendEmailArgs) {
         ? payload.errors.map((entry: any) => entry?.message).filter(Boolean).join("; ")
         : "";
       const detail = errors || payload?.message || `Email verification send failed (${response.status}).`;
+      if (/maximum credits exceeded/i.test(detail)) {
+        throw new EmailDeliveryError(
+          "Email verification is unavailable because the email service has no sending allowance available. Restore the email sending allowance before retrying.",
+          "email_sending_limit",
+        );
+      }
       if (response.status === 401 || /authorization grant/i.test(detail)) {
-        throw new Error("SendGrid rejected the API key. Create or paste a valid SendGrid API key with Mail Send permission, then restart Control.");
+        throw new EmailDeliveryError(
+          "Email verification is unavailable because the email service rejected the delivery request.",
+          "email_provider_rejected",
+        );
       }
 
       throw new Error(detail);

@@ -1,0 +1,23 @@
+diff --git a/src/app/login/page.tsx b/src/app/login/page.tsx
+index 15f7fbe..bb81d9c 100644
+--- a/src/app/login/page.tsx
++++ b/src/app/login/page.tsx
+@@ -9,7 +9,7 @@ import GlassCard from "@/components/GlassCard";
+ export const dynamic = "force-dynamic";
+ 
+ function sanitizeNext(raw: string | null) {
+-  const fallback = "/shops";
++  const fallback = "/dashboard";
+   const next = (raw ?? "").trim();
+ 
+   if (!next) return fallback;
+@@ -17,9 +17,6 @@ function sanitizeNext(raw: string | null) {
+   if (next.startsWith("/login")) return fallback;
+   if (next.startsWith("/signup")) return fallback;
+ 
+-  // You previously used /dashboard as fallback, but that route doesn't exist in your project.
+-  if (next === "/dashboard") return fallback;
+-
+   return next;
+ }
+ 
