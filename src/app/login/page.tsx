@@ -9,16 +9,13 @@ import GlassCard from "@/components/GlassCard";
 export const dynamic = "force-dynamic";
 
 function sanitizeNext(raw: string | null) {
-  const fallback = "/shops";
+  const fallback = "/dashboard";
   const next = (raw ?? "").trim();
 
   if (!next) return fallback;
   if (!next.startsWith("/")) return fallback;
   if (next.startsWith("/login")) return fallback;
   if (next.startsWith("/signup")) return fallback;
-
-  // You previously used /dashboard as fallback, but that route doesn't exist in your project.
-  if (next === "/dashboard") return fallback;
 
   return next;
 }
