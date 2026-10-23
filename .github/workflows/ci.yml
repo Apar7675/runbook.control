@@ -51,6 +51,9 @@ jobs:
       - name: Control MFA step-up and return regressions
         run: node scripts/verify-control-mfa-stepup.js
 
+      - name: Control authenticator enrollment regressions
+        run: node scripts/verify-control-mfa-enrollment.js
+
   timeclock-summary-db:
     runs-on: ubuntu-latest
     timeout-minutes: 10

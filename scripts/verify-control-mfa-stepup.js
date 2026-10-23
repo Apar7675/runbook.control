@@ -136,6 +136,7 @@ async function main() {
         const index = cursor++;
         return [values[index], (value) => { values[index] = value; if (index === 2) statuses.push(value); }];
       } },
+      "@/components/EnableMFAClient": { __esModule: true, default: "enrollment" },
       "@/components/control/ControlActionButton": { __esModule: true, default: "action" },
       "@/components/control/ControlPanel": { __esModule: true, default: "panel" },
       "@/components/control/controlTheme": { controlTheme: { radius: { sm: 1 }, color: {} } },

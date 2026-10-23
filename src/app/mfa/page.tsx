@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import EnableMFAClient from "@/components/EnableMFAClient";
 import ControlActionButton from "@/components/control/ControlActionButton";
 import ControlPanel from "@/components/control/ControlPanel";
 import { controlTheme as t } from "@/components/control/controlTheme";
@@ -28,6 +29,7 @@ export default function MFAPage() {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState("Loading...");
   const [loading, setLoading] = useState(false);
+  const [canEnroll, setCanEnroll] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,15 +47,17 @@ export default function MFAPage() {
 
       const totp = (data?.totp ?? []).find((factor) => factor.status === "verified");
       if (!totp?.id) {
-        setStatus("No verified authenticator is available for this account. Use your established account recovery process.");
+        setCanEnroll(true);
+        setStatus("Set up an authenticator app to continue.");
         return;
       }
 
+      setCanEnroll(false);
       setFactorId(totp.id);
       setStatus("Enter the 6-digit code from your authenticator app.");
     }
 
-    init();
+    void init().catch((error: unknown) => { if (!cancelled) setStatus(errorMessage(error)); });
     return () => {
       cancelled = true;
     };
@@ -63,7 +67,7 @@ export default function MFAPage() {
     if (!factorId) return;
 
     const otp = code.trim();
-    if (otp.length !== 6) {
+    if (!/^\d{6}$/.test(otp)) {
       setStatus("Enter a valid 6-digit code.");
       return;
     }
@@ -111,9 +115,11 @@ export default function MFAPage() {
       </div>
 
       <ControlPanel title="Authenticator required" description="Verify your authenticator to continue with Control administration. You will return to your previous page; submit the action again after verification.">
-        <div style={{ display: "grid", gap: 10 }}>
+        {canEnroll ? <EnableMFAClient required returnTo={mfaReturnFromRequestPath("/mfa" + window.location.search)} /> : <div style={{ display: "grid", gap: 10 }}>
           <input
             placeholder="6-digit code"
+            aria-label="6-digit authenticator code"
+            disabled={loading}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
             style={inputStyle}
@@ -134,8 +140,8 @@ export default function MFAPage() {
             {loading ? "Verifying..." : "Verify"}
           </ControlActionButton>
 
-          <div style={{ fontSize: 12, color: t.color.textMuted }}>{status}</div>
-        </div>
+          <div role="status" aria-live="polite" style={{ fontSize: 12, color: t.color.textMuted }}>{status}</div>
+        </div>}
       </ControlPanel>
     </div>
   );

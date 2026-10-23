@@ -1,89 +1,191 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { mfaStepUpHref, safeMfaReturnTo } from "@/lib/auth/mfaReturn";
+import { cancelTotpEnrollment, loadTotpEnrollmentState, startTotpEnrollment, verifyTotpEnrollment, type TotpEnrollment } from "@/lib/auth/mfaEnrollment";
 
-type Props = { required?: boolean };
+type Props = { required?: boolean; returnTo?: string };
 
-export default function EnableMFAClient({ required }: Props) {
-  const supabase = supabaseBrowser();
-
-  const [hasTotp, setHasTotp] = useState<boolean | null>(null);
-  const [status, setStatus] = useState("");
+export default function EnableMFAClient({ required, returnTo }: Props) {
+  const auth = supabaseBrowser().auth;
+  const currentPage = typeof window !== "undefined" && typeof window.location.pathname === "string" ? window.location.pathname + (window.location.search ?? "") : "/settings";
+  const destination = safeMfaReturnTo(returnTo ?? currentPage);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [pendingFactorIds, setPendingFactorIds] = useState<string[]>([]);
+  const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState("Loading authenticator settings...");
+  const [busy, setBusy] = useState(false);
+  const active = useRef(false);
+  const epoch = useRef(0);
+  const busyRef = useRef(false);
+  const userRef = useRef<string | null>(null);
+  const enrollmentRef = useRef<TotpEnrollment | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      const { data, error } = await supabase.auth.mfa.listFactors();
-      if (cancelled) return;
-
-      if (error) {
-        setStatus(error.message);
-        setHasTotp(false);
-        return;
+    active.current = true;
+    const generation = epoch.current;
+    loadTotpEnrollmentState(auth).then((state) => {
+      if (!active.current || generation !== epoch.current) return;
+      userRef.current = state.userId;
+      setUserId(state.userId);
+      setEnabled(state.enabled);
+      setPendingFactorIds(state.pendingFactorIds);
+      setStatus(state.enabled ? "Authenticator enabled." : "Set up an authenticator app to continue.");
+    }).catch((error: unknown) => {
+      if (active.current && generation === epoch.current) setStatus(error instanceof Error ? error.message : "Authenticator settings could not be loaded.");
+    });
+    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
+      if (!active.current) return;
+      if (userRef.current && session?.user.id !== userRef.current) {
+        epoch.current++;
+        enrollmentRef.current = null;
+        userRef.current = null;
+        busyRef.current = false;
+        setEnrollment(null);
+        setCode("");
+        setEnabled(null);
+        setUserId(null);
+        setPendingFactorIds([]);
+        setBusy(false);
+        setStatus("The signed-in account changed. Reload before continuing.");
       }
-
-      setHasTotp((data?.totp ?? []).length > 0);
-    }
-
-    load();
+    });
     return () => {
-      cancelled = true;
+      active.current = false;
+      epoch.current++;
+      enrollmentRef.current = null;
+      subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [auth]);
 
-  async function startEnroll() {
-    setStatus("Starting MFA enrollment…");
-
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
-    if (error) return setStatus(error.message);
-
-    // show QR by opening a simple modal-less flow
-    // easiest: just open a new tab to settings with qr in memory is hard
-    // so instead: alert with QR data URL if needed
-    // better UX is possible later; for now we keep it simple:
-    setStatus("Enrollment started. Open this page in a new tab and complete scan + verify in the QR flow (coming next).");
-    console.log("TOTP QR:", data.totp.qr_code);
+  function valid(generation: number) { return active.current && generation === epoch.current; }
+  function begin() {
+    if (busyRef.current || !userId) return null;
+    busyRef.current = true;
+    setBusy(true);
+    return epoch.current;
+  }
+  function finish(generation: number) {
+    if (valid(generation)) { busyRef.current = false; setBusy(false); }
+  }
+  function showError(error: unknown, generation: number) {
+    if (valid(generation)) setStatus(error instanceof Error ? error.message : "Authenticator setup failed.");
   }
 
+  async function start() {
+    const generation = begin();
+    if (generation === null || !userId) return;
+    setStatus("Starting authenticator setup...");
+    try {
+      const setup = await startTotpEnrollment(auth, userId);
+      if (!valid(generation)) return;
+      enrollmentRef.current = setup;
+      setEnrollment(setup);
+      setCode("");
+      setStatus("Scan the QR code or enter the setup key, then enter the 6-digit code.");
+    } catch (error: unknown) {
+      showError(error, generation);
+      // An interrupted/invalid provider response can still leave an unverified factor.
+      try {
+        const state = await loadTotpEnrollmentState(auth);
+        if (valid(generation) && state.userId === userId) {
+          setPendingFactorIds(state.pendingFactorIds);
+          setEnabled(state.enabled);
+        }
+      } catch { /* Preserve the original error and let the user retry. */ }
+    } finally { finish(generation); }
+  }
+
+  async function verify() {
+    const setup = enrollmentRef.current;
+    if (!setup) return;
+    const generation = begin();
+    if (generation === null) return;
+    setStatus("Verifying authenticator...");
+    try {
+      await verifyTotpEnrollment(auth, setup, code.trim(), () => {
+        if (!valid(generation)) return;
+        enrollmentRef.current = null;
+        setEnrollment(null);
+        setCode("");
+        setPendingFactorIds([]);
+        setEnabled(true);
+        setStatus("Authenticator enabled. Finalizing your session...");
+      });
+      if (valid(generation)) window.location.href = destination;
+    } catch (error: unknown) { showError(error, generation); }
+    finally { finish(generation); }
+  }
+
+  async function cancel() {
+    const setup = enrollmentRef.current;
+    if (!setup) return;
+    const generation = begin();
+    if (generation === null) return;
+    setStatus("Canceling unfinished setup...");
+    try {
+      await cancelTotpEnrollment(auth, setup);
+      if (!valid(generation)) return;
+      enrollmentRef.current = null;
+      setEnrollment(null);
+      setCode("");
+      setStatus("Authenticator setup canceled.");
+    } catch (error: unknown) { showError(error, generation); }
+    finally { finish(generation); }
+  }
+
+  async function cancelUnfinished() {
+    const generation = begin();
+    if (generation === null || !userId) return;
+    setStatus("Canceling unfinished authenticator setup...");
+    try {
+      for (const factorId of pendingFactorIds) {
+        if (!valid(generation)) return;
+        await cancelTotpEnrollment(auth, { factorId, userId, qrImage: "", secret: "" });
+      }
+      const state = await loadTotpEnrollmentState(auth);
+      if (!valid(generation) || state.userId !== userId) return;
+      setPendingFactorIds(state.pendingFactorIds);
+      setEnabled(state.enabled);
+      setStatus("Unfinished setup canceled. You can start again.");
+    } catch (error: unknown) { showError(error, generation); }
+    finally { finish(generation); }
+  }
+
+  const button = { padding: 10, borderRadius: 8, fontWeight: 700 };
   return (
-    <div style={{ display: "grid", gap: 12, maxWidth: 560 }}>
-      {required ? (
-        <div
-          style={{
-            padding: 12,
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: "rgba(139,140,255,0.10)",
-            fontWeight: 900,
-          }}
-        >
-          MFA is required for Platform Admins.
+    <section aria-label="Authenticator setup" style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+      {required ? <p>Control administrators must verify an authenticator before opening admin pages.</p> : null}
+      <h2 style={{ margin: 0, fontSize: 18 }}>Authenticator app</h2>
+      {enrollment ? (
+        <form onSubmit={(event) => { event.preventDefault(); void verify(); }} style={{ display: "grid", gap: 12 }}>
+          {/* The provider QR contains a setup key. It stays in this component only. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={enrollment.qrImage} alt="Scan this QR code in your authenticator app" width={220} height={220} />
+          <details><summary>Enter the setup key manually</summary><code style={{ overflowWrap: "anywhere" }}>{enrollment.secret}</code></details>
+          <p>Verifying this new authenticator signs out your other RunBook sessions.</p>
+          <label style={{ display: "grid", gap: 6 }}>6-digit authenticator code
+            <input value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} aria-describedby="mfa-enrollment-status" disabled={busy} />
+          </label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="submit" disabled={busy || !/^\d{6}$/.test(code)} style={button}>{busy ? "Working..." : "Verify and continue"}</button>
+            <button type="button" onClick={() => void cancel()} disabled={busy} style={button}>Cancel setup</button>
+          </div>
+        </form>
+      ) : enabled ? (
+        <button type="button" onClick={() => { window.location.href = mfaStepUpHref(destination); }} disabled={busy} style={button}>Verify now</button>
+      ) : userId && pendingFactorIds.length > 0 ? (
+        <div style={{ display: "grid", gap: 8 }}>
+          <p>An unfinished authenticator setup exists on this account. Cancel it before starting again.</p>
+          <button type="button" onClick={() => void cancelUnfinished()} disabled={busy} style={button}>Cancel unfinished setup</button>
         </div>
+      ) : userId ? (
+        <button type="button" onClick={() => void start()} disabled={busy} style={button}>Enable authenticator app</button>
       ) : null}
-
-      <div style={{ fontWeight: 900, fontSize: 16 }}>Two-Factor Authentication (Authenticator App)</div>
-
-      {hasTotp === null ? (
-        <div style={{ opacity: 0.8 }}>Loading…</div>
-      ) : hasTotp ? (
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ opacity: 0.85 }}>Status: <b>Enabled</b></div>
-          <button
-            onClick={() => (window.location.href = "/mfa")}
-            style={{ padding: 10, borderRadius: 12, fontWeight: 900 }}
-          >
-            Verify now
-          </button>
-        </div>
-      ) : (
-        <button onClick={startEnroll} style={{ padding: 10, borderRadius: 12, fontWeight: 900 }}>
-          Enable Authenticator App
-        </button>
-      )}
-
-      {status ? <div style={{ opacity: 0.85 }}>{status}</div> : null}
-    </div>
+      <div id="mfa-enrollment-status" role="status" aria-live="polite" style={{ overflowWrap: "anywhere" }}>{status}</div>
+    </section>
   );
 }
