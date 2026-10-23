@@ -29,6 +29,6 @@ The manual-only Control CI workflow runs PostgreSQL 17 in a disposable service a
 2. `supabase/migrations/20261023235500_timeclock_weekly_summary_utc.sql`
 3. `supabase/tests/timeclock_weekly_summary.sql`
 
-The fixture creates only synthetic auth/employee/event tables and matching SELECT RLS, executes the actual migration function, checks arithmetic/carry-in/overnight/receipt delay/tie ordering/open and future windows/session-timezone invariance/source retention, and calls the RPC as an unprivileged actor for same-employee, other-employee and cross-shop access. The transaction rolls back all fixture state. Never run the fixture against an application database.
+The fixture creates only synthetic auth/employee/event tables and the current F05 active-identity helper and SELECT RLS, executes the actual migration function, checks arithmetic/carry-in/overnight/receipt delay/tie ordering/open and future windows/session-timezone invariance/source retention, and calls the RPC as an unprivileged actor for same-employee, other-employee, cross-shop, inactive-employee and inactive-membership access. The transaction rolls back all fixture state. Never run the fixture against an application database.
 
 These tests establish the checked-in function behavior under a minimal representative schema. They do not certify a live database schema, migration application, payroll policy or end-to-end provider configuration.

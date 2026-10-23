@@ -31,7 +31,9 @@ values
 insert into public.time_events(employee_id,shop_id,event_type,client_ts)
 values
 ('00000000-0000-4000-8000-0000000000b2','00000000-0000-4000-8000-000000000011','CLOCK_IN','2026-01-04 00:00+00'),
-('00000000-0000-4000-8000-0000000000c3','00000000-0000-4000-8000-000000000022','CLOCK_IN','2026-01-04 00:00+00');
+('00000000-0000-4000-8000-0000000000c3','00000000-0000-4000-8000-000000000022','CLOCK_IN','2026-01-04 00:00+00'),
+('00000000-0000-4000-8000-0000000000d4','00000000-0000-4000-8000-000000000011','CLOCK_IN','2026-01-04 00:00+00'),
+('00000000-0000-4000-8000-0000000000e5','00000000-0000-4000-8000-000000000011','CLOCK_IN','2026-01-04 00:00+00');
 create temporary table source_before as table public.time_events;
 do $test$
 declare r record; total bigint;
@@ -110,6 +112,19 @@ select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099'
 do $test$
 begin
  assert not exists(select 1 from public.timeclock_weekly_summary('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000a1','2026-01-04') where work_seconds<>0 or last_event_ts is not null), 'actor without employee row sees no event stream';
+end
+$test$;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000004',true);
+do $test$
+begin
+ assert not exists(select 1 from public.timeclock_weekly_summary('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000d4','2026-01-04') where work_seconds<>0 or last_event_ts is not null), 'inactive employee cannot read prior evidence';
+end
+$test$;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000005',true);
+do $test$
+begin
+ assert not exists(select 1 from public.timeclock_weekly_summary('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000e5','2026-01-04') where work_seconds<>0 or last_event_ts is not null), 'inactive shop membership cannot read prior evidence';
+ assert not has_table_privilege(current_user,'public.employees','select'), 'fixture must preserve server-only employees';
 end
 $test$;
 reset role;
