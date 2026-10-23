@@ -26,7 +26,7 @@ function screenHtml(load, content, long = false, selectedCompanyId = "synthetic-
   const RootLayout = load(path.join(root, "src/app/layout.tsx")).default;
   return "<!doctype html>" + renderToStaticMarkup(React.createElement(RootLayout, null, React.createElement(Shell, {
     email: long ? `${"long-account".repeat(12)}@example.invalid` : "reviewer@example.invalid", roleLabel: "Platform admin",
-    companies: [{ id: "synthetic-shop-0", name: "Synthetic review company" }, { id: "synthetic-shop-1", name: "Synthetic second company" }], selectedCompanyId,
+    selectedCompanyId,
     statuses: [{ key: "auth", label: "Fixture identity", tone: "info" }, { key: "data", label: "Synthetic records", tone: "info" }],
   }, fixtureNote(), content)));
 }
@@ -586,11 +586,8 @@ async function checkImages(page) {
 }
 
 async function checkNavigationKeyboard(page, height) {
-  const company = page.getByRole("combobox", { name: "Company", exact: true });
-  await company.focus();
-  assert.equal(await page.locator("#control-navigation-search").count(), 0, "Find Module is removed");
-  await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => (() => { const u = new URL(document.activeElement.getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; })()), destinations[0]);
+  assert.equal(await page.getByRole("combobox", { name: "Company", exact: true }).count(), 0, "Company dropdown is removed");
+  assert.equal(await page.locator("#control-company,#control-navigation-search").count(), 0, "Removed sidebar controls stay absent");
   await page.locator(".control-nav a").first().focus();
   const reached = [];
   for (let i = 0; i < destinations.length; i++) {

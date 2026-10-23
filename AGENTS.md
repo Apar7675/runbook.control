@@ -15,7 +15,7 @@ Architecture violations are not allowed even if the code compiles.
 - `Docs/Architecture/RunBook-System-Bible.md` is the top authority.
 - App bibles in `Docs/Architecture/` are secondary authorities for app-local boundaries.
 - If this file conflicts with the System Bible, the System Bible wins.
-- This repo does not carry `Docs/Architecture/` locally. Reference the shared architecture docs at `D:\RunBook-Office\RunBook.Desktop\Docs\Architecture\`.
+- This repo does not carry `Docs/Architecture/` locally. Reference the shared architecture docs at `../RunBook.Desktop/Docs/Architecture/` in the current workspace.
 
 ## 3. Non-Negotiable Architecture Rules
 
@@ -78,6 +78,6 @@ Architecture violations are not allowed even if the code compiles.
 
 If a change depends on architecture details not present locally, fetch the relevant System Bible or app bible from `Apar7675/runbook-desktop/Docs/Architecture/` on GitHub before proceeding. Do not guess and do not require access to a particular workstation.
 
-## Office migration directive — October 5, 2026
+## Current development workflow
 
-For development authority and the current recovery-only pause, follow the coordinated Desktop `Docs/Architecture/RunBook-AI-Cloud-Workflow.md` and `D:\RunBook-Office\LOCAL-HANDOFF.md`. Earlier cloud dispatch, idle continuation, automatic checkpoint push and GitHub-only development rules are superseded by the owner direction recorded there. Architecture and application/data ownership rules remain in force.
+Before work, read [RunBook-AI-Cloud-Workflow.md](../RunBook.Desktop/Docs/Architecture/RunBook-AI-Cloud-Workflow.md) for current development authority, startup, shared-session coordination and authorized scope. Use its current instructions before historical migration directions. [LOCAL-HANDOFF.md](../LOCAL-HANDOFF.md) preserves recovery evidence. Architecture and application/data ownership rules remain in force.

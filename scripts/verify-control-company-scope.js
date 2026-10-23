@@ -110,6 +110,10 @@ async function serverChecks() {
   assert.equal(pure.companyRequest('/dashboard', new URLSearchParams('company=' + B + '&shop=' + A)), B);
   assert.equal(pure.companyRequest('/shops/' + B, new URLSearchParams()), B);
   assert.equal(pure.companyRequest('/shops/new', new URLSearchParams()), '');
+  assert.equal(pure.companyRequest('/shops', new URLSearchParams('company='+A+'&shop='+B)), '');
+  assert.equal(pure.companyHref('/shops?company='+A+'&shop='+B+'&shop_id='+A, A), '/shops');
+  assert.equal(pure.companyHref('/shops/'+B, A), '/shops/'+B+'?company='+B);
+  assert.equal(pure.resolveCompany([companies[0]],pure.companyRequest('/shops/'+B,new URLSearchParams())).unavailable,true);
   assert.equal(pure.companyRequest('/dashboard', new URLSearchParams('company=' + A + '&company=' + B)), '__invalid_company__');
   assert.equal(pure.companyRequest('/dashboard', new URLSearchParams('company=' + encodeURIComponent('../unavailable'))), '__invalid_company__');
   assert.equal(pure.companyRequest('/dashboard', new URLSearchParams('shop_id=' + B)), B);
@@ -161,6 +165,35 @@ async function serverChecks() {
   assert.equal(auditData.filters.shop_id, A); assert.equal(auditData.counts.totalVisible, 3); assert(auditData.rows.every(row => row.shop_id === A));
   for (const call of db.calls.slice(start)) assertFilter(call, 'shop_id', [A]);
 
+
+  // The actual authorized directory must expose B even when incoming page scope is A.
+  const React = requireRoot('react'), { renderToStaticMarkup } = requireRoot('react-dom/server');
+  let directoryContext = scoped;
+  const { navigationMocks } = require(path.join(root,'scripts/verify-control-compact.js'));
+  const directoryLoad = componentLoader({
+    ...navigationMocks('/shops'),
+    '@/lib/control/summary': {
+      getViewerContext: async () => directoryContext,
+      getShopSnapshot: async company => snapshot(company),
+      getPlatformSnapshot: async context => ({ shopCount: context.shops.length, manageableShopCount: context.shops.length, deviceCount: 0, employeeCount: 0, auditCount: 0 }),
+    },
+    '@/lib/supabase/admin': { supabaseAdmin: () => db },
+  });
+  const ShopsPage = directoryLoad(path.join(root,'src/app/(authed)/shops/page.tsx')).default;
+  const DirectoryScope = directoryLoad(path.join(root,'src/components/control/CompanyScope.tsx')).default;
+  async function directoryHtml() {
+    return renderToStaticMarkup(React.createElement(DirectoryScope,{selectedId:A},await ShopsPage()));
+  }
+  const allShopsHtml = await directoryHtml();
+  assert(allShopsHtml.includes('href="/shops/'+A+'?company='+A+'"'));
+  assert(allShopsHtml.includes('href="/shops/'+B+'?company='+B+'"'),'Selected A must not override B directory row');
+  assert(!allShopsHtml.includes(C),'Unavailable C must not be listed');
+  assert(fs.readFileSync(path.join(root,'src/app/(authed)/shops/page.tsx'),'utf8').includes('authorizedShops'),'Directory uses the existing validated authorization list');
+  directoryContext = {...scoped, authorizedShops:[companies[0]]};
+  const limitedShopsHtml = await directoryHtml();
+  assert(limitedShopsHtml.includes('href="/shops/'+A+'?company='+A+'"'));
+  assert(!limitedShopsHtml.includes('href="/shops/'+B),'Directory never invents unavailable B access');
+
   const extra = await require('./verify-control-company-scope-extra.js')({root,componentLoader,db,devices,people,pure,summary,context:scoped,companies,A,B,deviceData,personData,snapshot,assertFilter});
   scoped = { ...scoped, shops: [], selectedCompanyId: null, companyUnavailable: true };
   start = db.calls.length; assert.deepEqual((await devices.loadDeviceViewRows()).rows, []); assert.deepEqual((await billing.loadBillingViews()).rows, []); assert.deepEqual((await people.loadPeopleViews()).peopleRows, []);
@@ -185,9 +218,10 @@ async function bundleClient() {
     'const Shell=require(' + JSON.stringify(path.join(root,'src/components/control/ControlAppShell.tsx')) + ').default;',
     'const {CompanyForm}=require(' + JSON.stringify(path.join(root,'src/components/control/CompanyScope.tsx')) + ');',
     'const CompanyLink=require(' + JSON.stringify(path.join(root,'src/components/control/CompanyLink.tsx')) + ').default;',
+    'const {ControlActionLink}=require(' + JSON.stringify(path.join(root,'src/components/control/ControlActionButton.tsx')) + ');',
     'const data=JSON.parse(document.getElementById("fixture-data").textContent);const h=React.createElement;',
-    'const body=h("div",null,h("p",{role:"note"},"LOCAL SYNTHETIC COMPANY FIXTURE | NOT LIVE / AUTHENTICATED"),h("h1",null,"Company scope verification"),h("div",{"data-testid":"company-data"},data.record),h(CompanyLink,{href:"/devices/device-a?q=old"},"Open synthetic detail"),h(CompanyForm,{method:"get",action:"/devices"},h("label",null,"Filter query",h("input",{name:"q",defaultValue:new URLSearchParams(location.search).get("q")||""})),h("button",{type:"submit"},"Apply fixture filter")));',
-    'createRoot(document.getElementById("root")).render(h(Shell,{email:"reviewer@example.invalid",roleLabel:"Platform admin",statuses:[],companies:data.companies,selectedCompanyId:data.selectedId,companyUnavailable:data.unavailable,companyError:data.error},body));'
+    "const record=h(\"div\",{\"data-testid\":\"company-data\"},data.record);const directory=location.pathname===\"/shops\"?h(\"div\",{\"data-testid\":\"shops-directory\"},data.companies.map(company=>h(ControlActionLink,{key:company.id,href:\"/shops/\"+company.id},\"Open \"+company.name))):null;const body=h(\"div\",null,h(\"p\",{role:\"note\"},\"LOCAL SYNTHETIC COMPANY FIXTURE | NOT LIVE / AUTHENTICATED\"),h(\"h1\",null,\"Shop context verification\"),data.error?h(\"div\",{role:\"alert\"},data.error):null,record,directory,h(CompanyLink,{href:\"/devices/device-a?q=old\"},\"Open synthetic detail\"),h(CompanyForm,{method:\"get\",action:\"/devices\"},h(\"label\",null,\"Filter query\",h(\"input\",{name:\"q\",defaultValue:new URLSearchParams(location.search).get(\"q\")||\"\"})),h(\"button\",{type:\"submit\"},\"Apply fixture filter\")));",
+    'createRoot(document.getElementById("root")).render(h(Shell,{email:"reviewer@example.invalid",roleLabel:"Platform admin",statuses:[],selectedCompanyId:data.selectedId},body));'
   ].join('\n'));
   const webpack = requireRoot('next/dist/compiled/webpack/webpack').webpack;
   await new Promise((resolve,reject) => webpack.webpack({ mode:'production',devtool:false,cache:false,target:'web',entry,output:{path:bundleDir,filename:'fixture.js'},optimization:{minimize:false},resolve:{extensions:['.js','.cjs','.tsx','.ts','.json'],modules:[path.join(root,'node_modules'),'node_modules'],alias:{'@':path.join(root,'src')}},module:{rules:[{test:/\.tsx?$/,exclude:/node_modules/,use:[{loader:tsLoader}]}]},plugins:[new webpack.NormalModuleReplacementPlugin(/^next\/navigation$/,navigationMock),new webpack.NormalModuleReplacementPlugin(/^next\/link$/,linkMock)] }, (error,stats) => {
@@ -200,7 +234,7 @@ async function bundleClient() {
 
 async function browserChecks(pure) {
   const bundle = await bundleClient();
-  let allowed = [...companies], delayB = false, releaseB;
+  let allowed = [...companies];
   const pageRequests = [], external = [], errors = [], screenshots = [];
   const server = http.createServer(async (request,response) => {
     const url = new URL(request.url, 'http://fixture.invalid');
@@ -217,7 +251,6 @@ async function browserChecks(pure) {
     const available = mode === 'empty' || mode === 'error' ? [] : mode === 'single' ? [companies[0]] : allowed;
     const selected = pure.resolveCompany(available,pure.companyRequest(url.pathname,url.searchParams));
     const data={companies:available,selectedId:selected.selected?.id || null,unavailable:selected.unavailable,error:mode==='error'?'Synthetic company list unavailable.':null,record:selected.selected ? (selected.selected.id===A?'A-only synthetic record':'B-only synthetic record') : 'No company data'};
-    if(delayB && selected.selected?.id===B) await new Promise(resolve=>{releaseB=resolve;});
     const payload=JSON.stringify(data).replaceAll('<','\\u003c');
     response.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store','Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self'; connect-src 'none'; form-action 'self'"});
     response.end('<!doctype html><html><head><meta charset="utf-8"><title>Synthetic company fixture</title></head><body style="margin:0"><div id="root"></div><script type="application/json" id="fixture-data">'+payload+'</script><script defer src="/fixture.js"></script></body></html>');
@@ -233,72 +266,61 @@ async function browserChecks(pure) {
     const page=await context.newPage();
     page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
     page.on('response',response=>{if(response.status()>=400)errors.push(String(response.status())+': '+response.url());});
-    const picker=()=>page.getByRole('combobox',{name:'Company',exact:true});
-    async function expectCompany(id) {
-      await picker().waitFor({state:'visible'});assert.equal(await picker().inputValue(),id);
-      const text=await page.getByTestId('company-data').innerText();assert.equal(text,id===A?'A-only synthetic record':'B-only synthetic record');
-      assert.equal(await page.locator('#control-navigation-search').count(),0,'Find Module is removed');
-      const hrefs=await page.locator('.control-nav a').evaluateAll(links=>links.map(link=>link.getAttribute('href')));
-      assert.equal(hrefs.length,13);assert(hrefs.every(href=>new URL(href,origin).searchParams.get('company')===id));
+    async function expectShell() {
+      await page.locator('.control-nav').waitFor({state:'visible'});
+      assert.equal(await page.getByRole('combobox',{name:'Company',exact:true}).count(),0,'Company dropdown is removed');
+      assert.equal(await page.locator('#control-company,#control-navigation-search').count(),0,'No removed selector or Find Module controls');
+      assert.equal(await page.locator('.control-nav a').count(),13,'All modules remain available');
+      const shopsHref=await page.getByRole('link',{name:'Shops',exact:true}).getAttribute('href');
+      assert.equal(shopsHref,'/shops','Shops always opens the authorized directory');
     }
-    async function shot(name){const file=path.join(evidence,name+'.png');await page.screenshot({path:file});screenshots.push(file);}    await page.goto(origin+'/dashboard?company='+A);await expectCompany(A);
-    assert.deepEqual(await picker().locator('option').evaluateAll(options=>options.map(option=>option.value)),[A,B]);await shot('company-a-1366x768');
-    // Synthetic DOM tampering proves the real handler rejects an ID outside its options.
-    const beforeUnauthorized = pageRequests.length;
-    await picker().evaluate((select, unauthorized) => { const option=document.createElement('option');option.value=unauthorized;option.textContent='Synthetic unauthorized';select.append(option);select.value=unauthorized;select.dispatchEvent(new Event('change',{bubbles:true}));option.remove(); }, C);
-    assert.equal(pageRequests.length,beforeUnauthorized);await expectCompany(A);
-    // Full-document navigation retires the old company component tree. While pending,
-    // the native selector is disabled and the previous company's main content is hidden.
-    delayB=true;const startRequests=pageRequests.length;
-    const pending=await picker().evaluate((select,value)=>{
-      select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));
-      return {disabled:select.disabled,inert:Boolean(document.querySelector('.control-nav a').closest('[inert]')),visibility:getComputedStyle(document.querySelector('.control-main')).visibility,status:document.querySelector('[role="status"]')?.textContent};
-    },B);
-    console.log('Pending DOM:',JSON.stringify(pending));
-    assert.equal(pending.disabled,true);assert.equal(pending.inert,true);assert.equal(pending.visibility,'hidden');assert.equal(pending.status,'Loading company...');
-    while(!releaseB)await new Promise(resolve=>setTimeout(resolve,10));releaseB();delayB=false;
-    await page.waitForURL(url=>url.searchParams.get('company')===B);await expectCompany(B);
-    assert.equal(pageRequests.slice(startRequests).filter(request=>new URLSearchParams(request.search).get('company')===B).length,1,'Rapid input must not issue a second company navigation');
-    await shot('company-b-1366x768');
-    await picker().selectOption(A);await page.waitForURL(url=>url.searchParams.get('company')===A);await expectCompany(A);
-    await page.goBack();await page.waitForURL(url=>url.searchParams.get('company')===B);await expectCompany(B);
-    await page.goForward();await page.waitForURL(url=>url.searchParams.get('company')===A);await expectCompany(A);
-    await page.reload();await expectCompany(A);
-    await picker().focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
-    await page.waitForURL(url=>url.searchParams.get('company')===B);await expectCompany(B);
+    async function expectCompany(id) {
+      await expectShell();
+      const text=await page.getByTestId('company-data').innerText();assert.equal(text,id===A?'A-only synthetic record':'B-only synthetic record');
+      const hrefs=await page.locator('.control-nav a').evaluateAll(links=>links.map(link=>link.getAttribute('href')));
+      assert(hrefs.every(href=>href==='/shops'||new URL(href,origin).searchParams.get('company')===id));
+    }
+    async function shot(name){const file=path.join(evidence,name+'.png');await page.screenshot({path:file});screenshots.push(file);}
+    await page.goto(origin+'/dashboard?company='+A);await expectCompany(A);await shot('no-selector-company-a-1366x768');
+    const shops=page.getByRole('link',{name:'Shops',exact:true});await shops.focus();await page.keyboard.press('Enter');
+    await page.waitForURL(url=>url.pathname==='/shops');await expectCompany(A);
+    assert.equal(new URL(page.url()).searchParams.has('company'),false);
+    assert.deepEqual(await page.getByTestId('shops-directory').getByRole('link').allTextContents(),['Open Synthetic Company A','Open Synthetic Company B']);
+    await page.getByRole('link',{name:'Open Synthetic Company B',exact:true}).click();
+    await page.waitForURL(url=>url.pathname==='/shops/'+B);assert.equal(new URL(page.url()).searchParams.get('company'),B);await expectCompany(B);await shot('no-selector-company-b-1366x768');
     await page.getByRole('link',{name:'Devices',exact:true}).click();await page.waitForURL(url=>url.pathname==='/devices');await expectCompany(B);
     await page.getByLabel('Filter query',{exact:true}).fill('synthetic-filter');
     await page.getByRole('button',{name:'Apply fixture filter',exact:true}).click();
     await page.waitForURL(url=>url.pathname==='/devices'&&url.searchParams.get('q')==='synthetic-filter');
     assert.equal(new URL(page.url()).searchParams.get('company'),B);await expectCompany(B);
+    await page.reload();await expectCompany(B);
     await page.getByRole('link',{name:'Open synthetic detail',exact:true}).click();await page.waitForURL(url=>url.pathname==='/devices/device-a');
-    assert.equal(new URL(page.url()).searchParams.get('company'),B);
-    await picker().selectOption(A);await page.waitForURL(url=>url.pathname==='/devices'&&url.searchParams.get('company')===A);await expectCompany(A);
-    assert.equal(new URL(page.url()).searchParams.has('q'),false,'Old company filters/cursors are cleared on switch');
-    await page.goto(origin+'/shops/'+A+'?tab=overview&company='+A);await expectCompany(A);
-    await picker().selectOption(B);await page.waitForURL(url=>url.pathname==='/shops/'+B&&url.searchParams.get('company')===B);await expectCompany(B);
+    assert.equal(new URL(page.url()).searchParams.get('company'),B);await expectCompany(B);
+    await page.goBack();await page.waitForURL(url=>url.pathname==='/devices');await expectCompany(B);
+    await page.goForward();await page.waitForURL(url=>url.pathname==='/devices/device-a');await expectCompany(B);
+    await page.getByRole('link',{name:'Shops',exact:true}).click();await page.waitForURL(url=>url.pathname==='/shops');
+    await page.getByRole('link',{name:'Open Synthetic Company A',exact:true}).click();
+    await page.waitForURL(url=>url.pathname==='/shops/'+A);await expectCompany(A);
     await page.goto(origin+'/software-updates?company='+A);await expectCompany(A);
     assert.equal(await page.getByRole('note',{name:'Platform-wide page',exact:true}).count(),1);
     await page.goto(origin+'/dashboard?company='+A+'&fixture=single');await expectCompany(A);
-    assert.deepEqual(await picker().locator('option').evaluateAll(options=>options.map(option=>option.value)),[A]);
-    await page.goto(origin+'/dashboard?fixture=empty');await picker().waitFor({state:'visible'});
-    assert.equal(await picker().isDisabled(),true);assert.equal(await page.getByTestId('company-data').innerText(),'No company data');await shot('company-empty-1366x768');
-    await page.goto(origin+'/dashboard?company='+C);await picker().waitFor({state:'visible'});
-    assert.equal(await picker().inputValue(),'');assert.equal(await page.getByTestId('company-data').innerText(),'No company data');
-    assert.match(await picker().innerText(),/Choose another company/);await shot('company-unavailable-1366x768');
-    allowed=[companies[1]];await page.goto(origin+'/dashboard?company='+A);await picker().waitFor({state:'visible'});
-    assert.equal(await page.getByTestId('company-data').innerText(),'No company data','Revocation is rechecked on a fresh document request');
-    assert.equal(await picker().inputValue(),'');await picker().selectOption(B);await page.waitForURL(url=>url.searchParams.get('company')===B);await expectCompany(B);allowed=[...companies];
-    await page.goto(origin+'/dashboard?fixture=error');await picker().waitFor({state:'visible'});
-    assert.equal(await picker().isDisabled(),true);assert.match(await page.getByRole('alert').innerText(),/Synthetic company list unavailable/);
-    assert.equal(await page.getByTestId('company-data').innerText(),'No company data');await shot('company-error-1366x768');
-    const beforeRetry=pageRequests.length;
-    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Retry companies',exact:true}).click()]);
-    await picker().waitFor({state:'visible'});assert(pageRequests.length>beforeRetry,'Retry reloads company authority instead of fabricating options');
+    await page.goto(origin+'/dashboard?fixture=empty');await expectShell();
+    assert.equal(await page.getByTestId('company-data').innerText(),'No company data');await shot('no-selector-empty-1366x768');
+    await page.goto(origin+'/dashboard?company='+C);await expectShell();
+    assert.equal(await page.getByTestId('company-data').innerText(),'No company data');await shot('no-selector-unavailable-1366x768');
+    allowed=[companies[1]];await page.goto(origin+'/dashboard?company='+A);await expectShell();
+    assert.equal(await page.getByTestId('company-data').innerText(),'No company data','Revoked scope remains fail-closed');
+    await page.getByRole('link',{name:'Shops',exact:true}).click();await page.waitForURL(url=>url.pathname==='/shops');await expectCompany(B);
+    assert.deepEqual(await page.getByTestId('shops-directory').getByRole('link').allTextContents(),['Open Synthetic Company B']);
+    await page.getByRole('link',{name:'Open Synthetic Company B',exact:true}).click();await page.waitForURL(url=>url.pathname==='/shops/'+B);await expectCompany(B);allowed=[...companies];
+    await page.goto(origin+'/dashboard?fixture=error');await expectShell();
+    assert.match(await page.getByRole('alert').innerText(),/Synthetic company list unavailable/);
+    assert.equal(await page.getByTestId('company-data').innerText(),'No company data');await shot('no-selector-error-1366x768');
+    await page.getByRole('link',{name:'Shops',exact:true}).click();await page.waitForURL(url=>url.pathname==='/shops');await expectCompany(A);
     assert.deepEqual(errors,[],'No client, resource or console errors');assert.deepEqual(external,[],'No provider or external requests');
     await context.close();
-    return {actualReactComponents:true,syntheticServerBoundary:true,liveAuthenticatedApp:false,cases:['selection','unauthorized-option-rejection','keyboard','pending','rapid-input-lock','reload','back-forward','filter-GET','detail-switch','shop-switch','platform-note','single','empty','unavailable','revoked','error-retry'],pageRequests,screenshots,externalRequests:external,browserErrors:errors};
-  } finally { if(releaseB)releaseB(); if(browser)await browser.close();await new Promise(resolve=>server.close(resolve)); }
+    return {actualReactComponents:true,syntheticServerBoundary:true,liveAuthenticatedApp:false,cases:['dropdown-absent','all13-modules','Shops-directory','directory-row-selection','keyboard-Shops-link','reload','back-forward','filter-GET','detail-context','shop-context','platform-note','single','empty','unavailable','revoked','error-recovery-via-Shops'],pageRequests,screenshots,externalRequests:external,browserErrors:errors};
+  } finally { if(browser)await browser.close();await new Promise(resolve=>server.close(resolve)); }
 }
 
 async function main() {
@@ -310,6 +332,6 @@ async function main() {
   const crypto=require('node:crypto');
   const sourceHashes=Object.fromEntries(sources.map(file=>[file,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')]));
   fs.writeFileSync(path.join(evidence,'company-scope-results.json'),JSON.stringify({generatedAt:new Date().toISOString(),label:'Synthetic actual-component and mocked-query evidence; not live/authenticated',sourceHashes,server,browser},null,2));
-  console.log('PASS: company authority, scoped loaders before caps, actual React selection/keyboard/pending/history/filter/revocation/error behavior. Evidence: '+evidence);
+  console.log('PASS: company authority, scoped loaders before caps, actual React dropdown removal, Shops navigation, context/history/filter/revocation behavior. Evidence: '+evidence);
 }
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});

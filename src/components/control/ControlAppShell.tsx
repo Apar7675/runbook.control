@@ -1,22 +1,18 @@
 import React from "react";
 import CompanyScope, { CompanyScopeNotice } from "@/components/control/CompanyScope";
-import type { CompanyOption } from "@/lib/control/companyScope";
 import ControlSidebar from "@/components/control/ControlSidebar";
 import { controlTheme as t } from "@/components/control/controlTheme";
 import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
 
-export default function ControlAppShell({ email, roleLabel, statuses, companies = [], selectedCompanyId = null, companyUnavailable = false, companyError = null, children }: {
+export default function ControlAppShell({ email, roleLabel, statuses, selectedCompanyId = null, children }: {
   email: string;
   roleLabel: string;
   statuses: Array<{ key: string; label: string; tone: ControlStatusTone }>;
-  companies?: CompanyOption[];
   selectedCompanyId?: string | null;
-  companyUnavailable?: boolean;
-  companyError?: string | null;
   children: React.ReactNode;
 }) {
   return (
-    <CompanyScope key={selectedCompanyId ?? "unavailable"} companies={companies} selectedId={selectedCompanyId} unavailable={companyUnavailable} error={companyError}>
+    <CompanyScope key={selectedCompanyId ?? "unavailable"} selectedId={selectedCompanyId}>
     <div className="control-shell" style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "clamp(208px, 15vw, 232px) minmax(0, 1fr)", background: "linear-gradient(135deg, #EFE8FF 0%, #DAECFF 45%, #E7E2FF 100%)", color: t.color.text }}>
       <ControlSidebar email={email} roleLabel={roleLabel} statuses={statuses} />
       <main className="control-main" style={{ minWidth: 0, minHeight: "100dvh" }}>

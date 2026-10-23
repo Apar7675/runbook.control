@@ -100,7 +100,9 @@ async function loadPlanByShop(shopIds: string[]) {
 }
 
 export default async function ShopsPage() {
-  const context = await getViewerContext();
+  const viewer = await getViewerContext();
+  // The directory lists only shops already authorized by the server.
+  const context = { ...viewer, shops: viewer.authorizedShops ?? viewer.shops };
 
   if (!context.isPlatformAdmin && context.shops.length === 1) {
     redirect(`/shops/${context.shops[0].id}`);

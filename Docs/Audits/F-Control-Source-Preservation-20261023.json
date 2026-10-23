@@ -1,0 +1,3463 @@
+{
+  "format": 1,
+  "kind": "read-only-source-preservation",
+  "sourceRoot": "F:/PortableWorkspace/RunBook/Office/RunBook.Control",
+  "originalRemoteCommit": "ecb7e77609a661b77178e5b04be3e3e4ffcf0743",
+  "currentRemoteRepairCommitAtReview": "8427c388070a41b0c4304f203814c74cc9be0b97",
+  "gitWorktreeState": "Not verified: Git operations were unavailable; no reset, clean, pull or ref change was attempted.",
+  "scope": "Source, existing public assets and design pack only. Excludes .git, dependencies/build outputs, .local-evidence, company/runtime data, credential files, generated file-tree listing and stripe.exe.",
+  "summary": {
+    "remoteBlobs": 410,
+    "localEligibleFiles": 430,
+    "rawExact": 91,
+    "lineEndingOnly": 307,
+    "changed": 12,
+    "new": 20,
+    "missing": 0,
+    "readErrors": 0
+  },
+  "hashDefinition": "Git SHA-1 over 'blob <byte-count>\\0' and exact bytes. normalizedLF uses strict UTF-8 CRLF-to-LF conversion; binary bytes remain unchanged.",
+  "preservation": "The accompanying tree preserves exact raw bytes for all 32 substantively changed/new files. The 307 line-ending-only files remain content-equivalent to the original remote objects. This is a recovery candidate, not an approved merge or deployed state; never replace repaired main wholesale with this tree.",
+  "files": [
+    {
+      "path": ".env.example",
+      "bytes": 508,
+      "rawGitSha": "b0ca15a4ac7cc3783f91cb8ec966b3c7fd5780a6",
+      "normalizedLFGitSha": "b0ca15a4ac7cc3783f91cb8ec966b3c7fd5780a6",
+      "originalRemoteGitSha": "b0ca15a4ac7cc3783f91cb8ec966b3c7fd5780a6",
+      "status": "raw-exact"
+    },
+    {
+      "path": ".eslintrc.cjs",
+      "bytes": 563,
+      "rawGitSha": "05d487e8e6bab82193c928029abaae740689fd10",
+      "normalizedLFGitSha": "6c9887dfd173f0d74349f13c2a9095e934551805",
+      "originalRemoteGitSha": "6c9887dfd173f0d74349f13c2a9095e934551805",
+      "status": "line-ending-only"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 821,
+      "rawGitSha": "4e8c0527805f602cdcce7b98c861c83e37e2a1c5",
+      "normalizedLFGitSha": "98d9660768d401be9f76152319bb35518386c8b4",
+      "originalRemoteGitSha": "99945aebe70070409ba7e5c5542c31350f42884e",
+      "status": "changed"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 896,
+      "rawGitSha": "f3796cabe255b2aaa7806f8625fc5c5f93b9af90",
+      "normalizedLFGitSha": "f3796cabe255b2aaa7806f8625fc5c5f93b9af90",
+      "originalRemoteGitSha": "f3796cabe255b2aaa7806f8625fc5c5f93b9af90",
+      "status": "raw-exact"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 4402,
+      "rawGitSha": "3d6750ebf47ab4c0a255617409894e0fd71f7d80",
+      "normalizedLFGitSha": "ae91d5d0061c3653a551c8348680cdc76867c11d",
+      "originalRemoteGitSha": "db6a5d62a4ff45a047261323257655ca276bd232",
+      "status": "changed"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/EVIDENCE-SHA256SUMS",
+      "bytes": 10563,
+      "rawGitSha": "e8572e0ef5d04e99622b6770ac3d2cdebdd461f3",
+      "normalizedLFGitSha": "e8572e0ef5d04e99622b6770ac3d2cdebdd461f3",
+      "originalRemoteGitSha": "e8572e0ef5d04e99622b6770ac3d2cdebdd461f3",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/PACK-MANIFEST.json",
+      "bytes": 702,
+      "rawGitSha": "1f36a2149c938b4677d40a76d43b23f3e37a18b5",
+      "normalizedLFGitSha": "1f36a2149c938b4677d40a76d43b23f3e37a18b5",
+      "originalRemoteGitSha": "1f36a2149c938b4677d40a76d43b23f3e37a18b5",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/runbook-control-compact-dashboard-v1.zip",
+      "bytes": 90531,
+      "rawGitSha": "8c2aa456ed6c0d99a5a3bf7b8b54d4ca73a47b09",
+      "normalizedLFGitSha": "8c2aa456ed6c0d99a5a3bf7b8b54d4ca73a47b09",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/SHA256SUMS",
+      "bytes": 108,
+      "rawGitSha": "8eccc9b877352df6c6b514ad1209993c7f26345c",
+      "normalizedLFGitSha": "11d374d96b019e169fbcf5d4bf475786ffdf31a9",
+      "originalRemoteGitSha": "11d374d96b019e169fbcf5d4bf475786ffdf31a9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/SOURCE-SHA256SUMS",
+      "bytes": 761,
+      "rawGitSha": "c3e23aeb6f4c84fa395242f687743b26ce2eb0f5",
+      "normalizedLFGitSha": "c3e23aeb6f4c84fa395242f687743b26ce2eb0f5",
+      "originalRemoteGitSha": "c3e23aeb6f4c84fa395242f687743b26ce2eb0f5",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/SUPERVISOR-REVIEW.md",
+      "bytes": 2991,
+      "rawGitSha": "cb23d2e6d560fd9643c9d7a065af943529a9f199",
+      "normalizedLFGitSha": "cb23d2e6d560fd9643c9d7a065af943529a9f199",
+      "originalRemoteGitSha": "cb23d2e6d560fd9643c9d7a065af943529a9f199",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Design/control-compact-dashboard-v1/TASK-RECEIPT.md",
+      "bytes": 23165,
+      "rawGitSha": "988e54840a74cb9f88ffeb545323e89156c74861",
+      "normalizedLFGitSha": "988e54840a74cb9f88ffeb545323e89156c74861",
+      "originalRemoteGitSha": "988e54840a74cb9f88ffeb545323e89156c74861",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Releases/2026-10-20-login-routing/candidate-source-manifest.json",
+      "bytes": 63239,
+      "rawGitSha": "ce999eabbc913eca3af8edb4f61ef15cc629ce7e",
+      "normalizedLFGitSha": "ce999eabbc913eca3af8edb4f61ef15cc629ce7e",
+      "originalRemoteGitSha": "ce999eabbc913eca3af8edb4f61ef15cc629ce7e",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Releases/2026-10-20-login-routing/control-login-dashboard.patch",
+      "bytes": 784,
+      "rawGitSha": "bd70f0fe5feac05736ab93aed8a096a607d11e27",
+      "normalizedLFGitSha": "925fa9edd99caf8f0091629be824bfbb00042f58",
+      "originalRemoteGitSha": "925fa9edd99caf8f0091629be824bfbb00042f58",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "Docs/Releases/2026-10-20-login-routing/release-identity.json",
+      "bytes": 1254,
+      "rawGitSha": "d8a4fd2c4f67cb719bd15391bc4c0f10cd3e7d73",
+      "normalizedLFGitSha": "d8a4fd2c4f67cb719bd15391bc4c0f10cd3e7d73",
+      "originalRemoteGitSha": "d8a4fd2c4f67cb719bd15391bc4c0f10cd3e7d73",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Releases/2026-10-20-login-routing/routing-cases.json",
+      "bytes": 2268,
+      "rawGitSha": "4edbe6a13a97f8f68189fa184157f0d17f133628",
+      "normalizedLFGitSha": "69317219d875d77a80f1b5dedb16315e36779550",
+      "originalRemoteGitSha": "69317219d875d77a80f1b5dedb16315e36779550",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "Docs/Releases/2026-10-20-login-routing/source-equivalent-commit.json",
+      "bytes": 504,
+      "rawGitSha": "5725d42def4fdbed3921c09c10b5063415dda0d6",
+      "normalizedLFGitSha": "c077c232fe7fdc0504b87a3804de122e3dfde59e",
+      "originalRemoteGitSha": "c077c232fe7fdc0504b87a3804de122e3dfde59e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "Docs/Releases/2026-10-20-login-routing/VERIFICATION.md",
+      "bytes": 4706,
+      "rawGitSha": "3201ff51898f9a16bae62a57512f86f0b48de307",
+      "normalizedLFGitSha": "3201ff51898f9a16bae62a57512f86f0b48de307",
+      "originalRemoteGitSha": "3201ff51898f9a16bae62a57512f86f0b48de307",
+      "status": "raw-exact"
+    },
+    {
+      "path": "Docs/Software-Updates/Software-Update-Process.md",
+      "bytes": 4083,
+      "rawGitSha": "6a4e098c61189718ddbfffd732cf709e38d07e0a",
+      "normalizedLFGitSha": "af2e9d95109b9abe9d147227f8707923e1859839",
+      "originalRemoteGitSha": "af2e9d95109b9abe9d147227f8707923e1859839",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "Docs/Supabase/F04-Legacy-Manufacturing-Containment.md",
+      "bytes": 4634,
+      "rawGitSha": "0fd80abe9f533dd5fa6f42c4226be56f91fa0020",
+      "normalizedLFGitSha": "9d1aa5e94624c28a7894ad18a07af04132e480ba",
+      "originalRemoteGitSha": "9d1aa5e94624c28a7894ad18a07af04132e480ba",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "Docs/Supabase/F05-Employee-Client-Access-Boundary.md",
+      "bytes": 6560,
+      "rawGitSha": "ea825a44627e023f324fd032f4897111a51f671f",
+      "normalizedLFGitSha": "6b288e0ac4b634a7e5e8bb89dd7fbbe18c243457",
+      "originalRemoteGitSha": "6b288e0ac4b634a7e5e8bb89dd7fbbe18c243457",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "bytes": 1321,
+      "rawGitSha": "ba8fde17668f2f292d3161c5a711c9b0386eaaa5",
+      "normalizedLFGitSha": "5fc682a7c06a885692d0c542ce2e8747b1cf71d1",
+      "originalRemoteGitSha": "5fc682a7c06a885692d0c542ce2e8747b1cf71d1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "middleware.ts",
+      "bytes": 2570,
+      "rawGitSha": "c72d7116685f4327e5e08413c83134530171e41e",
+      "normalizedLFGitSha": "c72d7116685f4327e5e08413c83134530171e41e",
+      "originalRemoteGitSha": "c72d7116685f4327e5e08413c83134530171e41e",
+      "status": "raw-exact"
+    },
+    {
+      "path": "next-env.d.ts",
+      "bytes": 253,
+      "rawGitSha": "3a636e00db355e6c1331037430e36b9dbde38614",
+      "normalizedLFGitSha": "9edff1c7cacb3bfac9a1eadcf6f51eaa99565e38",
+      "originalRemoteGitSha": "9edff1c7cacb3bfac9a1eadcf6f51eaa99565e38",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "next.config.ts",
+      "bytes": 140,
+      "rawGitSha": "f20f687ea82d04267354d1b506d7af1bcdb1d3c3",
+      "normalizedLFGitSha": "e9ffa3083ad279ecf95fd8eae59cb253e9a539c4",
+      "originalRemoteGitSha": "e9ffa3083ad279ecf95fd8eae59cb253e9a539c4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 217465,
+      "rawGitSha": "07b5ccae382eabb248e57b54082608d29312e2cd",
+      "normalizedLFGitSha": "556018e3ab22bedec6c15f071caf40ed21d562de",
+      "originalRemoteGitSha": "93bad3ee1b1cd9a244488dd676b0e9e38dce88f2",
+      "status": "changed"
+    },
+    {
+      "path": "package.json",
+      "bytes": 1090,
+      "rawGitSha": "3bcda703535f3801b45fc3778cac5acc927283a4",
+      "normalizedLFGitSha": "ac7e9849ab44625dbc404dd41e05efb94921d02c",
+      "originalRemoteGitSha": "4601929703a319f5c54545893599c61bd806c756",
+      "status": "changed"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Accounting.Light.png",
+      "bytes": 388,
+      "rawGitSha": "484f3d1baec630752530751fb1118eea162f8d22",
+      "normalizedLFGitSha": "484f3d1baec630752530751fb1118eea162f8d22",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Dashboard.Light.png",
+      "bytes": 248,
+      "rawGitSha": "f748a7a0d33ed37d0c0e54e60aff71064fe5b921",
+      "normalizedLFGitSha": "f748a7a0d33ed37d0c0e54e60aff71064fe5b921",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Factory.Light.png",
+      "bytes": 550,
+      "rawGitSha": "703759358cabd8a68cbfd5dfd1b35aa7068088d4",
+      "normalizedLFGitSha": "703759358cabd8a68cbfd5dfd1b35aa7068088d4",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Help.Light.png",
+      "bytes": 1318,
+      "rawGitSha": "fa42438f910afbbf24731966696241b1bb0a2119",
+      "normalizedLFGitSha": "fa42438f910afbbf24731966696241b1bb0a2119",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Lock.Light.png",
+      "bytes": 532,
+      "rawGitSha": "1586f995f16805986eeff40d0409ac539e08572c",
+      "normalizedLFGitSha": "1586f995f16805986eeff40d0409ac539e08572c",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Machines.Light.png",
+      "bytes": 373,
+      "rawGitSha": "63d091364ec2d065d6eaf3a872151668628f6aea",
+      "normalizedLFGitSha": "63d091364ec2d065d6eaf3a872151668628f6aea",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/PeopleCompany.Light.png",
+      "bytes": 1264,
+      "rawGitSha": "212f25125a6eecdeb0b7f726d6a35cec4a103979",
+      "normalizedLFGitSha": "212f25125a6eecdeb0b7f726d6a35cec4a103979",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Refresh.Light.png",
+      "bytes": 938,
+      "rawGitSha": "6ae87c3b2883b61ea90ed75e56ed374f90a76450",
+      "normalizedLFGitSha": "6ae87c3b2883b61ea90ed75e56ed374f90a76450",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Search.Light.png",
+      "bytes": 852,
+      "rawGitSha": "46a1607d7858aa55b4002fae4ef502137db8e4a0",
+      "normalizedLFGitSha": "46a1607d7858aa55b4002fae4ef502137db8e4a0",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Sessions.Light.png",
+      "bytes": 289,
+      "rawGitSha": "1a27a72d66f02b6bcf547151e743f5029f291e12",
+      "normalizedLFGitSha": "1a27a72d66f02b6bcf547151e743f5029f291e12",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/Settings.Light.png",
+      "bytes": 863,
+      "rawGitSha": "514bef8f517b6aada8909a3c73c39883fbffd497",
+      "normalizedLFGitSha": "514bef8f517b6aada8909a3c73c39883fbffd497",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/StatementImport.Light.png",
+      "bytes": 374,
+      "rawGitSha": "a99d38c6d66620802cbdccdaa8cc400e93bbadea",
+      "normalizedLFGitSha": "a99d38c6d66620802cbdccdaa8cc400e93bbadea",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/TimeClock.Light.png",
+      "bytes": 1128,
+      "rawGitSha": "cc5ebe81f0fa0c36e680c93037784c65997a0c54",
+      "normalizedLFGitSha": "cc5ebe81f0fa0c36e680c93037784c65997a0c54",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/icons/WorkOrders.Light.png",
+      "bytes": 514,
+      "rawGitSha": "5b8f88f3d3414e7c9d22268d7ca399ce997739af",
+      "normalizedLFGitSha": "5b8f88f3d3414e7c9d22268d7ca399ce997739af",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/control-sample2/runbook-logo.png",
+      "bytes": 109441,
+      "rawGitSha": "d278caeb2f4da749f6d3433e7d0f217f4e30392f",
+      "normalizedLFGitSha": "d278caeb2f4da749f6d3433e7d0f217f4e30392f",
+      "originalRemoteGitSha": "d278caeb2f4da749f6d3433e7d0f217f4e30392f",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/control-sample2/wave-header.png",
+      "bytes": 51411,
+      "rawGitSha": "f5475cba80e3c68479acb8d3e4f223c2d99f1c4f",
+      "normalizedLFGitSha": "f5475cba80e3c68479acb8d3e4f223c2d99f1c4f",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/audit.svg",
+      "bytes": 616,
+      "rawGitSha": "81d8a66d9e16f4bbd4a2b9194b158d12a866ce36",
+      "normalizedLFGitSha": "81d8a66d9e16f4bbd4a2b9194b158d12a866ce36",
+      "originalRemoteGitSha": "81d8a66d9e16f4bbd4a2b9194b158d12a866ce36",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/billing-plans.svg",
+      "bytes": 616,
+      "rawGitSha": "e92074f298d28cf81c1494cfa9dad98b2e5ac697",
+      "normalizedLFGitSha": "e92074f298d28cf81c1494cfa9dad98b2e5ac697",
+      "originalRemoteGitSha": "e92074f298d28cf81c1494cfa9dad98b2e5ac697",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/dashboard.svg",
+      "bytes": 306,
+      "rawGitSha": "90c525a15dbd8ea3b9c6efafd078d77c75177c66",
+      "normalizedLFGitSha": "b6ec3ba376b65148651cd01b11b2932235f5d637",
+      "originalRemoteGitSha": "b6ec3ba376b65148651cd01b11b2932235f5d637",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/devices.svg",
+      "bytes": 396,
+      "rawGitSha": "18baa3da35a0f57f2ef4e6c2a9e1327f0e3f19e6",
+      "normalizedLFGitSha": "2b0024a44bacb63937dbd97ddb50d7ce434fa6dc",
+      "originalRemoteGitSha": "2b0024a44bacb63937dbd97ddb50d7ce434fa6dc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/message-header.png",
+      "bytes": 79056,
+      "rawGitSha": "0c54cb27cfc24d23aeee0c1761b996e72549ec96",
+      "normalizedLFGitSha": "0c54cb27cfc24d23aeee0c1761b996e72549ec96",
+      "originalRemoteGitSha": "0c54cb27cfc24d23aeee0c1761b996e72549ec96",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/mobile-access.svg",
+      "bytes": 666,
+      "rawGitSha": "9af307293ba258f0db116b7faff3695ff1f5ada4",
+      "normalizedLFGitSha": "9af307293ba258f0db116b7faff3695ff1f5ada4",
+      "originalRemoteGitSha": "9af307293ba258f0db116b7faff3695ff1f5ada4",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/people.svg",
+      "bytes": 692,
+      "rawGitSha": "c52fad21457448e02d68af380cf58f369087ca63",
+      "normalizedLFGitSha": "cea69d983e298ecd71bad0a5f59dad8a2f7e59f6",
+      "originalRemoteGitSha": "cea69d983e298ecd71bad0a5f59dad8a2f7e59f6",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/provenance.json",
+      "bytes": 9348,
+      "rawGitSha": "40f1bafd8aa10954d2cb5f7ddf8ef55dee2f6b7c",
+      "normalizedLFGitSha": "6c72a84c873e4c871fb15c2925db16efe5f41df4",
+      "originalRemoteGitSha": "6c72a84c873e4c871fb15c2925db16efe5f41df4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/settings.svg",
+      "bytes": 483,
+      "rawGitSha": "ea9e0848f5bf5f0bdabe31d2341e38d6605b08e3",
+      "normalizedLFGitSha": "b348f2eec1631daa61ddfe5d71f2a108020dabf0",
+      "originalRemoteGitSha": "b348f2eec1631daa61ddfe5d71f2a108020dabf0",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/shops.png",
+      "bytes": 1523,
+      "rawGitSha": "d2722d18b9c8c10ad775c9766a1b21fff7aff0cf",
+      "normalizedLFGitSha": "d2722d18b9c8c10ad775c9766a1b21fff7aff0cf",
+      "originalRemoteGitSha": "d2722d18b9c8c10ad775c9766a1b21fff7aff0cf",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/software-updates.svg",
+      "bytes": 609,
+      "rawGitSha": "103b1f9d14734278df5714d23d31ed8a0af74a53",
+      "normalizedLFGitSha": "103b1f9d14734278df5714d23d31ed8a0af74a53",
+      "originalRemoteGitSha": "103b1f9d14734278df5714d23d31ed8a0af74a53",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/support.svg",
+      "bytes": 538,
+      "rawGitSha": "57eb158424c0e88ff2abb67897eb6952cf49dca2",
+      "normalizedLFGitSha": "cd025d1f10ccdaf0452c2b39f4ca4647a19d4ddc",
+      "originalRemoteGitSha": "cd025d1f10ccdaf0452c2b39f4ca4647a19d4ddc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/timeclock.svg",
+      "bytes": 396,
+      "rawGitSha": "2e9f9b1d84116df04ab2048845eb685269b848f6",
+      "normalizedLFGitSha": "77c1bf3de46074e76bbb7bf5965f488275ee13e0",
+      "originalRemoteGitSha": "77c1bf3de46074e76bbb7bf5965f488275ee13e0",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/updates.svg",
+      "bytes": 578,
+      "rawGitSha": "efc915ac9ebbb8f9b56c6a81bedc8ac7a32979e9",
+      "normalizedLFGitSha": "efc915ac9ebbb8f9b56c6a81bedc8ac7a32979e9",
+      "originalRemoteGitSha": "efc915ac9ebbb8f9b56c6a81bedc8ac7a32979e9",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/artwork/runbook-refined-b/workstations.svg",
+      "bytes": 555,
+      "rawGitSha": "2bba92451dd226a14b2a7b6e297dc2cd30726224",
+      "normalizedLFGitSha": "2bba92451dd226a14b2a7b6e297dc2cd30726224",
+      "originalRemoteGitSha": "2bba92451dd226a14b2a7b6e297dc2cd30726224",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/control-space-bg.png",
+      "bytes": 1967472,
+      "rawGitSha": "06e96e2f46245830fe4b7c053b504a7ae022cd7d",
+      "normalizedLFGitSha": "06e96e2f46245830fe4b7c053b504a7ae022cd7d",
+      "originalRemoteGitSha": "06e96e2f46245830fe4b7c053b504a7ae022cd7d",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/file.svg",
+      "bytes": 391,
+      "rawGitSha": "004145cddf3f9db91b57b9cb596683c8eb420862",
+      "normalizedLFGitSha": "004145cddf3f9db91b57b9cb596683c8eb420862",
+      "originalRemoteGitSha": "004145cddf3f9db91b57b9cb596683c8eb420862",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/globe.svg",
+      "bytes": 1035,
+      "rawGitSha": "567f17b0d7c7fb662c16d4357dd74830caf2dccb",
+      "normalizedLFGitSha": "567f17b0d7c7fb662c16d4357dd74830caf2dccb",
+      "originalRemoteGitSha": "567f17b0d7c7fb662c16d4357dd74830caf2dccb",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/images/chatgpt_space_bg.png",
+      "bytes": 1967472,
+      "rawGitSha": "06e96e2f46245830fe4b7c053b504a7ae022cd7d",
+      "normalizedLFGitSha": "06e96e2f46245830fe4b7c053b504a7ae022cd7d",
+      "originalRemoteGitSha": "06e96e2f46245830fe4b7c053b504a7ae022cd7d",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/next.svg",
+      "bytes": 1375,
+      "rawGitSha": "5174b28c565c285e3e312ec5178be64fbeca8398",
+      "normalizedLFGitSha": "5174b28c565c285e3e312ec5178be64fbeca8398",
+      "originalRemoteGitSha": "5174b28c565c285e3e312ec5178be64fbeca8398",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/runbook-splash.png",
+      "bytes": 2548669,
+      "rawGitSha": "4ec8fc16372f6dbfe79f62a9e6a26c06d4d13ddd",
+      "normalizedLFGitSha": "4ec8fc16372f6dbfe79f62a9e6a26c06d4d13ddd",
+      "originalRemoteGitSha": "4ec8fc16372f6dbfe79f62a9e6a26c06d4d13ddd",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/vercel.svg",
+      "bytes": 128,
+      "rawGitSha": "77053960334e2e34dc584dea8019925c3b4ccca9",
+      "normalizedLFGitSha": "77053960334e2e34dc584dea8019925c3b4ccca9",
+      "originalRemoteGitSha": "77053960334e2e34dc584dea8019925c3b4ccca9",
+      "status": "raw-exact"
+    },
+    {
+      "path": "public/window.svg",
+      "bytes": 385,
+      "rawGitSha": "b2b2a44f6ebc70c450043c05a002e7a93ba5d651",
+      "normalizedLFGitSha": "b2b2a44f6ebc70c450043c05a002e7a93ba5d651",
+      "originalRemoteGitSha": "b2b2a44f6ebc70c450043c05a002e7a93ba5d651",
+      "status": "raw-exact"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1840,
+      "rawGitSha": "c47f6122adee85d0eb4f6bc7eeaa6395e7ee5d7c",
+      "normalizedLFGitSha": "23b1ba03f904b971b0989587249277e69e810204",
+      "originalRemoteGitSha": "23b1ba03f904b971b0989587249277e69e810204",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "RUNBOOK_CONTROL_AUDIT_REPORT.md",
+      "bytes": 28537,
+      "rawGitSha": "80cb8d1df70a6b4c367e2a56dd35419dda0a4d78",
+      "normalizedLFGitSha": "18fec24c7149cd230f5edaae367993434275941a",
+      "originalRemoteGitSha": "18fec24c7149cd230f5edaae367993434275941a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/run-migrations.js",
+      "bytes": 1516,
+      "rawGitSha": "772490118ce437117fdf0b0fc9613122700fb866",
+      "normalizedLFGitSha": "bbd21e6d38f581e0a1f829686f5c26f45e71c562",
+      "originalRemoteGitSha": "bbd21e6d38f581e0a1f829686f5c26f45e71c562",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/verify-control-compact.js",
+      "bytes": 50070,
+      "rawGitSha": "9a6f52a115dfb34e84e69cfd5fe9d10e34c34d38",
+      "normalizedLFGitSha": "9a6f52a115dfb34e84e69cfd5fe9d10e34c34d38",
+      "originalRemoteGitSha": "b340c16bb2b8c994d5958c189b285a7a83bca7c4",
+      "status": "changed"
+    },
+    {
+      "path": "scripts/verify-control-company-scope-extra.js",
+      "bytes": 8134,
+      "rawGitSha": "1bf808177b4e8de8f86fbc7836fbeda8e9aa3a5f",
+      "normalizedLFGitSha": "1bf808177b4e8de8f86fbc7836fbeda8e9aa3a5f",
+      "originalRemoteGitSha": "1bf808177b4e8de8f86fbc7836fbeda8e9aa3a5f",
+      "status": "raw-exact"
+    },
+    {
+      "path": "scripts/verify-control-company-scope.js",
+      "bytes": 32849,
+      "rawGitSha": "6d35b4ce1a07f20f92e1fb07521a7c0f09f1c9c2",
+      "normalizedLFGitSha": "6d35b4ce1a07f20f92e1fb07521a7c0f09f1c9c2",
+      "originalRemoteGitSha": "5a2c0dc8e7c934ec07b64158dc460b92fc1f44d8",
+      "status": "changed"
+    },
+    {
+      "path": "scripts/verify-desktop-employee-roles.js",
+      "bytes": 18037,
+      "rawGitSha": "cb1d18543d04db717a1ebb8ecb5271f39dcb4e07",
+      "normalizedLFGitSha": "cb1d18543d04db717a1ebb8ecb5271f39dcb4e07",
+      "originalRemoteGitSha": "cb1d18543d04db717a1ebb8ecb5271f39dcb4e07",
+      "status": "raw-exact"
+    },
+    {
+      "path": "scripts/verify-desktop-onboarding-policy.js",
+      "bytes": 3964,
+      "rawGitSha": "7b2497c4664efea700152bb53e0746c8394338aa",
+      "normalizedLFGitSha": "7b2497c4664efea700152bb53e0746c8394338aa",
+      "originalRemoteGitSha": "7b2497c4664efea700152bb53e0746c8394338aa",
+      "status": "raw-exact"
+    },
+    {
+      "path": "scripts/verify-desktop-verification.js",
+      "bytes": 20863,
+      "rawGitSha": "3a32b70d441a8c91cf1e4743bba63527efc25ccd",
+      "normalizedLFGitSha": "3a32b70d441a8c91cf1e4743bba63527efc25ccd",
+      "originalRemoteGitSha": "3a32b70d441a8c91cf1e4743bba63527efc25ccd",
+      "status": "raw-exact"
+    },
+    {
+      "path": "scripts/verify-f03-administrative-authorization.js",
+      "bytes": 79244,
+      "rawGitSha": "dac218a08da0de13f656139077f0ecb081074e0e",
+      "normalizedLFGitSha": "9109ce13d990ab8ad550b0ebbf0569b5f9c9b867",
+      "originalRemoteGitSha": "9109ce13d990ab8ad550b0ebbf0569b5f9c9b867",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/verify-f04-legacy-lockdown.js",
+      "bytes": 4249,
+      "rawGitSha": "61a5721765668ecea77a26081e1da1563059d5db",
+      "normalizedLFGitSha": "aa466b7a21b15ec08e29e7fafdc4d9a11c1e38c3",
+      "originalRemoteGitSha": "aa466b7a21b15ec08e29e7fafdc4d9a11c1e38c3",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/verify-f05-employee-boundary.js",
+      "bytes": 11690,
+      "rawGitSha": "2f17dc938e1b4df96d7b454ee6366905ca691abc",
+      "normalizedLFGitSha": "f82ffe9a28c2a3e64ce316c0b965f0061041750f",
+      "originalRemoteGitSha": "f82ffe9a28c2a3e64ce316c0b965f0061041750f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/verify-f06-api-boundary.js",
+      "bytes": 19342,
+      "rawGitSha": "962638cd180f472b63adb69a547ef5eb2ecb13dd",
+      "normalizedLFGitSha": "c13a3059b0d66c610dd5bc9d0b5a95b10df2598f",
+      "originalRemoteGitSha": "c13a3059b0d66c610dd5bc9d0b5a95b10df2598f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/verify-f06-messaging-boundary.js",
+      "bytes": 20066,
+      "rawGitSha": "776e105c44c72f4b8e4a5467cbe3b5f3471441eb",
+      "normalizedLFGitSha": "e1d8f4431de2bf65f8015ae5456b5e9f20c731f5",
+      "originalRemoteGitSha": "e1d8f4431de2bf65f8015ae5456b5e9f20c731f5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "scripts/verify-shop-admin-access.js",
+      "bytes": 10662,
+      "rawGitSha": "eb3819451d196f94c83704319eb8d08792494e88",
+      "normalizedLFGitSha": "eb3819451d196f94c83704319eb8d08792494e88",
+      "originalRemoteGitSha": "eb3819451d196f94c83704319eb8d08792494e88",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/apps/page.tsx",
+      "bytes": 11708,
+      "rawGitSha": "8d4f9dc20070ae90f1d5f666a404ca7d675417de",
+      "normalizedLFGitSha": "8d4f9dc20070ae90f1d5f666a404ca7d675417de",
+      "originalRemoteGitSha": "8d4f9dc20070ae90f1d5f666a404ca7d675417de",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/audit/page.tsx",
+      "bytes": 9175,
+      "rawGitSha": "a4c102dc20e7e3a3ce9c1acf60c3ab5a26644d22",
+      "normalizedLFGitSha": "a4c102dc20e7e3a3ce9c1acf60c3ab5a26644d22",
+      "originalRemoteGitSha": "a4c102dc20e7e3a3ce9c1acf60c3ab5a26644d22",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/billing-access/page.tsx",
+      "bytes": 10390,
+      "rawGitSha": "e257a55afaca99cbc769b4ea8a022a2fd261620f",
+      "normalizedLFGitSha": "0209484c881cd8aa225abcedf3e97082ec923ab4",
+      "originalRemoteGitSha": "0209484c881cd8aa225abcedf3e97082ec923ab4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/(authed)/dashboard/page.tsx",
+      "bytes": 13907,
+      "rawGitSha": "31e2b30e32aed03614dbed363d09817283ea33ef",
+      "normalizedLFGitSha": "31e2b30e32aed03614dbed363d09817283ea33ef",
+      "originalRemoteGitSha": "31e2b30e32aed03614dbed363d09817283ea33ef",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/devices/[deviceId]/page.tsx",
+      "bytes": 20345,
+      "rawGitSha": "440e3da5036234476e593ba5a351fc10720d247c",
+      "normalizedLFGitSha": "440e3da5036234476e593ba5a351fc10720d247c",
+      "originalRemoteGitSha": "440e3da5036234476e593ba5a351fc10720d247c",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/devices/page.tsx",
+      "bytes": 15553,
+      "rawGitSha": "5110ed970417adb546dba5d6cef8e262c27bce1c",
+      "normalizedLFGitSha": "5110ed970417adb546dba5d6cef8e262c27bce1c",
+      "originalRemoteGitSha": "5110ed970417adb546dba5d6cef8e262c27bce1c",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/layout.tsx",
+      "bytes": 3334,
+      "rawGitSha": "b8e8577e4bef4b4536226382378365716af38d84",
+      "normalizedLFGitSha": "b8e8577e4bef4b4536226382378365716af38d84",
+      "originalRemoteGitSha": "3b3cdcf3c8fc2bd60adc9de953ef9f6990d533db",
+      "status": "changed"
+    },
+    {
+      "path": "src/app/(authed)/mobile-access/page.tsx",
+      "bytes": 8436,
+      "rawGitSha": "0d124e2de16b6b2613773e50b524d1c87b8a1836",
+      "normalizedLFGitSha": "0d124e2de16b6b2613773e50b524d1c87b8a1836",
+      "originalRemoteGitSha": "0d124e2de16b6b2613773e50b524d1c87b8a1836",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/people/page.tsx",
+      "bytes": 12239,
+      "rawGitSha": "86d4f3d7a64f82c1280539d83117cd0a309fb6eb",
+      "normalizedLFGitSha": "86d4f3d7a64f82c1280539d83117cd0a309fb6eb",
+      "originalRemoteGitSha": "86d4f3d7a64f82c1280539d83117cd0a309fb6eb",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/settings/page.tsx",
+      "bytes": 14741,
+      "rawGitSha": "c95c01e391ee1672eea221ffd69d601cf346de5f",
+      "normalizedLFGitSha": "c95c01e391ee1672eea221ffd69d601cf346de5f",
+      "originalRemoteGitSha": "c95c01e391ee1672eea221ffd69d601cf346de5f",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/audit/page.tsx",
+      "bytes": 570,
+      "rawGitSha": "277b95a6a4cc36fbd6d519fbc839542f4495a009",
+      "normalizedLFGitSha": "277b95a6a4cc36fbd6d519fbc839542f4495a009",
+      "originalRemoteGitSha": "277b95a6a4cc36fbd6d519fbc839542f4495a009",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/billing/page.tsx",
+      "bytes": 571,
+      "rawGitSha": "84032c080a487a8bd8b9e2c1d9c885f5e28e9e24",
+      "normalizedLFGitSha": "84032c080a487a8bd8b9e2c1d9c885f5e28e9e24",
+      "originalRemoteGitSha": "84032c080a487a8bd8b9e2c1d9c885f5e28e9e24",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/devices/page.tsx",
+      "bytes": 867,
+      "rawGitSha": "996e8355171809bc08eee36ad466ab14213a684a",
+      "normalizedLFGitSha": "996e8355171809bc08eee36ad466ab14213a684a",
+      "originalRemoteGitSha": "996e8355171809bc08eee36ad466ab14213a684a",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/layout.tsx",
+      "bytes": 5402,
+      "rawGitSha": "bffbe88e5de5286e7159b9240949447baf4a2f6a",
+      "normalizedLFGitSha": "bffbe88e5de5286e7159b9240949447baf4a2f6a",
+      "originalRemoteGitSha": "bffbe88e5de5286e7159b9240949447baf4a2f6a",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/members/page.tsx",
+      "bytes": 569,
+      "rawGitSha": "c588832264ecdcddb12d7b048fa33c9b9a16e693",
+      "normalizedLFGitSha": "c588832264ecdcddb12d7b048fa33c9b9a16e693",
+      "originalRemoteGitSha": "c588832264ecdcddb12d7b048fa33c9b9a16e693",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/page.tsx",
+      "bytes": 54652,
+      "rawGitSha": "1765392477e9d40184994642c076544e16bbe2f0",
+      "normalizedLFGitSha": "1765392477e9d40184994642c076544e16bbe2f0",
+      "originalRemoteGitSha": "1765392477e9d40184994642c076544e16bbe2f0",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/[shopId]/policy/page.tsx",
+      "bytes": 4241,
+      "rawGitSha": "a2393bd635cc807052bf2229cfd63325e56b02b4",
+      "normalizedLFGitSha": "a2393bd635cc807052bf2229cfd63325e56b02b4",
+      "originalRemoteGitSha": "a2393bd635cc807052bf2229cfd63325e56b02b4",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/shops/new/page.tsx",
+      "bytes": 2540,
+      "rawGitSha": "ea4d7365ec1dece782d06ea60b326e06dd7a014d",
+      "normalizedLFGitSha": "5c69e8fcf3c7b1d91ec8e4530741329ba7dab0b1",
+      "originalRemoteGitSha": "5c69e8fcf3c7b1d91ec8e4530741329ba7dab0b1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/(authed)/shops/page.tsx",
+      "bytes": 13567,
+      "rawGitSha": "af3e97ec95eda541be3c644f71d8364359b689f0",
+      "normalizedLFGitSha": "27eeb4ce9d02b71c805fe23887c2aa665c914277",
+      "originalRemoteGitSha": "96c9cc35356ffbe8919c42138d5fbc6d70c1b199",
+      "status": "changed"
+    },
+    {
+      "path": "src/app/(authed)/software-updates/actions.ts",
+      "bytes": 25954,
+      "rawGitSha": "c0f8f868ab888aa69049110e802fd3b0fb176c95",
+      "normalizedLFGitSha": "c0f8f868ab888aa69049110e802fd3b0fb176c95",
+      "originalRemoteGitSha": "c0f8f868ab888aa69049110e802fd3b0fb176c95",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/software-updates/page.tsx",
+      "bytes": 8491,
+      "rawGitSha": "809123265067837647843f9d6392135ed139bbbe",
+      "normalizedLFGitSha": "c04fa7909a863c978458fed6958a73b913c31806",
+      "originalRemoteGitSha": "c04fa7909a863c978458fed6958a73b913c31806",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/(authed)/status/page.tsx",
+      "bytes": 20707,
+      "rawGitSha": "969644a9fdd546bb99dbb9020225b75d416cbf7d",
+      "normalizedLFGitSha": "969644a9fdd546bb99dbb9020225b75d416cbf7d",
+      "originalRemoteGitSha": "969644a9fdd546bb99dbb9020225b75d416cbf7d",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/support/page.tsx",
+      "bytes": 14685,
+      "rawGitSha": "8176056ccfc71bb98e10aef9b96c0a16753ffed2",
+      "normalizedLFGitSha": "8176056ccfc71bb98e10aef9b96c0a16753ffed2",
+      "originalRemoteGitSha": "8176056ccfc71bb98e10aef9b96c0a16753ffed2",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/timeclock-review/page.tsx",
+      "bytes": 8636,
+      "rawGitSha": "1f41dc8083237489a35dfe6b76741319781f5e6e",
+      "normalizedLFGitSha": "1f41dc8083237489a35dfe6b76741319781f5e6e",
+      "originalRemoteGitSha": "1f41dc8083237489a35dfe6b76741319781f5e6e",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/updates/packages/page.tsx",
+      "bytes": 3417,
+      "rawGitSha": "86011a477760301fc60bd4fed2100c18530ff8ff",
+      "normalizedLFGitSha": "754954b475296d7c482245adceb5a1bbfc271f4d",
+      "originalRemoteGitSha": "754954b475296d7c482245adceb5a1bbfc271f4d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/(authed)/updates/page.tsx",
+      "bytes": 6876,
+      "rawGitSha": "ed2ff3bd9b7a4a8cae479b65fae7c8e2cb651c1a",
+      "normalizedLFGitSha": "ed2ff3bd9b7a4a8cae479b65fae7c8e2cb651c1a",
+      "originalRemoteGitSha": "ed2ff3bd9b7a4a8cae479b65fae7c8e2cb651c1a",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/(authed)/workstations/page.tsx",
+      "bytes": 10107,
+      "rawGitSha": "0355be0a3f0e0680003cca328ceb217700c6da4d",
+      "normalizedLFGitSha": "0355be0a3f0e0680003cca328ceb217700c6da4d",
+      "originalRemoteGitSha": "0355be0a3f0e0680003cca328ceb217700c6da4d",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/api/admin/schema-summary/route.ts",
+      "bytes": 2370,
+      "rawGitSha": "63b0aee9f9db9ba1724e85e6a7ccb6b3e90e0a71",
+      "normalizedLFGitSha": "8e19971128c7cbc050877b4239b21afcc2b2284b",
+      "originalRemoteGitSha": "8e19971128c7cbc050877b4239b21afcc2b2284b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/shop-summary/route.ts",
+      "bytes": 4918,
+      "rawGitSha": "829af8dab827f7939a721b399eb9ae17ed75f898",
+      "normalizedLFGitSha": "e6c00b41a208bdb72bad536a792e78a3797b3b61",
+      "originalRemoteGitSha": "e6c00b41a208bdb72bad536a792e78a3797b3b61",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/shops/billing-access/route.ts",
+      "bytes": 8589,
+      "rawGitSha": "5e5cbe13da0ca1d5f14f292f3ca68e7e75bcf573",
+      "normalizedLFGitSha": "fdcf91844957175161276274da2972f470261e69",
+      "originalRemoteGitSha": "fdcf91844957175161276274da2972f470261e69",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/shops/billing-directory/route.ts",
+      "bytes": 5978,
+      "rawGitSha": "a11901e451a70618870d4bd9bbf9db6593961d18",
+      "normalizedLFGitSha": "866b645f9e615f8ee6685582a32cc636f5ac8166",
+      "originalRemoteGitSha": "866b645f9e615f8ee6685582a32cc636f5ac8166",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/shops/billing-stripe/route.ts",
+      "bytes": 7788,
+      "rawGitSha": "c1f1b7357dfdc2c72052876d74288be721d23dbb",
+      "normalizedLFGitSha": "5f6b91219ff159bc338b9de0934b010607e5b190",
+      "originalRemoteGitSha": "5f6b91219ff159bc338b9de0934b010607e5b190",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/shops/manual-billing/route.ts",
+      "bytes": 5763,
+      "rawGitSha": "072eaf78726b051424e43c4be0fdcb2159d6af05",
+      "normalizedLFGitSha": "b6a8b34cc2ab3d464a6fb0e495e629b0d648a99e",
+      "originalRemoteGitSha": "b6a8b34cc2ab3d464a6fb0e495e629b0d648a99e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/users/administrative-completion/route.ts",
+      "bytes": 5129,
+      "rawGitSha": "eac3e127a89a5e365cfdfe526cbe5844c28c838e",
+      "normalizedLFGitSha": "ae380bf169e05a1323f975d6030b3a16557c6caa",
+      "originalRemoteGitSha": "ae380bf169e05a1323f975d6030b3a16557c6caa",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/users/list/route.ts",
+      "bytes": 8272,
+      "rawGitSha": "4a98d8f7ca90f639c3b09e9229a1a5bed9774367",
+      "normalizedLFGitSha": "f7bce6a425985fed5a305d433ffd093fe2b9cff7",
+      "originalRemoteGitSha": "f7bce6a425985fed5a305d433ffd093fe2b9cff7",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/users/mobile-timeclock/route.ts",
+      "bytes": 3289,
+      "rawGitSha": "dcfdf6d282f1a8563dbcfefb1a9b8efd4d6659d6",
+      "normalizedLFGitSha": "3acfed54b80d36d92da55e286ce26acec31dd777",
+      "originalRemoteGitSha": "3acfed54b80d36d92da55e286ce26acec31dd777",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/admin/users/workstation-access/route.ts",
+      "bytes": 3358,
+      "rawGitSha": "3827f012aebfa84ac0f47a7d3e45584403b66c77",
+      "normalizedLFGitSha": "742808ff7fb4037155d0c6d53da8f18524357e5c",
+      "originalRemoteGitSha": "742808ff7fb4037155d0c6d53da8f18524357e5c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/audit/export/route.ts",
+      "bytes": 3662,
+      "rawGitSha": "cdd46b1ef06ab13306b462f01a2ac14921fbd1dd",
+      "normalizedLFGitSha": "4c74ee1c985019b0f9197845f7d566458447a5e9",
+      "originalRemoteGitSha": "4c74ee1c985019b0f9197845f7d566458447a5e9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/audit/list/route.ts",
+      "bytes": 2895,
+      "rawGitSha": "6a6124eb66f066d1c2b010225d193b20cfeea904",
+      "normalizedLFGitSha": "420c2a9b86b1271240939f99886535abb2056e68",
+      "originalRemoteGitSha": "420c2a9b86b1271240939f99886535abb2056e68",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/auth/session/login/route.ts",
+      "bytes": 2167,
+      "rawGitSha": "d2b3a61f3e0d091f8ff45837cefdc0cd52f4947a",
+      "normalizedLFGitSha": "5bd68cc31441c024390447d2ad7d62799853ce7e",
+      "originalRemoteGitSha": "5bd68cc31441c024390447d2ad7d62799853ce7e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/auth/session/me/route.ts",
+      "bytes": 1521,
+      "rawGitSha": "f19ec5562e76095ca03110ddbc7d6bd524d6ad7c",
+      "normalizedLFGitSha": "2396d83673e0287e9bb5babba12efc751d799e62",
+      "originalRemoteGitSha": "2396d83673e0287e9bb5babba12efc751d799e62",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/auth/session/password-reset/route.ts",
+      "bytes": 1473,
+      "rawGitSha": "ffe09eedfccb18dfd8d8b2891a626b4830381f6e",
+      "normalizedLFGitSha": "c4f21997bf7232a1453f64cab1fad7eecd320072",
+      "originalRemoteGitSha": "c4f21997bf7232a1453f64cab1fad7eecd320072",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/auth/session/refresh/route.ts",
+      "bytes": 2001,
+      "rawGitSha": "842140340fa686f252cbc72155a0923b80bccca6",
+      "normalizedLFGitSha": "dc7fd7cdaedcade774dea7fe4a1a63c702aa7ecd",
+      "originalRemoteGitSha": "dc7fd7cdaedcade774dea7fe4a1a63c702aa7ecd",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/auth/session/resend/route.ts",
+      "bytes": 1293,
+      "rawGitSha": "ebf0a2fd09a7eeec14ded414c44c73f36befa37b",
+      "normalizedLFGitSha": "757d3a4b1cbd7f39bb6e05c744abae0239ad6e01",
+      "originalRemoteGitSha": "757d3a4b1cbd7f39bb6e05c744abae0239ad6e01",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/auth/session/signup/route.ts",
+      "bytes": 5034,
+      "rawGitSha": "b287f91f0edc4a68837c85bd656fe1834de90fd2",
+      "normalizedLFGitSha": "8d70f0cea5ed0f07310bf034f37023d1b42940e1",
+      "originalRemoteGitSha": "8d70f0cea5ed0f07310bf034f37023d1b42940e1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/backfill-period-end/route.ts",
+      "bytes": 2969,
+      "rawGitSha": "1fc0c39c69a45e0d178d1db864d7333eaa26db97",
+      "normalizedLFGitSha": "0f23b4a2d0cc4bbc8f4f5689525e1a4165b92acd",
+      "originalRemoteGitSha": "0f23b4a2d0cc4bbc8f4f5689525e1a4165b92acd",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/create-checkout/route.ts",
+      "bytes": 3832,
+      "rawGitSha": "4b91963ca99f30b47373b5b36b6157c83fef12fb",
+      "normalizedLFGitSha": "8ac868369375e4f82d247b220e68f7114c3d949a",
+      "originalRemoteGitSha": "8ac868369375e4f82d247b220e68f7114c3d949a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/create-portal/route.ts",
+      "bytes": 2431,
+      "rawGitSha": "b5dbfde067001500fd7f12bf9948cbe0253c1c0c",
+      "normalizedLFGitSha": "7ef741769cb3cedb8d22f13d3001513a1b1fd0b1",
+      "originalRemoteGitSha": "7ef741769cb3cedb8d22f13d3001513a1b1fd0b1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/debug-session/route.ts",
+      "bytes": 2558,
+      "rawGitSha": "9599fb34fc8fcfa687c024712d0900d76a7d482f",
+      "normalizedLFGitSha": "3083a347eddea45648b59300081a121194f5860f",
+      "originalRemoteGitSha": "3083a347eddea45648b59300081a121194f5860f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/shop-status/route.ts",
+      "bytes": 3789,
+      "rawGitSha": "584bf26a9f10eb7ddaf4c6627a31e840e5d80f22",
+      "normalizedLFGitSha": "d092df3fcf2bdcb5add682d78ba4dbb27680f817",
+      "originalRemoteGitSha": "d092df3fcf2bdcb5add682d78ba4dbb27680f817",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/sync-from-checkout-return/route.ts",
+      "bytes": 6863,
+      "rawGitSha": "183970826438fb0dc3e028291ee3c8f6ee833bb2",
+      "normalizedLFGitSha": "4e68bde9d1af0ac7e9ffb4e289556321a9e48fcc",
+      "originalRemoteGitSha": "4e68bde9d1af0ac7e9ffb4e289556321a9e48fcc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/sync-from-session-browser/route.ts",
+      "bytes": 1890,
+      "rawGitSha": "2984b849423da7fd2c6636f6f8f459d04e5df061",
+      "normalizedLFGitSha": "317a0c586833fd2dd367c9437af8d735cefcdd7c",
+      "originalRemoteGitSha": "317a0c586833fd2dd367c9437af8d735cefcdd7c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/sync-from-session/route.ts",
+      "bytes": 6881,
+      "rawGitSha": "edefbd24894d7f0fe48742f3571f6353930d7b3a",
+      "normalizedLFGitSha": "28a11a7c6e6cb1c78ae64d1e6e5dd86ac8ab7fd1",
+      "originalRemoteGitSha": "28a11a7c6e6cb1c78ae64d1e6e5dd86ac8ab7fd1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/billing/webhook/route.ts",
+      "bytes": 12013,
+      "rawGitSha": "0fcbced8d2bf486b1d70da33ab385e3f0eebb8b8",
+      "normalizedLFGitSha": "3020247532940d8812f135a1fed2b88b8387a257",
+      "originalRemoteGitSha": "3020247532940d8812f135a1fed2b88b8387a257",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/control/directory-lease-approvals/route.ts",
+      "bytes": 289,
+      "rawGitSha": "9399bb9c604bf184302e75f49edb0ed600fc3d1a",
+      "normalizedLFGitSha": "9399bb9c604bf184302e75f49edb0ed600fc3d1a",
+      "originalRemoteGitSha": "9399bb9c604bf184302e75f49edb0ed600fc3d1a",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/api/control/directory-session/route.ts",
+      "bytes": 1873,
+      "rawGitSha": "360253d9d78ffa01ade37c23e7ee39e2fc8e807c",
+      "normalizedLFGitSha": "360253d9d78ffa01ade37c23e7ee39e2fc8e807c",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "src/app/api/desktop/administrative-authorization/route.ts",
+      "bytes": 6552,
+      "rawGitSha": "d2b6b06335fbdfed0ef3fffe0babfb973a1cac95",
+      "normalizedLFGitSha": "697727c8a00fd63311b74cf505b5ff4a78dba6a9",
+      "originalRemoteGitSha": "697727c8a00fd63311b74cf505b5ff4a78dba6a9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/ai/machine-code-cleanup/route.ts",
+      "bytes": 13257,
+      "rawGitSha": "e1917722f21508e8f846b04cf2ee23effab9c80c",
+      "normalizedLFGitSha": "86a943883df03157e19e46558b3d9a2daa6cdf42",
+      "originalRemoteGitSha": "86a943883df03157e19e46558b3d9a2daa6cdf42",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/ai/po-extract/route.ts",
+      "bytes": 11790,
+      "rawGitSha": "3f51ee5702938c62c7f4deb5d052755818e41360",
+      "normalizedLFGitSha": "70abcbadbf8958e3210f7a2d10d6891d6dfb0479",
+      "originalRemoteGitSha": "70abcbadbf8958e3210f7a2d10d6891d6dfb0479",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/ai/thumbnail-assist/route.ts",
+      "bytes": 10866,
+      "rawGitSha": "74dd884bd05f7ad55b5fa6ddd6248c71ca66e05a",
+      "normalizedLFGitSha": "c3db9da07c7ec834c11e7c7895b434e25759be1b",
+      "originalRemoteGitSha": "c3db9da07c7ec834c11e7c7895b434e25759be1b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/bootstrap/route.ts",
+      "bytes": 14119,
+      "rawGitSha": "d65ecbb4827c176d208bff58cfd6335e0771b6f9",
+      "normalizedLFGitSha": "bd4cbfe960e01d03a77e83963a09ffd398170e47",
+      "originalRemoteGitSha": "bd4cbfe960e01d03a77e83963a09ffd398170e47",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/business-authorization/challenge/route.ts",
+      "bytes": 197,
+      "rawGitSha": "e569974d4d14a006532682b4b1a0f649a971e4f5",
+      "normalizedLFGitSha": "e569974d4d14a006532682b4b1a0f649a971e4f5",
+      "originalRemoteGitSha": "e569974d4d14a006532682b4b1a0f649a971e4f5",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/api/desktop/business-authorization/route.ts",
+      "bytes": 287,
+      "rawGitSha": "f672e9eebb8be30d066de7bacae4e0e1dea49861",
+      "normalizedLFGitSha": "f672e9eebb8be30d066de7bacae4e0e1dea49861",
+      "originalRemoteGitSha": "f672e9eebb8be30d066de7bacae4e0e1dea49861",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/api/desktop/create-checkout/route.ts",
+      "bytes": 2187,
+      "rawGitSha": "c4dab5c4e718f00253ec384cfe739617226a4a0e",
+      "normalizedLFGitSha": "28b7031bbee2e0d1a903be859db708a666a0ba5d",
+      "originalRemoteGitSha": "28b7031bbee2e0d1a903be859db708a666a0ba5d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/current-shop/route.ts",
+      "bytes": 1996,
+      "rawGitSha": "29982e18ac15099b71133744620bd9b0d8ee046c",
+      "normalizedLFGitSha": "da68e38141bbc12718e0bc0a82e5db01e1be16d5",
+      "originalRemoteGitSha": "da68e38141bbc12718e0bc0a82e5db01e1be16d5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/device-role/route.ts",
+      "bytes": 10941,
+      "rawGitSha": "11eed47993fd865a97a013e9257e97334ec205a6",
+      "normalizedLFGitSha": "ccc1b5377eac8c9dfef06818f17985ad36abf24d",
+      "originalRemoteGitSha": "ccc1b5377eac8c9dfef06818f17985ad36abf24d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/employee-directory/route.ts",
+      "bytes": 10828,
+      "rawGitSha": "1f2215a7f223fcff0ae78090ad57dce4ae8a0d40",
+      "normalizedLFGitSha": "667dfd19eabc18f6aaecb221537d31d678b95e83",
+      "originalRemoteGitSha": "667dfd19eabc18f6aaecb221537d31d678b95e83",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/employee-mobile-timeclock/route.ts",
+      "bytes": 4130,
+      "rawGitSha": "e878772981f9f2d234b370b416d879b77a02747d",
+      "normalizedLFGitSha": "7ebb3fb5d3a222eddf5e15ab8fd5f77161c7ab3f",
+      "originalRemoteGitSha": "7ebb3fb5d3a222eddf5e15ab8fd5f77161c7ab3f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/entitlement/route.ts",
+      "bytes": 8004,
+      "rawGitSha": "4a516ddf8bf065fc90ea12d02f4e482b03a0b715",
+      "normalizedLFGitSha": "73158c87c907b7318bd27b36a4cfe89c48b815eb",
+      "originalRemoteGitSha": "73158c87c907b7318bd27b36a4cfe89c48b815eb",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/inspection-report-references/route.ts",
+      "bytes": 11945,
+      "rawGitSha": "8ec6ef55f2038cb8a1b122831400c3a75017b095",
+      "normalizedLFGitSha": "2c104f4372db06c59a79f2f05f4f5ea52bc38eeb",
+      "originalRemoteGitSha": "2c104f4372db06c59a79f2f05f4f5ea52bc38eeb",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/issue-license/route.ts",
+      "bytes": 3580,
+      "rawGitSha": "4106168a8bf26c8ac7bda96612db97a96ec58334",
+      "normalizedLFGitSha": "bc7725c588e5e1cd8f521a5a28e9086141c75d2f",
+      "originalRemoteGitSha": "bc7725c588e5e1cd8f521a5a28e9086141c75d2f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/main-desktop-replacement/route.ts",
+      "bytes": 5105,
+      "rawGitSha": "ad4231b959b3493013d4ff8d770181e819c50bfc",
+      "normalizedLFGitSha": "d8854ec6517a52a01d028d69ad86a9a5ddf4d08e",
+      "originalRemoteGitSha": "d8854ec6517a52a01d028d69ad86a9a5ddf4d08e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/messaging-summary/route.ts",
+      "bytes": 5550,
+      "rawGitSha": "55e0a75c61427250f85eebfc976cfab75fc7b8e6",
+      "normalizedLFGitSha": "6558b25b73d81a9b34d001fe367913cceaafae5a",
+      "originalRemoteGitSha": "6558b25b73d81a9b34d001fe367913cceaafae5a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/messaging/route.ts",
+      "bytes": 9675,
+      "rawGitSha": "e3ef3040d4d990da2ae146029206b611e6f4d458",
+      "normalizedLFGitSha": "c56ad31f1f9abf83afbcf03a3d8d3cf2a73d4449",
+      "originalRemoteGitSha": "c56ad31f1f9abf83afbcf03a3d8d3cf2a73d4449",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/mobile-timeclock-policy/route.ts",
+      "bytes": 7726,
+      "rawGitSha": "59b986c15a02496d42dc4dd5f29b910e411be937",
+      "normalizedLFGitSha": "c750fb545b628f2ea8c84d20e740fe63ed8dbb24",
+      "originalRemoteGitSha": "c750fb545b628f2ea8c84d20e740fe63ed8dbb24",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/onboarding-policy/route.ts",
+      "bytes": 482,
+      "rawGitSha": "4b4dd034dc2c8890c532466e0e42d402e72b8e59",
+      "normalizedLFGitSha": "4b4dd034dc2c8890c532466e0e42d402e72b8e59",
+      "originalRemoteGitSha": "4b4dd034dc2c8890c532466e0e42d402e72b8e59",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/app/api/desktop/provision-employee/route.ts",
+      "bytes": 29382,
+      "rawGitSha": "b2c8eae79fc1debad2bb38abfb6e05d4173b1bdf",
+      "normalizedLFGitSha": "67e5162e6db4bedf119566c994708edf304d9d5b",
+      "originalRemoteGitSha": "67e5162e6db4bedf119566c994708edf304d9d5b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/register-device/route.ts",
+      "bytes": 6062,
+      "rawGitSha": "f7fa452251c96f66963cfad5251d6ade1e4f8df5",
+      "normalizedLFGitSha": "5966068073787c33c1010660d1d0d3950ebee153",
+      "originalRemoteGitSha": "5966068073787c33c1010660d1d0d3950ebee153",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/shop-status/route.ts",
+      "bytes": 3076,
+      "rawGitSha": "a381c5465954fb38c11e302608cd51ebf97f6b7e",
+      "normalizedLFGitSha": "9586dd0bb85542c6c19228723e1628e9e2eb7fb8",
+      "originalRemoteGitSha": "9586dd0bb85542c6c19228723e1628e9e2eb7fb8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/timeclock/events/route.ts",
+      "bytes": 5300,
+      "rawGitSha": "beecba80c93d53f6f41f575572c2acc5e4b369f6",
+      "normalizedLFGitSha": "478eb64bab64bc786e0e4fa198cf0db895cbd761",
+      "originalRemoteGitSha": "478eb64bab64bc786e0e4fa198cf0db895cbd761",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/upload-avatar/route.ts",
+      "bytes": 4111,
+      "rawGitSha": "6274c4c224e2e6e9ac885721c60d10d84d04f35e",
+      "normalizedLFGitSha": "9f5b5722850f02c3cffbddd56a10ca10a01f1661",
+      "originalRemoteGitSha": "9f5b5722850f02c3cffbddd56a10ca10a01f1661",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/workstation-sync-employee/route.ts",
+      "bytes": 6378,
+      "rawGitSha": "2cd79160063dd316a3e0bee9bd7bf5093febe38d",
+      "normalizedLFGitSha": "f5b4e9dbc5a238b14879fc2ffc2237d8f5ff8e42",
+      "originalRemoteGitSha": "f5b4e9dbc5a238b14879fc2ffc2237d8f5ff8e42",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/desktop/workstations/route.ts",
+      "bytes": 1804,
+      "rawGitSha": "9832f7b3c95e98023fe86bb75e5d4147c2a9f80e",
+      "normalizedLFGitSha": "1725440a03cad0d74c8300084c067b90f5af49a2",
+      "originalRemoteGitSha": "1725440a03cad0d74c8300084c067b90f5af49a2",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/activate/route.ts",
+      "bytes": 4041,
+      "rawGitSha": "6ed3dfb38fc083afc0b39a4904a9ddc3d403a6a5",
+      "normalizedLFGitSha": "60bbb3762d0c5b15c4f453dbea73f4d776248253",
+      "originalRemoteGitSha": "60bbb3762d0c5b15c4f453dbea73f4d776248253",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/admin/route.ts",
+      "bytes": 4420,
+      "rawGitSha": "750dd9ad474288108d5c8e836ee18d05953c01ea",
+      "normalizedLFGitSha": "8978ad9f89b69e79651b1cde1ec2826dfe5bbf4b",
+      "originalRemoteGitSha": "8978ad9f89b69e79651b1cde1ec2826dfe5bbf4b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/checkin-legacy/route.ts",
+      "bytes": 557,
+      "rawGitSha": "20ec27598297607d756f2c9290e3c50f877e5c4c",
+      "normalizedLFGitSha": "240204f739d81a35f6f9eeac21c64088d3093665",
+      "originalRemoteGitSha": "240204f739d81a35f6f9eeac21c64088d3093665",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/checkin/route.ts",
+      "bytes": 5491,
+      "rawGitSha": "1fd87482d05c81a8400957f5a975c199b853e003",
+      "normalizedLFGitSha": "82dd52586754021f089b3f06a6597f33abe80ecb",
+      "originalRemoteGitSha": "82dd52586754021f089b3f06a6597f33abe80ecb",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/create/route.ts",
+      "bytes": 2215,
+      "rawGitSha": "5d0847e3edaa74e522685b32d9d59830f607503b",
+      "normalizedLFGitSha": "2498b6466fd6de1c0a1d10969aaa7481ebb170d5",
+      "originalRemoteGitSha": "2498b6466fd6de1c0a1d10969aaa7481ebb170d5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/delete/route.ts",
+      "bytes": 2301,
+      "rawGitSha": "a12a648a6d1e01962859603bd826d9da30e0b1cf",
+      "normalizedLFGitSha": "bd2505c9b92799ef6f13dd82a872cb18d32eca17",
+      "originalRemoteGitSha": "bd2505c9b92799ef6f13dd82a872cb18d32eca17",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/enroll-token/route.ts",
+      "bytes": 2706,
+      "rawGitSha": "753c2378eabbb5cbc9cab4a662a24e65ff325c4c",
+      "normalizedLFGitSha": "78d7e51b3d592fe9a258b1acafd25ab164385d16",
+      "originalRemoteGitSha": "78d7e51b3d592fe9a258b1acafd25ab164385d16",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/issue-token/route.ts",
+      "bytes": 4832,
+      "rawGitSha": "a344b1709cb47324d6fb2affcd1d1a978a36ee46",
+      "normalizedLFGitSha": "b018b13d15bc5bac94224bde4e809cec3d2af7a8",
+      "originalRemoteGitSha": "b018b13d15bc5bac94224bde4e809cec3d2af7a8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/list/route.ts",
+      "bytes": 3374,
+      "rawGitSha": "68cc881d57a37159ee173d0d12000f94f103ab1d",
+      "normalizedLFGitSha": "4d554801ab098afb234ae8a3d0bfd8a1e16e994c",
+      "originalRemoteGitSha": "4d554801ab098afb234ae8a3d0bfd8a1e16e994c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/page.tsx",
+      "bytes": 8126,
+      "rawGitSha": "fe2ab329f7dd12cbe1913b4e4c4e7f31f80a6230",
+      "normalizedLFGitSha": "01d88910cc73b0f54f38e7a5a3bfad4793f1f09b",
+      "originalRemoteGitSha": "01d88910cc73b0f54f38e7a5a3bfad4793f1f09b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/revoke-token/route.ts",
+      "bytes": 2306,
+      "rawGitSha": "67cfa521289ccc49b96d97dc728cbf20dafe7278",
+      "normalizedLFGitSha": "8e11bf60f581803e9ef8e8afd67c5d8348286e39",
+      "originalRemoteGitSha": "8e11bf60f581803e9ef8e8afd67c5d8348286e39",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/set-status/route.ts",
+      "bytes": 2678,
+      "rawGitSha": "3fe83fb111927a40e7149d056325b5f945130256",
+      "normalizedLFGitSha": "08767ab5ea0c9e98671a4a40046afb84fd204bee",
+      "originalRemoteGitSha": "08767ab5ea0c9e98671a4a40046afb84fd204bee",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/update/route.ts",
+      "bytes": 6531,
+      "rawGitSha": "e23641dff2d02e94182f8c3d93e178d2d7985786",
+      "normalizedLFGitSha": "2f3ab67ee3f266674a6ff3bc508b58eedf39513c",
+      "originalRemoteGitSha": "2f3ab67ee3f266674a6ff3bc508b58eedf39513c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/device/validate-token/route.ts",
+      "bytes": 12060,
+      "rawGitSha": "fc78b71a4206cc0c50afc41797ad8a579a9dc910",
+      "normalizedLFGitSha": "172cf6e9a837d0660578077b2e28e978eedcdc8c",
+      "originalRemoteGitSha": "172cf6e9a837d0660578077b2e28e978eedcdc8c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/mobile/dev-seed-user/route.ts",
+      "bytes": 7149,
+      "rawGitSha": "80c72002fc90b8bcd4803e775ca37b2587250a46",
+      "normalizedLFGitSha": "cce6c917189abdf8d552bc026ee2433e1bd2bd16",
+      "originalRemoteGitSha": "cce6c917189abdf8d552bc026ee2433e1bd2bd16",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/mobile/inspection-reports/route.ts",
+      "bytes": 9811,
+      "rawGitSha": "d9d75ea11e0fedb9ab323a2722444cd2ad5bee54",
+      "normalizedLFGitSha": "a5f33692777d2fe1148e3dc45fe25a9c49411f2b",
+      "originalRemoteGitSha": "a5f33692777d2fe1148e3dc45fe25a9c49411f2b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/mobile/resolve-shop/route.ts",
+      "bytes": 3136,
+      "rawGitSha": "d9d03adf97dd5d8ed37b0f27692563fffbd420ac",
+      "normalizedLFGitSha": "d620400d34792502b8b3b0bc383ea016797806c0",
+      "originalRemoteGitSha": "d620400d34792502b8b3b0bc383ea016797806c0",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/mobile/shop-access/route.ts",
+      "bytes": 3369,
+      "rawGitSha": "d8c18bf6dd752dac988b141d332d7e7059089296",
+      "normalizedLFGitSha": "638eb80440b8a908de4a95fa90e7934f5f931d9d",
+      "originalRemoteGitSha": "638eb80440b8a908de4a95fa90e7934f5f931d9d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/mobile/timeclock/events/route.ts",
+      "bytes": 15223,
+      "rawGitSha": "c07f8f73640da25b641068445cc3d75efa7d1520",
+      "normalizedLFGitSha": "f916129abbce896036efb8a715687bb736b2f842",
+      "originalRemoteGitSha": "f916129abbce896036efb8a715687bb736b2f842",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/complete/route.ts",
+      "bytes": 783,
+      "rawGitSha": "ca5797b2003aff18ac2378f51d38f38def8e647a",
+      "normalizedLFGitSha": "a6d6b4e3d513711caa5d01a2cd626226ba499e32",
+      "originalRemoteGitSha": "a6d6b4e3d513711caa5d01a2cd626226ba499e32",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/create-shop/route.ts",
+      "bytes": 14427,
+      "rawGitSha": "813c75839a14369cc1d9bbe54f9f363e8700a8fc",
+      "normalizedLFGitSha": "caa65fb1b3ea0cc7f92c3ea6b282743db6fbb9d8",
+      "originalRemoteGitSha": "caa65fb1b3ea0cc7f92c3ea6b282743db6fbb9d8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/debug/route.ts",
+      "bytes": 1013,
+      "rawGitSha": "7d2d0be1d60e77f1a0f35baf42fc795b105e352a",
+      "normalizedLFGitSha": "95f581f0567e12e2cfd1cfb271f4a87713dff9a9",
+      "originalRemoteGitSha": "95f581f0567e12e2cfd1cfb271f4a87713dff9a9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/save-profile/route.ts",
+      "bytes": 2624,
+      "rawGitSha": "422cb4187c244888a8c9c23e8deeaf9a71c37c1e",
+      "normalizedLFGitSha": "b2b114322db67233077335cda58f13f80075f169",
+      "originalRemoteGitSha": "b2b114322db67233077335cda58f13f80075f169",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/send-email-code/route.ts",
+      "bytes": 3397,
+      "rawGitSha": "7d47c20ab6a3fa0b63a118175e34da222bb71ee9",
+      "normalizedLFGitSha": "bace6a26a5b3df96c6196366afad0a282a456673",
+      "originalRemoteGitSha": "bace6a26a5b3df96c6196366afad0a282a456673",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/send-sms-code/route.ts",
+      "bytes": 3517,
+      "rawGitSha": "7bf0b8af6720cd175a7c43e6ae1da0dd3c705f75",
+      "normalizedLFGitSha": "bed13cf4e80ef0e7fd684b698b212752b27575ea",
+      "originalRemoteGitSha": "bed13cf4e80ef0e7fd684b698b212752b27575ea",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/setup-status/route.ts",
+      "bytes": 1013,
+      "rawGitSha": "070bb23b9f636195ee2ee7f8e1cd9ae3cff0e329",
+      "normalizedLFGitSha": "3e82d103ab1fed7a029664039679aa652ffd6d15",
+      "originalRemoteGitSha": "3e82d103ab1fed7a029664039679aa652ffd6d15",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/state/route.ts",
+      "bytes": 1590,
+      "rawGitSha": "2702f8f292457c2515e465827c904c2dc4bea424",
+      "normalizedLFGitSha": "fe325bfa31763340bdfe4d0922bafac6467e11a4",
+      "originalRemoteGitSha": "fe325bfa31763340bdfe4d0922bafac6467e11a4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/verify-email-code/route.ts",
+      "bytes": 2556,
+      "rawGitSha": "5bc629eb521ffaf817fd86f7bb7f8fe111ad63b2",
+      "normalizedLFGitSha": "ee8513cf9222a32c9ef46e0429f932ec5878f8fe",
+      "originalRemoteGitSha": "ee8513cf9222a32c9ef46e0429f932ec5878f8fe",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/onboarding/verify-sms-code/route.ts",
+      "bytes": 2490,
+      "rawGitSha": "5840aff39736f4d5ecd87280203943814bcccc09",
+      "normalizedLFGitSha": "75964c6b73a6ce4b053b43f751f8add1521014a5",
+      "originalRemoteGitSha": "75964c6b73a6ce4b053b43f751f8add1521014a5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/people/list/route.ts",
+      "bytes": 6561,
+      "rawGitSha": "617c9ec9356a993c5320831748de39a48e08a35c",
+      "normalizedLFGitSha": "888b3b6b10d4d7c86012d9121f132f2334b12a09",
+      "originalRemoteGitSha": "888b3b6b10d4d7c86012d9121f132f2334b12a09",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/people/remove/route.ts",
+      "bytes": 3191,
+      "rawGitSha": "108cf863d68eae011bcba5366ad0c70a712fb7af",
+      "normalizedLFGitSha": "4c6407859e4e93106b5ae72d558ab2c27a679ffe",
+      "originalRemoteGitSha": "4c6407859e4e93106b5ae72d558ab2c27a679ffe",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/service/administrative-authorization/verify/route.ts",
+      "bytes": 4878,
+      "rawGitSha": "dd41f91a24838a24693a89506fac197c0e007c89",
+      "normalizedLFGitSha": "e4dcb3c314945d36a66b04597c8ed6bd173d0199",
+      "originalRemoteGitSha": "e4dcb3c314945d36a66b04597c8ed6bd173d0199",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/activity/route.ts",
+      "bytes": 2212,
+      "rawGitSha": "f4d773146f7c36562c21c9584834986949f005c6",
+      "normalizedLFGitSha": "a041395849b7d7a413e2c2662506a2a8f83f185b",
+      "originalRemoteGitSha": "a041395849b7d7a413e2c2662506a2a8f83f185b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/billing-activity/route.ts",
+      "bytes": 2293,
+      "rawGitSha": "7123aaf9cdb496277e6b6c5278f931001ef56371",
+      "normalizedLFGitSha": "1b43aafb5021aae5ef11a60c14dcb67c2fa4389e",
+      "originalRemoteGitSha": "1b43aafb5021aae5ef11a60c14dcb67c2fa4389e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/delete-operation/route.ts",
+      "bytes": 1461,
+      "rawGitSha": "6fea5511179060f9e82fa0c0e55af45706066a7b",
+      "normalizedLFGitSha": "161d38d7e9a04957c1fba6148e288ffb6e3e61c9",
+      "originalRemoteGitSha": "161d38d7e9a04957c1fba6148e288ffb6e3e61c9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/delete/route.ts",
+      "bytes": 2205,
+      "rawGitSha": "2d8bfc2731840f84799cfbdb1613387ec84fa34e",
+      "normalizedLFGitSha": "4b490995edca45b31ce71475c3702e75479356e5",
+      "originalRemoteGitSha": "4b490995edca45b31ce71475c3702e75479356e5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/list-simple/route.ts",
+      "bytes": 1497,
+      "rawGitSha": "a77635e6de669c12927308f060e8c9cae2d21915",
+      "normalizedLFGitSha": "c6f71aefb0bff3be7f9a2ebf91d47937cccc35e9",
+      "originalRemoteGitSha": "c6f71aefb0bff3be7f9a2ebf91d47937cccc35e9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/mobile-timeclock-policy/route.ts",
+      "bytes": 8196,
+      "rawGitSha": "26c0e638a799c189a76027ae9417262b10b38c8a",
+      "normalizedLFGitSha": "1ba22d5777327e2a88807995abaaee977d6c60a5",
+      "originalRemoteGitSha": "1ba22d5777327e2a88807995abaaee977d6c60a5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/shops/readiness/route.ts",
+      "bytes": 4384,
+      "rawGitSha": "e272058fdb16794abb261ccf7dc1e1e05a0d61da",
+      "normalizedLFGitSha": "d2812da550728ef9bd041539e51c500384daa5fc",
+      "originalRemoteGitSha": "d2812da550728ef9bd041539e51c500384daa5fc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/software-updates/check/route.ts",
+      "bytes": 13601,
+      "rawGitSha": "588711d7aa689b77b08028e6f8c9de43583dc12e",
+      "normalizedLFGitSha": "2fab6ac5a1d70c9fa3299dafb64ebadd65a906be",
+      "originalRemoteGitSha": "2fab6ac5a1d70c9fa3299dafb64ebadd65a906be",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/software-updates/device-status/route.ts",
+      "bytes": 7558,
+      "rawGitSha": "685e0c5a19c12d7e4dae99a69bec0487a4675228",
+      "normalizedLFGitSha": "8414398b2c2e39d6bc5523d54f5491125079c1c8",
+      "originalRemoteGitSha": "8414398b2c2e39d6bc5523d54f5491125079c1c8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/support/bundle/route.ts",
+      "bytes": 2637,
+      "rawGitSha": "6cfa3a7f111ad85beb9121bd8d30810a15763682",
+      "normalizedLFGitSha": "4dd46840fa4d0abd99dc1ee1c81367fa9a23a853",
+      "originalRemoteGitSha": "4dd46840fa4d0abd99dc1ee1c81367fa9a23a853",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/updates/list/route.ts",
+      "bytes": 2534,
+      "rawGitSha": "927cd93c3877ee1ea8388d94023fd7e5d1f34b63",
+      "normalizedLFGitSha": "5a649a103ea141036753d5d82e1f19074213c15f",
+      "originalRemoteGitSha": "5a649a103ea141036753d5d82e1f19074213c15f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/updates/package/route.ts",
+      "bytes": 1835,
+      "rawGitSha": "64843cf1c8e5dec5ea0ef41aa6a825913f06a4d0",
+      "normalizedLFGitSha": "82e713ada81afdf94ad8b4a3569a57fb0317eb59",
+      "originalRemoteGitSha": "82e713ada81afdf94ad8b4a3569a57fb0317eb59",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/user/ensure-device-id/route.ts",
+      "bytes": 820,
+      "rawGitSha": "e1115aaf931d8f5d2e66d6116fab4a7668fca76c",
+      "normalizedLFGitSha": "ace218af13616b9cca352bd6b02bb41706011efb",
+      "originalRemoteGitSha": "ace218af13616b9cca352bd6b02bb41706011efb",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/user/grant-platform-admin/route.ts",
+      "bytes": 2143,
+      "rawGitSha": "c229da079e7ea6bbc653b6d578c5291c6f1b6899",
+      "normalizedLFGitSha": "cf1abb3f4d16af3220c092c3a18457744503a472",
+      "originalRemoteGitSha": "cf1abb3f4d16af3220c092c3a18457744503a472",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/user/prefs/route.ts",
+      "bytes": 975,
+      "rawGitSha": "ea4c0a2470689400f3912e6df1f7af190fd11cd3",
+      "normalizedLFGitSha": "803f4f156e4f0c205fdacb4aebb469bacc106778",
+      "originalRemoteGitSha": "803f4f156e4f0c205fdacb4aebb469bacc106778",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/user/revoke-platform-admin/route.ts",
+      "bytes": 1852,
+      "rawGitSha": "61aad1076388f3fc6c066c062875409f2a27c316",
+      "normalizedLFGitSha": "e4cde91b84e910f854b93c2d5e26f9e370f3e874",
+      "originalRemoteGitSha": "e4cde91b84e910f854b93c2d5e26f9e370f3e874",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/user/trust-device/route.ts",
+      "bytes": 2165,
+      "rawGitSha": "3f38ff25faa5f2ae2db83e5d6c0b9fb3ae644e82",
+      "normalizedLFGitSha": "e561969c6529c0a4749f72410c13ed9e14cb7d1c",
+      "originalRemoteGitSha": "e561969c6529c0a4749f72410c13ed9e14cb7d1c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/workstation/login/route.ts",
+      "bytes": 9487,
+      "rawGitSha": "b6cc6caf9464309009ca9f7b19b5e83846b3c27c",
+      "normalizedLFGitSha": "998c931de81b52885644d87537d77b8284aedb86",
+      "originalRemoteGitSha": "998c931de81b52885644d87537d77b8284aedb86",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/workstation/register/route.ts",
+      "bytes": 3671,
+      "rawGitSha": "c7abb2a1400c686b7d8dfd393ebd67731f115aa7",
+      "normalizedLFGitSha": "c27e84dc24667bc74c00b8b2e6cd867d940ca9f1",
+      "originalRemoteGitSha": "c27e84dc24667bc74c00b8b2e6cd867d940ca9f1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/api/workstation/timeclock/route.ts",
+      "bytes": 6289,
+      "rawGitSha": "84acc94b917f22d87c62e9637f3fa6feb5b31419",
+      "normalizedLFGitSha": "4e64fefc027bd3a0796c254eeb0053c5423b5047",
+      "originalRemoteGitSha": "4e64fefc027bd3a0796c254eeb0053c5423b5047",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/auth/callback/route.ts",
+      "bytes": 2251,
+      "rawGitSha": "31a8116f8ba3774490d479abbe31c257b1eb3e7d",
+      "normalizedLFGitSha": "a92bfde1bcd870d6bf8e5d34dceb6ba8e28fe6ad",
+      "originalRemoteGitSha": "a92bfde1bcd870d6bf8e5d34dceb6ba8e28fe6ad",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/billing/cancel/page.tsx",
+      "bytes": 1512,
+      "rawGitSha": "457bcbe605d625bbbfaf52ad582a8f3cc9181290",
+      "normalizedLFGitSha": "360147e5a6f291005fb4e9c1d81af69cac0265cc",
+      "originalRemoteGitSha": "360147e5a6f291005fb4e9c1d81af69cac0265cc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/billing/complete/page.tsx",
+      "bytes": 3386,
+      "rawGitSha": "39d9f9774b3b8b6f535ce1fc2585b5ffb5c2e488",
+      "normalizedLFGitSha": "0c44eb84d2ba60807ca04720410ef3e483a2a193",
+      "originalRemoteGitSha": "0c44eb84d2ba60807ca04720410ef3e483a2a193",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/create-shop/page.tsx",
+      "bytes": 173,
+      "rawGitSha": "27e98277a2faf3af9b2fae90b9eacf1c494ae5f0",
+      "normalizedLFGitSha": "5267666b90d8051896e69c809c479acfae99c3f1",
+      "originalRemoteGitSha": "5267666b90d8051896e69c809c479acfae99c3f1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/directory-authorization/DirectoryAuthorizationClient.tsx",
+      "bytes": 9512,
+      "rawGitSha": "b63083ce3334316b1a22e22b25fe701690457a84",
+      "normalizedLFGitSha": "b63083ce3334316b1a22e22b25fe701690457a84",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "src/app/directory-authorization/page.tsx",
+      "bytes": 675,
+      "rawGitSha": "4e08829e27f64903e9f95c90bc69a1ac5e6dc5af",
+      "normalizedLFGitSha": "4e08829e27f64903e9f95c90bc69a1ac5e6dc5af",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "bytes": 611,
+      "rawGitSha": "41d2ec5d329be1de2fe8ef294d7ec2bd009c44ff",
+      "normalizedLFGitSha": "3f4a0c70ffd5366320a959a6873620973a98d61e",
+      "originalRemoteGitSha": "3f4a0c70ffd5366320a959a6873620973a98d61e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/login/page.tsx",
+      "bytes": 7728,
+      "rawGitSha": "dbefdf15d0c41bfffc0040d27798af270d4ed913",
+      "normalizedLFGitSha": "e7bec4c882be9211ff735703ba0c30a647f916b1",
+      "originalRemoteGitSha": "e7bec4c882be9211ff735703ba0c30a647f916b1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/member/page.tsx",
+      "bytes": 164,
+      "rawGitSha": "c0a21c0dca2d6d1020c757e9377661822b518931",
+      "normalizedLFGitSha": "a05ddaabadbf80fd718528293cfa36271e25644d",
+      "originalRemoteGitSha": "a05ddaabadbf80fd718528293cfa36271e25644d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/mfa/layout.tsx",
+      "bytes": 1003,
+      "rawGitSha": "49500915fd488f4a00a25788ca293d880c6e9253",
+      "normalizedLFGitSha": "b30dadb86f7eb218e53c39adf7a556674f93f340",
+      "originalRemoteGitSha": "b30dadb86f7eb218e53c39adf7a556674f93f340",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/mfa/page.tsx",
+      "bytes": 5029,
+      "rawGitSha": "bb9dfd13a34b9f6440a732eb72b9b5195a08dd68",
+      "normalizedLFGitSha": "7b9f1f791d04f63b750744d5af9c8470cfc407d8",
+      "originalRemoteGitSha": "7b9f1f791d04f63b750744d5af9c8470cfc407d8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/onboarding/company/page.tsx",
+      "bytes": 172,
+      "rawGitSha": "3baf4d095a003d973da306800124e38b87f2329a",
+      "normalizedLFGitSha": "9e005b96e6f48d5ea820672de2389f7e39913f64",
+      "originalRemoteGitSha": "9e005b96e6f48d5ea820672de2389f7e39913f64",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/onboarding/layout.tsx",
+      "bytes": 1221,
+      "rawGitSha": "8c6ca14a35aa54b431949ecf2da3e247f7fd7747",
+      "normalizedLFGitSha": "18e2c9866978a4fe848c39e02260206488c2e46a",
+      "originalRemoteGitSha": "18e2c9866978a4fe848c39e02260206488c2e46a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/onboarding/page.tsx",
+      "bytes": 165,
+      "rawGitSha": "21d1f3fafed45e7d1dfd720c1f5f4c558a873742",
+      "normalizedLFGitSha": "d47194ae16e7ba2185d0c3ba23a1464b1062174f",
+      "originalRemoteGitSha": "d47194ae16e7ba2185d0c3ba23a1464b1062174f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/onboarding/profile/page.tsx",
+      "bytes": 172,
+      "rawGitSha": "28c5116ddbf187889128942d4be1fa864e1a099c",
+      "normalizedLFGitSha": "33ee0040f1001265f7f581a727224f3fc7d51977",
+      "originalRemoteGitSha": "33ee0040f1001265f7f581a727224f3fc7d51977",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/onboarding/setup/page.tsx",
+      "bytes": 170,
+      "rawGitSha": "75acf9deb742b3040823c5bed2a7f61456ab6912",
+      "normalizedLFGitSha": "73cb46519b6b24a820291502c5cbb6757c514d9c",
+      "originalRemoteGitSha": "73cb46519b6b24a820291502c5cbb6757c514d9c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/page.tsx",
+      "bytes": 1577,
+      "rawGitSha": "8d5ba8ea5d71074c5cd9d40ad37e0bbe9e840af2",
+      "normalizedLFGitSha": "1d662da87f24b0838d78ae4da26ec0e6d7f6927e",
+      "originalRemoteGitSha": "1d662da87f24b0838d78ae4da26ec0e6d7f6927e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/reset-password/page.tsx",
+      "bytes": 4064,
+      "rawGitSha": "7facb9ff0e3f239ba625a53b8aa0646b9c367de5",
+      "normalizedLFGitSha": "462dace5cc4929b0260c3a97557f6003238b24d6",
+      "originalRemoteGitSha": "462dace5cc4929b0260c3a97557f6003238b24d6",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/restricted/page.tsx",
+      "bytes": 2350,
+      "rawGitSha": "47f8d0da0c00da268f32bf7bbf8bc8208528d56c",
+      "normalizedLFGitSha": "ec199bffa8bd33ebaab58303707025a6ad55dea9",
+      "originalRemoteGitSha": "ec199bffa8bd33ebaab58303707025a6ad55dea9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/setup/page.tsx",
+      "bytes": 166,
+      "rawGitSha": "09c2bf39b9614beb327707b2eca6a6c707d8d5ca",
+      "normalizedLFGitSha": "2284c3175b9bd860c23e7c281f509f17abd256de",
+      "originalRemoteGitSha": "2284c3175b9bd860c23e7c281f509f17abd256de",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/signup/page.tsx",
+      "bytes": 161,
+      "rawGitSha": "0e82d7be8133a242d83caba51d878a7c0240426d",
+      "normalizedLFGitSha": "a8a4b6f4b43ad3d5b54fee27c89358bacee18a0c",
+      "originalRemoteGitSha": "a8a4b6f4b43ad3d5b54fee27c89358bacee18a0c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/app/support/bundle/route.ts",
+      "bytes": 1110,
+      "rawGitSha": "0cedf9b14edae715a02c2b0549c622df72d0f14c",
+      "normalizedLFGitSha": "5f6cf424c588e34d8ba824d956333c1b3fc19696",
+      "originalRemoteGitSha": "5f6cf424c588e34d8ba824d956333c1b3fc19696",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/audit/AuditLogWorkspaceV2.tsx",
+      "bytes": 8877,
+      "rawGitSha": "8132012374b9a4eb10523eee817a5c0a623e9a95",
+      "normalizedLFGitSha": "178bc3e4658e00a6b6269fef1c302a025126875b",
+      "originalRemoteGitSha": "178bc3e4658e00a6b6269fef1c302a025126875b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/billing/BillingAccessDirectoryWorkspaceV2.tsx",
+      "bytes": 12172,
+      "rawGitSha": "0cb066afc16d532ed38342aa71fd583eee9495f3",
+      "normalizedLFGitSha": "7a5d5b6da450aa51e0845cb9a359b99f5fab140d",
+      "originalRemoteGitSha": "7a5d5b6da450aa51e0845cb9a359b99f5fab140d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/billing/BillingAccessDrawerV2.tsx",
+      "bytes": 13309,
+      "rawGitSha": "8a3eac2ce963b14c698cdfcda066d9a534817cb1",
+      "normalizedLFGitSha": "700efdcdf1b70e9eab9194b6d38dd9c2881dada5",
+      "originalRemoteGitSha": "700efdcdf1b70e9eab9194b6d38dd9c2881dada5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/billing/BillingGate.tsx",
+      "bytes": 9812,
+      "rawGitSha": "7fc2f9627b2386270e720915f66c6880b3f96900",
+      "normalizedLFGitSha": "822866e68d0533d0ed42769c7262d73367b1ec1d",
+      "originalRemoteGitSha": "822866e68d0533d0ed42769c7262d73367b1ec1d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/billing/WriteLock.tsx",
+      "bytes": 1496,
+      "rawGitSha": "272e6e0c3bd5246dc1842b35174c8c99e973b849",
+      "normalizedLFGitSha": "8e41aeb1f2eb1f84b8df1ff6216f467bbb8273ca",
+      "originalRemoteGitSha": "8e41aeb1f2eb1f84b8df1ff6216f467bbb8273ca",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/CompanyLink.tsx",
+      "bytes": 976,
+      "rawGitSha": "0072f8db063cb82b9c0d771847cab10e9cde1cb8",
+      "normalizedLFGitSha": "7a399c4b9c461372503b3a1689267849b1816ce7",
+      "originalRemoteGitSha": "7a399c4b9c461372503b3a1689267849b1816ce7",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/CompanyScope.tsx",
+      "bytes": 1564,
+      "rawGitSha": "2ec584429aff5ab3ec085b91db5ba46b4ed31ae1",
+      "normalizedLFGitSha": "2ec584429aff5ab3ec085b91db5ba46b4ed31ae1",
+      "originalRemoteGitSha": "de47d7439ecff414e865f76138bde9a1145ed3a0",
+      "status": "changed"
+    },
+    {
+      "path": "src/components/control/ControlActionButton.tsx",
+      "bytes": 1966,
+      "rawGitSha": "a7896d84ba8acb54e7802453c63c2c6b64e87791",
+      "normalizedLFGitSha": "a7896d84ba8acb54e7802453c63c2c6b64e87791",
+      "originalRemoteGitSha": "a7896d84ba8acb54e7802453c63c2c6b64e87791",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlAppShell.tsx",
+      "bytes": 4773,
+      "rawGitSha": "9aebddc6b2692abadb03072534a0ccb9826d8ae6",
+      "normalizedLFGitSha": "9aebddc6b2692abadb03072534a0ccb9826d8ae6",
+      "originalRemoteGitSha": "f7e5c757375f99b4f8bae8c9c608f000969c4344",
+      "status": "changed"
+    },
+    {
+      "path": "src/components/control/ControlEmptyState.tsx",
+      "bytes": 892,
+      "rawGitSha": "5c2842fb14b7238a0c428ebc89fc18d618d4ad42",
+      "normalizedLFGitSha": "0a1030e69ee2ce02c16ea9be162fabd1d5514a6d",
+      "originalRemoteGitSha": "0a1030e69ee2ce02c16ea9be162fabd1d5514a6d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/ControlKeyValueGrid.tsx",
+      "bytes": 1165,
+      "rawGitSha": "5c08ede86b3f9ae40f2a7b22d1599866f953fcea",
+      "normalizedLFGitSha": "5c08ede86b3f9ae40f2a7b22d1599866f953fcea",
+      "originalRemoteGitSha": "5c08ede86b3f9ae40f2a7b22d1599866f953fcea",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlMetricCard.tsx",
+      "bytes": 2207,
+      "rawGitSha": "773af2de5ca1a52863d9660981be6bf32faa55de",
+      "normalizedLFGitSha": "773af2de5ca1a52863d9660981be6bf32faa55de",
+      "originalRemoteGitSha": "773af2de5ca1a52863d9660981be6bf32faa55de",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlPageHeader.tsx",
+      "bytes": 1419,
+      "rawGitSha": "3657da734a31a40103c7c7ee26b571165eb44b79",
+      "normalizedLFGitSha": "3657da734a31a40103c7c7ee26b571165eb44b79",
+      "originalRemoteGitSha": "3657da734a31a40103c7c7ee26b571165eb44b79",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlPanel.tsx",
+      "bytes": 1610,
+      "rawGitSha": "0a73b27ac9d993de6021f162fc5d57528ccc42e6",
+      "normalizedLFGitSha": "0a73b27ac9d993de6021f162fc5d57528ccc42e6",
+      "originalRemoteGitSha": "0a73b27ac9d993de6021f162fc5d57528ccc42e6",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlSidebar.tsx",
+      "bytes": 7642,
+      "rawGitSha": "265f86797947ca72b1e9cbdd9630f7fcb1b92380",
+      "normalizedLFGitSha": "265f86797947ca72b1e9cbdd9630f7fcb1b92380",
+      "originalRemoteGitSha": "72de5384b6cfb8cada316977094ad8f65b922b5e",
+      "status": "changed"
+    },
+    {
+      "path": "src/components/control/ControlStatusChip.tsx",
+      "bytes": 1579,
+      "rawGitSha": "d93768da2ea8eaac13b227529750321a40d146ff",
+      "normalizedLFGitSha": "d93768da2ea8eaac13b227529750321a40d146ff",
+      "originalRemoteGitSha": "d93768da2ea8eaac13b227529750321a40d146ff",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlTable.tsx",
+      "bytes": 1848,
+      "rawGitSha": "f9769fc80a87f459d10d43bcd4e4ce628add4987",
+      "normalizedLFGitSha": "f9769fc80a87f459d10d43bcd4e4ce628add4987",
+      "originalRemoteGitSha": "f9769fc80a87f459d10d43bcd4e4ce628add4987",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/ControlTabNav.tsx",
+      "bytes": 877,
+      "rawGitSha": "72069491ae36e63e147188a8db5fbd48e241f093",
+      "normalizedLFGitSha": "3ff09043c1e01698fbeff4fb94454c7a28fb3d37",
+      "originalRemoteGitSha": "3ff09043c1e01698fbeff4fb94454c7a28fb3d37",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/controlTheme.ts",
+      "bytes": 748,
+      "rawGitSha": "14d5f47c3a015da1818089b7c6d770f8e24de7e7",
+      "normalizedLFGitSha": "18cf10b8e2007a129175fb7f7d80963c440bc679",
+      "originalRemoteGitSha": "18cf10b8e2007a129175fb7f7d80963c440bc679",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/dashboard/ControlDashboard.tsx",
+      "bytes": 9211,
+      "rawGitSha": "069550a36285fa7613088d22ef428368dc1f0202",
+      "normalizedLFGitSha": "069550a36285fa7613088d22ef428368dc1f0202",
+      "originalRemoteGitSha": "069550a36285fa7613088d22ef428368dc1f0202",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/HeaderSearch.tsx",
+      "bytes": 1288,
+      "rawGitSha": "c903946988bb0e81121e676d472b85591f73884a",
+      "normalizedLFGitSha": "0dc5f293f8d76aec87bbfb62c78283443f03b1fa",
+      "originalRemoteGitSha": "0dc5f293f8d76aec87bbfb62c78283443f03b1fa",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/ui.tsx",
+      "bytes": 18396,
+      "rawGitSha": "ca8fc3a75dbbefb8c08ecd1a4add8d335d1263b8",
+      "normalizedLFGitSha": "ca8fc3a75dbbefb8c08ecd1a4add8d335d1263b8",
+      "originalRemoteGitSha": "ca8fc3a75dbbefb8c08ecd1a4add8d335d1263b8",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/v2/ControlActionButtonV2.tsx",
+      "bytes": 2051,
+      "rawGitSha": "2d44a38e83c488f0e1e70076698889bf05cda90c",
+      "normalizedLFGitSha": "2d44a38e83c488f0e1e70076698889bf05cda90c",
+      "originalRemoteGitSha": "2d44a38e83c488f0e1e70076698889bf05cda90c",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/v2/ControlBadgeV2.tsx",
+      "bytes": 1905,
+      "rawGitSha": "b04db24777d5b64307f3e36326d883df4aa8555f",
+      "normalizedLFGitSha": "6f3f42055e582d59130ce8a2ebb7a7740036592a",
+      "originalRemoteGitSha": "6f3f42055e582d59130ce8a2ebb7a7740036592a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/v2/ControlFieldV2.tsx",
+      "bytes": 746,
+      "rawGitSha": "1f9dc40dda110672c37aa837b6b722bbbde23502",
+      "normalizedLFGitSha": "5a7d20fb4a4810dc743a641ca58021c43f217f91",
+      "originalRemoteGitSha": "5a7d20fb4a4810dc743a641ca58021c43f217f91",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/v2/ControlMetricStripV2.tsx",
+      "bytes": 1135,
+      "rawGitSha": "127cd51e3f5df5b738aeb71d6dc4887bcba83189",
+      "normalizedLFGitSha": "15385a72b85b71f03cbbe93ce3cc4e7d4c289cb0",
+      "originalRemoteGitSha": "15385a72b85b71f03cbbe93ce3cc4e7d4c289cb0",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/v2/ControlPanelV2.tsx",
+      "bytes": 1428,
+      "rawGitSha": "6a37aab894c760d54f239456b47663bc1885565f",
+      "normalizedLFGitSha": "e3e9fc059465135a9eed8cb4b42e237edce93114",
+      "originalRemoteGitSha": "e3e9fc059465135a9eed8cb4b42e237edce93114",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/v2/ControlSidebarV2.tsx",
+      "bytes": 5905,
+      "rawGitSha": "2e8fd3ff46552ee24a73c52233b3502b40cfda0e",
+      "normalizedLFGitSha": "2e8fd3ff46552ee24a73c52233b3502b40cfda0e",
+      "originalRemoteGitSha": "2e8fd3ff46552ee24a73c52233b3502b40cfda0e",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/v2/ControlTableV2.tsx",
+      "bytes": 1578,
+      "rawGitSha": "0fe6d8ef8230dfe98415c774e07b9df09bb558bc",
+      "normalizedLFGitSha": "3b6b7978776b5d2afcdefdbba09810b8a4fbe530",
+      "originalRemoteGitSha": "3b6b7978776b5d2afcdefdbba09810b8a4fbe530",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/control/v2/ControlTabsV2.tsx",
+      "bytes": 1249,
+      "rawGitSha": "fb3666784d1feab9cc4b341a66cf7701033602e9",
+      "normalizedLFGitSha": "fb3666784d1feab9cc4b341a66cf7701033602e9",
+      "originalRemoteGitSha": "fb3666784d1feab9cc4b341a66cf7701033602e9",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/v2/ControlTopbarV2.tsx",
+      "bytes": 1854,
+      "rawGitSha": "8349a6f557f4e726e4723921c79f504a88ba0a8b",
+      "normalizedLFGitSha": "8349a6f557f4e726e4723921c79f504a88ba0a8b",
+      "originalRemoteGitSha": "8349a6f557f4e726e4723921c79f504a88ba0a8b",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/control/v2/controlV2Theme.ts",
+      "bytes": 1182,
+      "rawGitSha": "43ae8061e2cdf539a028e9d0dd70e4b8ef95d21a",
+      "normalizedLFGitSha": "90191492e5a3bb924b7872b44cc3555158db2212",
+      "originalRemoteGitSha": "90191492e5a3bb924b7872b44cc3555158db2212",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/DataTable.tsx",
+      "bytes": 2101,
+      "rawGitSha": "e348f3e77732dcf92a21b8cfb20825890dbb2b4a",
+      "normalizedLFGitSha": "4ba1afb00f0fefb93ee520029f07a5b27d0a5995",
+      "originalRemoteGitSha": "4ba1afb00f0fefb93ee520029f07a5b27d0a5995",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/DeleteShopButton.tsx",
+      "bytes": 701,
+      "rawGitSha": "884c198061c04740bd7b9b03fca0b5d1ad48252a",
+      "normalizedLFGitSha": "2ce3e8483568da2e00e6315346571bc6036af9d7",
+      "originalRemoteGitSha": "2ce3e8483568da2e00e6315346571bc6036af9d7",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/DeviceActionsTableClient.tsx",
+      "bytes": 6680,
+      "rawGitSha": "e3a754d29b480ba36b5142bb1a9172a68aed5b52",
+      "normalizedLFGitSha": "e3a754d29b480ba36b5142bb1a9172a68aed5b52",
+      "originalRemoteGitSha": "e3a754d29b480ba36b5142bb1a9172a68aed5b52",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/DeviceIdBootstrap.tsx",
+      "bytes": 401,
+      "rawGitSha": "bc3ad2bd90677a8cc6c4609bcdea873ee316ec22",
+      "normalizedLFGitSha": "2868bee2cdd1a73f26f2fe85f6f052a39a073673",
+      "originalRemoteGitSha": "2868bee2cdd1a73f26f2fe85f6f052a39a073673",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/devices/DeviceAdminActionsPanel.tsx",
+      "bytes": 6517,
+      "rawGitSha": "ba3e2535a64bb84f4ed66db772815ea5731c00ac",
+      "normalizedLFGitSha": "ba3e2535a64bb84f4ed66db772815ea5731c00ac",
+      "originalRemoteGitSha": "ba3e2535a64bb84f4ed66db772815ea5731c00ac",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/devices/DevicesDirectoryWorkspaceV2.tsx",
+      "bytes": 13781,
+      "rawGitSha": "244744e1fc37e725785ca33abc6d14852d6ff4d5",
+      "normalizedLFGitSha": "244744e1fc37e725785ca33abc6d14852d6ff4d5",
+      "originalRemoteGitSha": "244744e1fc37e725785ca33abc6d14852d6ff4d5",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/DismissNoviceButton.tsx",
+      "bytes": 1124,
+      "rawGitSha": "4540c96e8bb0e3a1557ca1ff554861426a0f5d1c",
+      "normalizedLFGitSha": "317bd07c7a38662594aea182a3b556e1d8ac6b41",
+      "originalRemoteGitSha": "317bd07c7a38662594aea182a3b556e1d8ac6b41",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/EnableMFAClient.tsx",
+      "bytes": 2737,
+      "rawGitSha": "ab6ae28d890b6dabbdc7c1632fd88bce92aa807f",
+      "normalizedLFGitSha": "1343e5d81ef27ffa8b3cf5b4f145d82e7338f9bf",
+      "originalRemoteGitSha": "1343e5d81ef27ffa8b3cf5b4f145d82e7338f9bf",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/EnrollTokenPanel.tsx",
+      "bytes": 5596,
+      "rawGitSha": "b0deb7ac24a41801a5d7f769189fd3f85c43aeee",
+      "normalizedLFGitSha": "b0deb7ac24a41801a5d7f769189fd3f85c43aeee",
+      "originalRemoteGitSha": "b0deb7ac24a41801a5d7f769189fd3f85c43aeee",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/FileUpload.tsx",
+      "bytes": 2311,
+      "rawGitSha": "39177ae30acb72b39ea4f6729906f99a4f5e16cc",
+      "normalizedLFGitSha": "a9ead1465541a9fc76d790f6eb280e4a542fee6d",
+      "originalRemoteGitSha": "a9ead1465541a9fc76d790f6eb280e4a542fee6d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/GlassCard.tsx",
+      "bytes": 4120,
+      "rawGitSha": "e6142f1f3e9139d269acd4ed37e26ccb5b0ed3a1",
+      "normalizedLFGitSha": "eeb32a54c6978530a77baa567a2cf8832303357a",
+      "originalRemoteGitSha": "eeb32a54c6978530a77baa567a2cf8832303357a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/HeaderDateTime.tsx",
+      "bytes": 1944,
+      "rawGitSha": "b18b6822e3868379c91f1390b962a64a574c21a1",
+      "normalizedLFGitSha": "a756a55332a8f6da9593759d2239df38e45ef59f",
+      "originalRemoteGitSha": "a756a55332a8f6da9593759d2239df38e45ef59f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/NoviceModeToggle.tsx",
+      "bytes": 2017,
+      "rawGitSha": "0e4e0b0664173b3290968c5a8b7b5704cdbe3b87",
+      "normalizedLFGitSha": "8c1162b05e04f000a8001bd3848757f95072c216",
+      "originalRemoteGitSha": "8c1162b05e04f000a8001bd3848757f95072c216",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/onboarding/CompanyOnboardingClient.tsx",
+      "bytes": 4610,
+      "rawGitSha": "b185e38bdb11828b52df6c4b2e81c23426fa2f51",
+      "normalizedLFGitSha": "ca23e565c0da26b0aa2081254c972a9100d14bf1",
+      "originalRemoteGitSha": "ca23e565c0da26b0aa2081254c972a9100d14bf1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/onboarding/ProfileOnboardingClient.tsx",
+      "bytes": 14205,
+      "rawGitSha": "29f6e2b2a264aad0e922250defed79a15e2bd670",
+      "normalizedLFGitSha": "be41b85cdfa7fd6765f5ad934cff3ca60c17c281",
+      "originalRemoteGitSha": "be41b85cdfa7fd6765f5ad934cff3ca60c17c281",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/onboarding/SetupLaunchButton.tsx",
+      "bytes": 1618,
+      "rawGitSha": "53dbb6a1e657a9b318146fee1b38ae6556466682",
+      "normalizedLFGitSha": "70ac5f033f3bda024a9ce4896934928d879f79f1",
+      "originalRemoteGitSha": "70ac5f033f3bda024a9ce4896934928d879f79f1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/onboarding/SetupStatusClient.tsx",
+      "bytes": 6959,
+      "rawGitSha": "3cd46c459b86669e14a34fa16a21c183cea2cf4f",
+      "normalizedLFGitSha": "e08826da9e002d8ce3b793d79aaf3253da0d2a94",
+      "originalRemoteGitSha": "e08826da9e002d8ce3b793d79aaf3253da0d2a94",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/PackageUploaderClient.tsx",
+      "bytes": 2342,
+      "rawGitSha": "0657261c6480ab67458c441687d7e63610d9a763",
+      "normalizedLFGitSha": "3ac4bab9a262fcdcec011db0d01139660e25857c",
+      "originalRemoteGitSha": "3ac4bab9a262fcdcec011db0d01139660e25857c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/people/PeopleDirectoryWorkspaceV2.tsx",
+      "bytes": 11413,
+      "rawGitSha": "3406db4981c0830e27ff947c78d65702530e30c8",
+      "normalizedLFGitSha": "c29a7f7f65e4bcaa674c22b3e18e80c95222b13d",
+      "originalRemoteGitSha": "c29a7f7f65e4bcaa674c22b3e18e80c95222b13d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/RevealSecretModal.tsx",
+      "bytes": 5279,
+      "rawGitSha": "3401e77a877c40cfa65350f9d5173c998243f893",
+      "normalizedLFGitSha": "f91befbe0eb7f7d4fd30e272d4c8b2eb70995be4",
+      "originalRemoteGitSha": "f91befbe0eb7f7d4fd30e272d4c8b2eb70995be4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/runbook/primitives.tsx",
+      "bytes": 11086,
+      "rawGitSha": "5005681c60c98ca8ca05e3d34f8db4876faafcdd",
+      "normalizedLFGitSha": "5005681c60c98ca8ca05e3d34f8db4876faafcdd",
+      "originalRemoteGitSha": "5005681c60c98ca8ca05e3d34f8db4876faafcdd",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/SetupChecklist.tsx",
+      "bytes": 3251,
+      "rawGitSha": "f60bffafc2f0aba4ee2399f185c6f6d2d5cf0674",
+      "normalizedLFGitSha": "b1e6dcd7e95b73350a893a33d4d51a046897f2aa",
+      "originalRemoteGitSha": "b1e6dcd7e95b73350a893a33d4d51a046897f2aa",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/billing/BillingAccessOverrideCard.tsx",
+      "bytes": 10756,
+      "rawGitSha": "c1b7910aee7c6668265d6c120dc773cc26811daf",
+      "normalizedLFGitSha": "757b836dca5945803e872dc65aa844c26aebfb6c",
+      "originalRemoteGitSha": "757b836dca5945803e872dc65aa844c26aebfb6c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/billing/BillingActivityCard.tsx",
+      "bytes": 4226,
+      "rawGitSha": "c22d5574149f52d3aecf46cce97d4c0d7fcad627",
+      "normalizedLFGitSha": "7fbe1acde978e84c85e465e016b2c3134c15a02e",
+      "originalRemoteGitSha": "7fbe1acde978e84c85e465e016b2c3134c15a02e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/billing/BillingControlPanel.tsx",
+      "bytes": 10561,
+      "rawGitSha": "8cb0b0be75eaa2cc6c7cf380ca47b346a63cc2c4",
+      "normalizedLFGitSha": "e68894403a661810d065be4379b81bc08583c0de",
+      "originalRemoteGitSha": "e68894403a661810d065be4379b81bc08583c0de",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/billing/BillingStripeControlsCard.tsx",
+      "bytes": 4448,
+      "rawGitSha": "f16062dc3c1210eb2b8c43bd3ecec584e8a69ab8",
+      "normalizedLFGitSha": "780b80e7ef08ad62d6c06cf4afb5db00b25a1168",
+      "originalRemoteGitSha": "780b80e7ef08ad62d6c06cf4afb5db00b25a1168",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/billing/BillingSummaryCard.tsx",
+      "bytes": 7762,
+      "rawGitSha": "2b432af1180d40891d5803c0862bb5cdefdb3c65",
+      "normalizedLFGitSha": "fd5f40b5785e41fca0ca5401ccda3d9e7aca292c",
+      "originalRemoteGitSha": "fd5f40b5785e41fca0ca5401ccda3d9e7aca292c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/DeleteOperationStatusCard.tsx",
+      "bytes": 6481,
+      "rawGitSha": "286b35552acb9e167508dc3a3366c7f7b25cf9d6",
+      "normalizedLFGitSha": "d071765eeacfc54bd19fa8a6f88ebb18c0c31a0e",
+      "originalRemoteGitSha": "d071765eeacfc54bd19fa8a6f88ebb18c0c31a0e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/MobileTimeclockPolicyEditor.tsx",
+      "bytes": 8897,
+      "rawGitSha": "040b6451d5ca03109a918f1f0587feca0b42d1f4",
+      "normalizedLFGitSha": "ee23a0a2e0ec0dd62e70cd1a49e62ffeb39be44c",
+      "originalRemoteGitSha": "ee23a0a2e0ec0dd62e70cd1a49e62ffeb39be44c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/RecentAdminActivityCard.tsx",
+      "bytes": 4115,
+      "rawGitSha": "4693c3488486743aabe6e6556451429e714eec28",
+      "normalizedLFGitSha": "bee449b55b579b33fd2c509967ffbb56deccfd10",
+      "originalRemoteGitSha": "bee449b55b579b33fd2c509967ffbb56deccfd10",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/ShopDangerZone.tsx",
+      "bytes": 4129,
+      "rawGitSha": "5b2ad60865c477a3f0f2d497781e2c157394d973",
+      "normalizedLFGitSha": "96e067897210359977c988401e3326c4249b088c",
+      "originalRemoteGitSha": "96e067897210359977c988401e3326c4249b088c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/ShopUserDrawer.tsx",
+      "bytes": 19433,
+      "rawGitSha": "e38cb32ca4ba86b21c195e9fd629464af5719d31",
+      "normalizedLFGitSha": "3043b5a9e1b48fe6c5941999d2ab92e4edd6cb2c",
+      "originalRemoteGitSha": "3043b5a9e1b48fe6c5941999d2ab92e4edd6cb2c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/ShopUsersManager.tsx",
+      "bytes": 9444,
+      "rawGitSha": "10c2ca91dd0d1206505fa9891338079399e5b1c4",
+      "normalizedLFGitSha": "1758927167da285f6b6afd20ee383b22767ea309",
+      "originalRemoteGitSha": "1758927167da285f6b6afd20ee383b22767ea309",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/ActivityTabV2.tsx",
+      "bytes": 4916,
+      "rawGitSha": "560bdba3b91eb4ee5681eba6a617f06a567a5b77",
+      "normalizedLFGitSha": "0876ce1dbaf9c188bef3029b115b5ff35dcd65f1",
+      "originalRemoteGitSha": "0876ce1dbaf9c188bef3029b115b5ff35dcd65f1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/BillingTabV2.tsx",
+      "bytes": 18985,
+      "rawGitSha": "4c73856b1e47771f8e239ad99c939b7eecf0ad41",
+      "normalizedLFGitSha": "0d1960f1404582dab41257b719ec2af1549ad4aa",
+      "originalRemoteGitSha": "0d1960f1404582dab41257b719ec2af1549ad4aa",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/DevicesTabV2.tsx",
+      "bytes": 4302,
+      "rawGitSha": "b33f473a9689c0d26681052f55c85a3d774567bd",
+      "normalizedLFGitSha": "18bc03734d3d9c274d22b2b8d6c59618b418a5f8",
+      "originalRemoteGitSha": "18bc03734d3d9c274d22b2b8d6c59618b418a5f8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/OverviewTabV2.tsx",
+      "bytes": 3605,
+      "rawGitSha": "d75e04a54390afb1b0f81206366f9ef31c432bf8",
+      "normalizedLFGitSha": "43beeabafa1cbab1200625c61fc005e843a11627",
+      "originalRemoteGitSha": "43beeabafa1cbab1200625c61fc005e843a11627",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/ShopDeleteControlV2.tsx",
+      "bytes": 8789,
+      "rawGitSha": "aa9bc00a47e7ad58183773d281ec66dde3133b17",
+      "normalizedLFGitSha": "c1463a5b674f53fe5b4df1242856853bf1aaf373",
+      "originalRemoteGitSha": "c1463a5b674f53fe5b4df1242856853bf1aaf373",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/ShopHeaderV2.tsx",
+      "bytes": 2507,
+      "rawGitSha": "d56905fd53785383a95a0c846277fa2cd40d296c",
+      "normalizedLFGitSha": "d56905fd53785383a95a0c846277fa2cd40d296c",
+      "originalRemoteGitSha": "d56905fd53785383a95a0c846277fa2cd40d296c",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/shops/v2/ShopsDirectoryWorkspaceV2.tsx",
+      "bytes": 12752,
+      "rawGitSha": "e43b98cb033c57c9cb38b016dce0dd66b942c715",
+      "normalizedLFGitSha": "ced580c7be4834b164f7985f22ade12f51a3d47d",
+      "originalRemoteGitSha": "ced580c7be4834b164f7985f22ade12f51a3d47d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/ShopTabBarV2.tsx",
+      "bytes": 861,
+      "rawGitSha": "d2f1a6bf1bd16d0e0559a2a66f4c8809b60a6322",
+      "normalizedLFGitSha": "c58eb5c009fbcf095b44b3429f9b3eede95ca283",
+      "originalRemoteGitSha": "c58eb5c009fbcf095b44b3429f9b3eede95ca283",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/ShopWorkspaceShellV2.tsx",
+      "bytes": 1873,
+      "rawGitSha": "05b34e3c154cde8cd9fcb457d93df751a57412f9",
+      "normalizedLFGitSha": "ca9b468047c0e6823f49a7e9529a5724d2ae4872",
+      "originalRemoteGitSha": "ca9b468047c0e6823f49a7e9529a5724d2ae4872",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/shops/v2/UsersTabV2.tsx",
+      "bytes": 9393,
+      "rawGitSha": "6cfef6f3b2df70fd5537c5a3b9573240a4fe6695",
+      "normalizedLFGitSha": "350aa3494b1bf983779c7ac79fe677d843c0d141",
+      "originalRemoteGitSha": "350aa3494b1bf983779c7ac79fe677d843c0d141",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/SideNav.tsx",
+      "bytes": 11833,
+      "rawGitSha": "70242267a509b9a4054df49c83e9eaf8785ee00c",
+      "normalizedLFGitSha": "41211d25ee6a9adec59c410ade1c9654e52c1798",
+      "originalRemoteGitSha": "41211d25ee6a9adec59c410ade1c9654e52c1798",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/SignOutButton.tsx",
+      "bytes": 1311,
+      "rawGitSha": "8baa87917d5f6afae48a71f8550f2b0b0bf28dba",
+      "normalizedLFGitSha": "00702e289869ad0a437d5fcc05c73a6a23275920",
+      "originalRemoteGitSha": "00702e289869ad0a437d5fcc05c73a6a23275920",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/components/software-updates/SoftwareUpdatesWorkspace.tsx",
+      "bytes": 85437,
+      "rawGitSha": "cd3cf9115e4ea74da2ae55fc9ec0873d09d92fd3",
+      "normalizedLFGitSha": "cd3cf9115e4ea74da2ae55fc9ec0873d09d92fd3",
+      "originalRemoteGitSha": "cd3cf9115e4ea74da2ae55fc9ec0873d09d92fd3",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/components/updates/UpdatesDirectoryWorkspaceV2.tsx",
+      "bytes": 10844,
+      "rawGitSha": "80b4387877673fb12ec9ffc03389a393edb59c4e",
+      "normalizedLFGitSha": "9a554452cdd308c9699d4f22e25c06160dc767c4",
+      "originalRemoteGitSha": "9a554452cdd308c9699d4f22e25c06160dc767c4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/administrativeAuthorizationGrant.ts",
+      "bytes": 9825,
+      "rawGitSha": "e57f93c501820bb8b281c0d1b329bc4586b7bd68",
+      "normalizedLFGitSha": "b1313a573837fa1955cc334a03252fc979c78364",
+      "originalRemoteGitSha": "b1313a573837fa1955cc334a03252fc979c78364",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/administrativeCompletionAuthority.ts",
+      "bytes": 5215,
+      "rawGitSha": "7cf4c08c914d2a52801118d8d6a49c5fc9ecb933",
+      "normalizedLFGitSha": "ba2becd32bcf059defe85153d5275c75206f1b2c",
+      "originalRemoteGitSha": "ba2becd32bcf059defe85153d5275c75206f1b2c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/audit.ts",
+      "bytes": 1199,
+      "rawGitSha": "7f45ace7c18b43650dbfc9aa5055d880cfed95fe",
+      "normalizedLFGitSha": "4844dc92463800131848694a09668a66a5c89a22",
+      "originalRemoteGitSha": "4844dc92463800131848694a09668a66a5c89a22",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/audit/writeAudit.ts",
+      "bytes": 908,
+      "rawGitSha": "9314fd3775b884e3eb4d90a28d8fc2c0a22aed8a",
+      "normalizedLFGitSha": "8bda1e6f396c4403a1051fc9368dd1e1b604634a",
+      "originalRemoteGitSha": "8bda1e6f396c4403a1051fc9368dd1e1b604634a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/authz.ts",
+      "bytes": 4028,
+      "rawGitSha": "9928a06ad6191f5e6fce55d5e71db50425bc1a87",
+      "normalizedLFGitSha": "bb0299e21a835528824b62742ca81399e6419aa4",
+      "originalRemoteGitSha": "bb0299e21a835528824b62742ca81399e6419aa4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/access.ts",
+      "bytes": 5442,
+      "rawGitSha": "b9adce3a6267678f61a6c0861afa892af2ce1669",
+      "normalizedLFGitSha": "0e4727f75e2c87dbe5b852f3e48a45da98871b1c",
+      "originalRemoteGitSha": "0e4727f75e2c87dbe5b852f3e48a45da98871b1c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/entitlement.ts",
+      "bytes": 7748,
+      "rawGitSha": "703126b7ee98db7d7c6aaa1b3994ab2f190e8494",
+      "normalizedLFGitSha": "5fc886071309495eb8e007a7ce51e58c2673e7f3",
+      "originalRemoteGitSha": "5fc886071309495eb8e007a7ce51e58c2673e7f3",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/feature.ts",
+      "bytes": 449,
+      "rawGitSha": "7fad1eaf152eb5f27c5c7d11ba8d1ce07310fcb1",
+      "normalizedLFGitSha": "82e50bd167ec911dc733de5c7230b0afa736e939",
+      "originalRemoteGitSha": "82e50bd167ec911dc733de5c7230b0afa736e939",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/features.ts",
+      "bytes": 188,
+      "rawGitSha": "9c3dc9d7f5c252647da653266f9022e837d1a076",
+      "normalizedLFGitSha": "c9aa0d492f759650b111293d3b3f67d84b532188",
+      "originalRemoteGitSha": "c9aa0d492f759650b111293d3b3f67d84b532188",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/logic.ts",
+      "bytes": 1253,
+      "rawGitSha": "b6514fd490dbf46925fae51a0a69e7e73b034851",
+      "normalizedLFGitSha": "2008073a6edcd5268c73613ce95f7d733af7a93b",
+      "originalRemoteGitSha": "2008073a6edcd5268c73613ce95f7d733af7a93b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/manual.ts",
+      "bytes": 3344,
+      "rawGitSha": "d44567d94e7352a6275de8c5b520b0045bd6d529",
+      "normalizedLFGitSha": "a06b177166a51f51c4f166f4dd788fa85a17d76c",
+      "originalRemoteGitSha": "a06b177166a51f51c4f166f4dd788fa85a17d76c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/billing/writeGuard.ts",
+      "bytes": 735,
+      "rawGitSha": "74942caed99143547e21738cee78b36bd0125b69",
+      "normalizedLFGitSha": "019ed6b4285a4cc1ea7e500ea558ed166393f203",
+      "originalRemoteGitSha": "019ed6b4285a4cc1ea7e500ea558ed166393f203",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/business/businessForegroundIdentity.ts",
+      "bytes": 7250,
+      "rawGitSha": "3f0108b11e6c3307bf9a5079cdce705a41d9a038",
+      "normalizedLFGitSha": "3f0108b11e6c3307bf9a5079cdce705a41d9a038",
+      "originalRemoteGitSha": "3f0108b11e6c3307bf9a5079cdce705a41d9a038",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/business/directoryAccessReview.ts",
+      "bytes": 3101,
+      "rawGitSha": "b6664084bbcabaf1db007ae36a28acd446f4131f",
+      "normalizedLFGitSha": "b6664084bbcabaf1db007ae36a28acd446f4131f",
+      "originalRemoteGitSha": null,
+      "status": "new"
+    },
+    {
+      "path": "src/lib/business/directoryAuthorization.ts",
+      "bytes": 10939,
+      "rawGitSha": "6face6bb86ce54d15949e752e5a8eb04d8152290",
+      "normalizedLFGitSha": "6face6bb86ce54d15949e752e5a8eb04d8152290",
+      "originalRemoteGitSha": "6face6bb86ce54d15949e752e5a8eb04d8152290",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/business/directoryCompanyBinding.ts",
+      "bytes": 4226,
+      "rawGitSha": "62f47353eed43f90884c0f9d0224480d6e78d1fd",
+      "normalizedLFGitSha": "62f47353eed43f90884c0f9d0224480d6e78d1fd",
+      "originalRemoteGitSha": "62f47353eed43f90884c0f9d0224480d6e78d1fd",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/business/directoryLeaseAdministration.ts",
+      "bytes": 9084,
+      "rawGitSha": "ba2d60a74729150cb7da306a9d720cfa422f3709",
+      "normalizedLFGitSha": "ba2d60a74729150cb7da306a9d720cfa422f3709",
+      "originalRemoteGitSha": "ba2d60a74729150cb7da306a9d720cfa422f3709",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/business/directoryTrustAdapters.ts",
+      "bytes": 18732,
+      "rawGitSha": "c22326689a871a69426fb74a9b2a6d5c025242ea",
+      "normalizedLFGitSha": "c22326689a871a69426fb74a9b2a6d5c025242ea",
+      "originalRemoteGitSha": "c22326689a871a69426fb74a9b2a6d5c025242ea",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/business/supabaseDirectoryTrustStore.ts",
+      "bytes": 11812,
+      "rawGitSha": "34f6a12ada6992a8fe9231bcc7d76623167ee477",
+      "normalizedLFGitSha": "34f6a12ada6992a8fe9231bcc7d76623167ee477",
+      "originalRemoteGitSha": "34f6a12ada6992a8fe9231bcc7d76623167ee477",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/connection-status.ts",
+      "bytes": 1692,
+      "rawGitSha": "5a549b12ee315611bfe16c44fcaa92f029f190f1",
+      "normalizedLFGitSha": "7935402f9829b4d359d8548a8b1c43e9e4dadcbc",
+      "originalRemoteGitSha": "7935402f9829b4d359d8548a8b1c43e9e4dadcbc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/control/auditViews.ts",
+      "bytes": 7309,
+      "rawGitSha": "d3c32215139738e25399ad2590da189076c0708f",
+      "normalizedLFGitSha": "d3c32215139738e25399ad2590da189076c0708f",
+      "originalRemoteGitSha": "d3c32215139738e25399ad2590da189076c0708f",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/control/billingViews.ts",
+      "bytes": 7243,
+      "rawGitSha": "3021973b533b7d498580333e54eb93661a3c440c",
+      "normalizedLFGitSha": "3021973b533b7d498580333e54eb93661a3c440c",
+      "originalRemoteGitSha": "3021973b533b7d498580333e54eb93661a3c440c",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/control/cleanup.ts",
+      "bytes": 3442,
+      "rawGitSha": "8b159783f6d8160aa7c376f1efbc07c6ce7b0bd3",
+      "normalizedLFGitSha": "371e1f9803bfea69019dd52f4f494c41e2c1190f",
+      "originalRemoteGitSha": "371e1f9803bfea69019dd52f4f494c41e2c1190f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/control/companyScope.ts",
+      "bytes": 2757,
+      "rawGitSha": "b4b0f75ed874bf005e5ca31433ed24242caf6b9c",
+      "normalizedLFGitSha": "74eeb2d31f07fef3361ce859241120da59def78c",
+      "originalRemoteGitSha": "9cf9e8cfa33929ed24790a0f242929cb08a7eac6",
+      "status": "changed"
+    },
+    {
+      "path": "src/lib/control/deviceViews.ts",
+      "bytes": 21388,
+      "rawGitSha": "271106cc7f0c57575759138094b9429cd1d2fc30",
+      "normalizedLFGitSha": "271106cc7f0c57575759138094b9429cd1d2fc30",
+      "originalRemoteGitSha": "271106cc7f0c57575759138094b9429cd1d2fc30",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/control/peopleViews.ts",
+      "bytes": 24521,
+      "rawGitSha": "ddbecd4b8788c6400afddb55b27193c9020f7627",
+      "normalizedLFGitSha": "ddbecd4b8788c6400afddb55b27193c9020f7627",
+      "originalRemoteGitSha": "ddbecd4b8788c6400afddb55b27193c9020f7627",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/control/readiness.ts",
+      "bytes": 5732,
+      "rawGitSha": "09cfda4e2c20e872e714361cb9381e35dbf2dafa",
+      "normalizedLFGitSha": "71d91996e5956ad5540dfc493041cfb6b2d229c1",
+      "originalRemoteGitSha": "71d91996e5956ad5540dfc493041cfb6b2d229c1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/control/readinessViews.ts",
+      "bytes": 4768,
+      "rawGitSha": "f759d14cfc78277204e100bd7332c6309185c155",
+      "normalizedLFGitSha": "e5c665102f5a75bc8473915a24496e0e69146957",
+      "originalRemoteGitSha": "e5c665102f5a75bc8473915a24496e0e69146957",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/control/settingsViews.ts",
+      "bytes": 7172,
+      "rawGitSha": "498ae28729072b800496cd8db9e0b460c6f049b9",
+      "normalizedLFGitSha": "4b2445595c6c6b358ba2c76f4d1e6c097529f4bf",
+      "originalRemoteGitSha": "4b2445595c6c6b358ba2c76f4d1e6c097529f4bf",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/control/softwareUpdatesViews.ts",
+      "bytes": 29855,
+      "rawGitSha": "2d9856ae894e2e7a4c446ba300cd9c41bc54853c",
+      "normalizedLFGitSha": "5fa0f88accf4913568286e56caa803f2ecf37d90",
+      "originalRemoteGitSha": "5fa0f88accf4913568286e56caa803f2ecf37d90",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/control/summary.ts",
+      "bytes": 11413,
+      "rawGitSha": "10885c3577e2ed930e41d7da9160bb89476bc997",
+      "normalizedLFGitSha": "10885c3577e2ed930e41d7da9160bb89476bc997",
+      "originalRemoteGitSha": "10885c3577e2ed930e41d7da9160bb89476bc997",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/control/supportViews.ts",
+      "bytes": 14223,
+      "rawGitSha": "d5a49d50b78693124fe1d47c226885214871f9b8",
+      "normalizedLFGitSha": "d5a49d50b78693124fe1d47c226885214871f9b8",
+      "originalRemoteGitSha": "d5a49d50b78693124fe1d47c226885214871f9b8",
+      "status": "raw-exact"
+    },
+    {
+      "path": "src/lib/control/updateViews.ts",
+      "bytes": 10475,
+      "rawGitSha": "85946d69b685a39e3cebe9f6e6237b03fb6ed4c2",
+      "normalizedLFGitSha": "3645a2be84dec4f7c7c9a88abd6a4b9f7589c0a6",
+      "originalRemoteGitSha": "3645a2be84dec4f7c7c9a88abd6a4b9f7589c0a6",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/crypto.ts",
+      "bytes": 259,
+      "rawGitSha": "61611ff3a9bc658f1dc76a2e0924292f5cd871cc",
+      "normalizedLFGitSha": "248a7c5f1cb8ad4a4baca065f84b924ce794ea4f",
+      "originalRemoteGitSha": "248a7c5f1cb8ad4a4baca065f84b924ce794ea4f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/delete/operations.ts",
+      "bytes": 4481,
+      "rawGitSha": "e57f0d1d4abd181def76c6dd3f017d2087393951",
+      "normalizedLFGitSha": "5ff297f3f9eaf48af8bcecd89eb94d815e0ad7cb",
+      "originalRemoteGitSha": "5ff297f3f9eaf48af8bcecd89eb94d815e0ad7cb",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/delete/orchestrateShopDelete.ts",
+      "bytes": 33295,
+      "rawGitSha": "04ccad630f0514785ae148bcbd15be9cde677d40",
+      "normalizedLFGitSha": "6f52131252875e04a112c55637281f0c2aaeac87",
+      "originalRemoteGitSha": "6f52131252875e04a112c55637281f0c2aaeac87",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/desktopAuth.ts",
+      "bytes": 903,
+      "rawGitSha": "b6b94e5b388d220d95cbb7adc9afa829f6372c40",
+      "normalizedLFGitSha": "6cbcd4e7bebe02e010679ee025584c01c97270e9",
+      "originalRemoteGitSha": "6cbcd4e7bebe02e010679ee025584c01c97270e9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/desktopShopAdminAuth.ts",
+      "bytes": 990,
+      "rawGitSha": "35910ee993035004c9d7ce66aa169e2c10226c98",
+      "normalizedLFGitSha": "cec5889af3aca3dde8bb46a9800c8bd7e758b2e4",
+      "originalRemoteGitSha": "cec5889af3aca3dde8bb46a9800c8bd7e758b2e4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/device/localIdentity.ts",
+      "bytes": 838,
+      "rawGitSha": "7d4d860788d16a9d5a2fc48d4ecfd507015cb436",
+      "normalizedLFGitSha": "9243dc3eafc275b7b8d75a0fb6ffded9a40cbf73",
+      "originalRemoteGitSha": "9243dc3eafc275b7b8d75a0fb6ffded9a40cbf73",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/device/tokens.ts",
+      "bytes": 295,
+      "rawGitSha": "7eb831bd669b72fe0054d1ae18fb66660ff07cec",
+      "normalizedLFGitSha": "dae7225cf3993027639b8311ad14518ad858dec4",
+      "originalRemoteGitSha": "dae7225cf3993027639b8311ad14518ad858dec4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/env/supabase.ts",
+      "bytes": 252,
+      "rawGitSha": "bc550406d9fcfd6ea29ca51f60665d6900c1b2bf",
+      "normalizedLFGitSha": "45d0024e9377d004605824506c5e115efffaebed",
+      "originalRemoteGitSha": "45d0024e9377d004605824506c5e115efffaebed",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/http/safeFetch.ts",
+      "bytes": 1352,
+      "rawGitSha": "0cb3855d9667e9e5ad45b574a51a8e096f2a496f",
+      "normalizedLFGitSha": "fef69123fc55f4d26584b449f807ceaeff57dc66",
+      "originalRemoteGitSha": "fef69123fc55f4d26584b449f807ceaeff57dc66",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/mobileTimeclockPolicy.ts",
+      "bytes": 2052,
+      "rawGitSha": "888f6962c5f420c54eb518614a6352b54672af27",
+      "normalizedLFGitSha": "63c69cf6f0ac87a9612aeaf8a14fd415adada179",
+      "originalRemoteGitSha": "63c69cf6f0ac87a9612aeaf8a14fd415adada179",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/onboarding/flow.ts",
+      "bytes": 9316,
+      "rawGitSha": "813225252d788f914b2d8bd75319d216c4f65791",
+      "normalizedLFGitSha": "a9649482aff487877c3ae0c4e6f870ae463be790",
+      "originalRemoteGitSha": "a9649482aff487877c3ae0c4e6f870ae463be790",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/onboarding/identity.ts",
+      "bytes": 2895,
+      "rawGitSha": "b52f8d0052e9ead4056632b20e354986e3b76c42",
+      "normalizedLFGitSha": "cf5e3174460331c9940c2f9678fff680a0546b1b",
+      "originalRemoteGitSha": "cf5e3174460331c9940c2f9678fff680a0546b1b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/onboarding/messaging.ts",
+      "bytes": 9963,
+      "rawGitSha": "2c6e768d55e5e7c5491759ce5c89180b7d6a93ec",
+      "normalizedLFGitSha": "a5ed7ded383a5a0fc0d77608e598c7f92c95bc34",
+      "originalRemoteGitSha": "a5ed7ded383a5a0fc0d77608e598c7f92c95bc34",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/onboarding/state.ts",
+      "bytes": 14756,
+      "rawGitSha": "8450f3d50de2181def76286e1ffc10eeba99cf9e",
+      "normalizedLFGitSha": "db773feabd14107daa310c924d25691ebc690e62",
+      "originalRemoteGitSha": "db773feabd14107daa310c924d25691ebc690e62",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/onboarding/validate.ts",
+      "bytes": 898,
+      "rawGitSha": "8b5f2890606cd3ba199bb4e76cdaadb2f3f16fa1",
+      "normalizedLFGitSha": "5a78b40648f7ecc4fd19ca219c90a690ba0ec5d4",
+      "originalRemoteGitSha": "5a78b40648f7ecc4fd19ca219c90a690ba0ec5d4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/platformAdmin.ts",
+      "bytes": 1073,
+      "rawGitSha": "7749814a4c0f2be12e6c7d4c574bbd3f71545bc0",
+      "normalizedLFGitSha": "20d259af54e1fec406644c2fd9ad696a4cec46cc",
+      "originalRemoteGitSha": "20d259af54e1fec406644c2fd9ad696a4cec46cc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/rb.ts",
+      "bytes": 6068,
+      "rawGitSha": "e93e52f95e59d560fbd5f092ebaca4b1010eb46f",
+      "normalizedLFGitSha": "6d90dc56a74039211b4565eb41846e7d4339a4a2",
+      "originalRemoteGitSha": "6d90dc56a74039211b4565eb41846e7d4339a4a2",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/security/boundedJsonRequest.ts",
+      "bytes": 8973,
+      "rawGitSha": "42867df1160b6dd312f1b41e4ecc223637cefd75",
+      "normalizedLFGitSha": "5b4f98a4eded1ee55c844b7cbcfecdb8337cfba2",
+      "originalRemoteGitSha": "5b4f98a4eded1ee55c844b7cbcfecdb8337cfba2",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/security/rateLimit.ts",
+      "bytes": 846,
+      "rawGitSha": "931c301e6ea2fe6503c3a35444cc25b4cfdc0e43",
+      "normalizedLFGitSha": "1f41c3189ecba4a0de349c058ccc6915bc9e7a83",
+      "originalRemoteGitSha": "1f41c3189ecba4a0de349c058ccc6915bc9e7a83",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/shopAdminAuth.ts",
+      "bytes": 941,
+      "rawGitSha": "604da8a4b82c9a5565269369ee3a426617c3b75f",
+      "normalizedLFGitSha": "3037c3fffdee03b6198037d10c1d621fccca3dc5",
+      "originalRemoteGitSha": "3037c3fffdee03b6198037d10c1d621fccca3dc5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/shops/authUsers.ts",
+      "bytes": 4021,
+      "rawGitSha": "1d849e3a6e0543eb49a37fc6b5cdd591c421f569",
+      "normalizedLFGitSha": "b4880062aa43cb2d02c71deade796aaa5d4f21ed",
+      "originalRemoteGitSha": "b4880062aa43cb2d02c71deade796aaa5d4f21ed",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/shops/storageCleanup.ts",
+      "bytes": 3860,
+      "rawGitSha": "7f074a814444b1d3ffb7f33aa3ca91ace66e8a9a",
+      "normalizedLFGitSha": "c8bd19850ec7dfba912b3e7914f299fa164b5472",
+      "originalRemoteGitSha": "c8bd19850ec7dfba912b3e7914f299fa164b5472",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/stripe/server.ts",
+      "bytes": 996,
+      "rawGitSha": "0d9e5eebda31a87625c6e039a029312dd8d94a2d",
+      "normalizedLFGitSha": "6a15354885f3afd627285d88ac0468d527a5a2e3",
+      "originalRemoteGitSha": "6a15354885f3afd627285d88ac0468d527a5a2e3",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/supabase/admin.ts",
+      "bytes": 598,
+      "rawGitSha": "360bbb4b400227a0a94850a90fbae507fb4290b8",
+      "normalizedLFGitSha": "191d7fd270654050dfa04e532ac708af2c91edb9",
+      "originalRemoteGitSha": "191d7fd270654050dfa04e532ac708af2c91edb9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/supabase/bearer.ts",
+      "bytes": 740,
+      "rawGitSha": "67041574bec9064b5ba2f37b823a6b8c8e056579",
+      "normalizedLFGitSha": "5c16cb76735f488c69c12fe7d1568656dd75b89e",
+      "originalRemoteGitSha": "5c16cb76735f488c69c12fe7d1568656dd75b89e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/supabase/browser.ts",
+      "bytes": 607,
+      "rawGitSha": "927f3a8b46ced3f35381ff05d475807f13125a64",
+      "normalizedLFGitSha": "c9e78ca61324a35bf29447611284a9221c197109",
+      "originalRemoteGitSha": "c9e78ca61324a35bf29447611284a9221c197109",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/supabase/client.ts",
+      "bytes": 216,
+      "rawGitSha": "de918c8ef773ad0e724307195cd6c1d3910b3fae",
+      "normalizedLFGitSha": "3b32bddc053253ae7213be3fc432902b0faa1905",
+      "originalRemoteGitSha": "3b32bddc053253ae7213be3fc432902b0faa1905",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/supabase/routeAuth.ts",
+      "bytes": 1086,
+      "rawGitSha": "736b355bf94fec7cd61c924ce9311de562ca9430",
+      "normalizedLFGitSha": "2c2cd0d5bd0b79e06361a4ed56d8d42eb12a9874",
+      "originalRemoteGitSha": "2c2cd0d5bd0b79e06361a4ed56d8d42eb12a9874",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/supabase/server.ts",
+      "bytes": 1166,
+      "rawGitSha": "79b919fd450dca1bfb5220aedb90bb93682ff6e0",
+      "normalizedLFGitSha": "1d3e704631141b27c706c77a3d8b291a9020168b",
+      "originalRemoteGitSha": "1d3e704631141b27c706c77a3d8b291a9020168b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/ui/dates.ts",
+      "bytes": 1425,
+      "rawGitSha": "5c23d35d94ddded1573399423d816b12e4535a81",
+      "normalizedLFGitSha": "2cab6c8152e275e12a0e98ef132df99759a54502",
+      "originalRemoteGitSha": "2cab6c8152e275e12a0e98ef132df99759a54502",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/ui/onboardingDeviceId.ts",
+      "bytes": 871,
+      "rawGitSha": "c73670006682df756d1266990356ead67eb5dfba",
+      "normalizedLFGitSha": "77afa5aaeb487354b5719f2df545ce0abea3a7a4",
+      "originalRemoteGitSha": "77afa5aaeb487354b5719f2df545ce0abea3a7a4",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/ui/runbookTheme.ts",
+      "bytes": 2200,
+      "rawGitSha": "6cc4031ee4500109736beb1aae584ba8218e098d",
+      "normalizedLFGitSha": "f601810391d21690ca75c34b22f0ae1fa01ee13e",
+      "originalRemoteGitSha": "f601810391d21690ca75c34b22f0ae1fa01ee13e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/ui/theme.ts",
+      "bytes": 3094,
+      "rawGitSha": "b80f2bba5f4af7527fa9babef97ebaab61a68dbe",
+      "normalizedLFGitSha": "87c469de8cb30849cdc8e7376e80278433c976b1",
+      "originalRemoteGitSha": "87c469de8cb30849cdc8e7376e80278433c976b1",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/ui/useIsMounted.ts",
+      "bytes": 230,
+      "rawGitSha": "2c03baa554db11f9844d9e6e111e8792ec1fb38c",
+      "normalizedLFGitSha": "2f07faa69173e01aa34c1587831dfb9e2ddbf732",
+      "originalRemoteGitSha": "2f07faa69173e01aa34c1587831dfb9e2ddbf732",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "src/lib/workstationAuth.ts",
+      "bytes": 3279,
+      "rawGitSha": "ed3be2579e29d8b4e793e69da7ba4a3c044bfc22",
+      "normalizedLFGitSha": "2a83425573b10de3342daf3a2f1cbfebc2f28e1c",
+      "originalRemoteGitSha": "2a83425573b10de3342daf3a2f1cbfebc2f28e1c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/.gitignore",
+      "bytes": 80,
+      "rawGitSha": "f621a6952a66e465c7fbd3e2857169688585782d",
+      "normalizedLFGitSha": "ad9264f0b14b294627f8e77383875c994af54865",
+      "originalRemoteGitSha": "ad9264f0b14b294627f8e77383875c994af54865",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/blocked/f06_messaging_legacy_contract_after_mobile_adoption.BLOCKED.sql",
+      "bytes": 2474,
+      "rawGitSha": "1ee65d35650934b0cb968df205ea3096041d47b4",
+      "normalizedLFGitSha": "2dd8f5fd984f8d4e09521e05daa4f858abcac32d",
+      "originalRemoteGitSha": "2dd8f5fd984f8d4e09521e05daa4f858abcac32d",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/config.toml",
+      "bytes": 14539,
+      "rawGitSha": "ea4faeeffdd611f5d60d90bdbf3a5bef3e347ae6",
+      "normalizedLFGitSha": "2b231ad67b213832a042f023587e79692b088b0c",
+      "originalRemoteGitSha": "2b231ad67b213832a042f023587e79692b088b0c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260207034620_remote_schema.sql",
+      "bytes": 192722,
+      "rawGitSha": "d8156a94f3eb401fbb35e4258068feda9a304b9b",
+      "normalizedLFGitSha": "09178d269b52c2ce1fe867bcad5b7801bff976dd",
+      "originalRemoteGitSha": "d8156a94f3eb401fbb35e4258068feda9a304b9b",
+      "status": "raw-exact"
+    },
+    {
+      "path": "supabase/migrations/20260207040000_device_health.sql",
+      "bytes": 1634,
+      "rawGitSha": "fffba4f713ab886036a749b73ace21337de0810d",
+      "normalizedLFGitSha": "4b5bda09024381e1b24859aa73f62bfe82cd02ff",
+      "originalRemoteGitSha": "4b5bda09024381e1b24859aa73f62bfe82cd02ff",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260330120000_shop_entitlement_schema.sql",
+      "bytes": 3426,
+      "rawGitSha": "0db1f48772612798251c570befa66ce3dee5d459",
+      "normalizedLFGitSha": "37f4cc18677a5b0050f14432c5c9b2700d747f80",
+      "originalRemoteGitSha": "37f4cc18677a5b0050f14432c5c9b2700d747f80",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260330150000_workstation_support.sql",
+      "bytes": 2776,
+      "rawGitSha": "8b482db605a3a9a783bbf5d0627ad90bf2827edb",
+      "normalizedLFGitSha": "72bf947b58438bd4f092476aa36cf51dc485710e",
+      "originalRemoteGitSha": "72bf947b58438bd4f092476aa36cf51dc485710e",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260401170000_device_roles.sql",
+      "bytes": 455,
+      "rawGitSha": "a87c89c89a45924a59e4c573435c266bd88c64ab",
+      "normalizedLFGitSha": "dc9b0aac368c3bbd9b937ebcb1338bd6130eec40",
+      "originalRemoteGitSha": "dc9b0aac368c3bbd9b937ebcb1338bd6130eec40",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260402190000_employee_profile_sync.sql",
+      "bytes": 9046,
+      "rawGitSha": "5e48f2edb96e512657b6f6a9ac5f90a5449fbd38",
+      "normalizedLFGitSha": "d711d6d872696ff62a94524904ac896818ba4a1a",
+      "originalRemoteGitSha": "d711d6d872696ff62a94524904ac896818ba4a1a",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260402233000_employee_contract_complete.sql",
+      "bytes": 13374,
+      "rawGitSha": "66d3df56b1117214925becef8bc9560218c2a4ca",
+      "normalizedLFGitSha": "fab467eae2556ed226966f2b373f147a47901f07",
+      "originalRemoteGitSha": "fab467eae2556ed226966f2b373f147a47901f07",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260404123000_onboarding_verification_and_trial_protection.sql",
+      "bytes": 2426,
+      "rawGitSha": "32c01f3e540e8824e8b4ba2164bdd3d215f0a773",
+      "normalizedLFGitSha": "e8acde03dd09713c19e0b083e5cd82c98a961ea5",
+      "originalRemoteGitSha": "e8acde03dd09713c19e0b083e5cd82c98a961ea5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260404143000_onboarding_progress_and_completion.sql",
+      "bytes": 694,
+      "rawGitSha": "3d725cf37363594683e215d10b94b693b2621900",
+      "normalizedLFGitSha": "bb56ec7a231d6c5de75e962baf38750c4b9e3275",
+      "originalRemoteGitSha": "bb56ec7a231d6c5de75e962baf38750c4b9e3275",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260405153000_trial_eligibility_history.sql",
+      "bytes": 1836,
+      "rawGitSha": "4d7e99cee2a840330bab24da5c625a47c0195e1a",
+      "normalizedLFGitSha": "c2dc51e3a607afec5afb8cc210d56a5d489624ab",
+      "originalRemoteGitSha": "c2dc51e3a607afec5afb8cc210d56a5d489624ab",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260406190000_app_release_authority.sql",
+      "bytes": 1648,
+      "rawGitSha": "ac620bac9b35fd24eb09823b252be35f6e75eb6b",
+      "normalizedLFGitSha": "27e2e3f83ee672e657f3c1568377938cad665d7f",
+      "originalRemoteGitSha": "27e2e3f83ee672e657f3c1568377938cad665d7f",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260408170000_control_remote_cleanup_authority.sql",
+      "bytes": 14095,
+      "rawGitSha": "a22254562326463cba36ff718578b4fb8ce0aea0",
+      "normalizedLFGitSha": "15d1ed6219a49e3702ce28c62cecab2904277157",
+      "originalRemoteGitSha": "15d1ed6219a49e3702ce28c62cecab2904277157",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260408193000_control_remote_cleanup_authority_fix.sql",
+      "bytes": 12528,
+      "rawGitSha": "0c31dec8843fcb2361d45a2c7aa38c7f599f3ed7",
+      "normalizedLFGitSha": "a9784a0856b2b9245afb1d83069e40817651a5f9",
+      "originalRemoteGitSha": "a9784a0856b2b9245afb1d83069e40817651a5f9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260409154000_shop_manual_billing_overrides.sql",
+      "bytes": 1347,
+      "rawGitSha": "3e3cd36e9f24434c86a1134c09d29f7a948e98f7",
+      "normalizedLFGitSha": "16b6e24c17a6327fe0a4004a8e6d67d3c0a5f888",
+      "originalRemoteGitSha": "16b6e24c17a6327fe0a4004a8e6d67d3c0a5f888",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260421150000_control_foundation_schema.sql",
+      "bytes": 13139,
+      "rawGitSha": "f22c3a62f40e47735b7ddfa2f87d7df5c395b35c",
+      "normalizedLFGitSha": "6c279cfc1ae688cca4ed88876ea8a3eeaf9f59d8",
+      "originalRemoteGitSha": "6c279cfc1ae688cca4ed88876ea8a3eeaf9f59d8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260421152000_control_delete_authority_hardening.sql",
+      "bytes": 13096,
+      "rawGitSha": "126aada2e130c5a75595ecccfee71731867da647",
+      "normalizedLFGitSha": "a66b79bc69bc4217f3e50b77d88c1a9ac6da4bc9",
+      "originalRemoteGitSha": "a66b79bc69bc4217f3e50b77d88c1a9ac6da4bc9",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260421173000_shop_full_wipe.sql",
+      "bytes": 5789,
+      "rawGitSha": "d130aeaa8c42104f989605afff8694898b4d3851",
+      "normalizedLFGitSha": "1b10edfcaa9afc76eb661eea0ad0b2b9a8911f44",
+      "originalRemoteGitSha": "1b10edfcaa9afc76eb661eea0ad0b2b9a8911f44",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260422190000_employee_soft_delete_authority.sql",
+      "bytes": 5111,
+      "rawGitSha": "a195cbd914e110997ead2b452dc8aa67b19f834b",
+      "normalizedLFGitSha": "ff54a29ddc0419398f9f9efb43f20a3403596bea",
+      "originalRemoteGitSha": "ff54a29ddc0419398f9f9efb43f20a3403596bea",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260426120000_repair_shop_delete_authority.sql",
+      "bytes": 7645,
+      "rawGitSha": "78c60cadd1c8fbefc660767bd7a8f60877633086",
+      "normalizedLFGitSha": "d3db0a7ab0a7d0a521490c8f2a85e05fc1c112f0",
+      "originalRemoteGitSha": "d3db0a7ab0a7d0a521490c8f2a85e05fc1c112f0",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260429080100_ai_usage_events.sql",
+      "bytes": 781,
+      "rawGitSha": "495fa5b49fe7da1f9607a3bef3416dd0583802c1",
+      "normalizedLFGitSha": "b0516f14ecb5038856ba9bfb51dcfc0b06df7256",
+      "originalRemoteGitSha": "b0516f14ecb5038856ba9bfb51dcfc0b06df7256",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260430120000_mobile_inspection_report_read_model.sql",
+      "bytes": 6165,
+      "rawGitSha": "d23760f01eca9d56d20f2379afb76fccea67ecc9",
+      "normalizedLFGitSha": "1c964f1dbd5f8d4d0610c37c91400d6b08fc1854",
+      "originalRemoteGitSha": "1c964f1dbd5f8d4d0610c37c91400d6b08fc1854",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260501120000_mobile_timeclock_submit_policy.sql",
+      "bytes": 3903,
+      "rawGitSha": "05a5e834b9f0d13c44e76883884f3d447573ad7a",
+      "normalizedLFGitSha": "9de678d12f60fbb313a2f5941648742245451c41",
+      "originalRemoteGitSha": "9de678d12f60fbb313a2f5941648742245451c41",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260503123000_mobile_operation_attachment_intake.sql",
+      "bytes": 364,
+      "rawGitSha": "7d0658c23e6c838dd60f41ecb0a844701d294c5b",
+      "normalizedLFGitSha": "933ae85528df2388d89e9ed0fc4ac5c382d1e370",
+      "originalRemoteGitSha": "933ae85528df2388d89e9ed0fc4ac5c382d1e370",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260517193000_control_device_readiness_reporting.sql",
+      "bytes": 4344,
+      "rawGitSha": "dac440e47b3501805ba7c0cf7b8cb002b099b599",
+      "normalizedLFGitSha": "ceae4434ce3ad4f54ec1ada257f2f8bf73232c48",
+      "originalRemoteGitSha": "ceae4434ce3ad4f54ec1ada257f2f8bf73232c48",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260521120000_software_updates_foundation.sql",
+      "bytes": 20787,
+      "rawGitSha": "e3734557c1de68e4e38a8d0c6f90074f2cd44ad5",
+      "normalizedLFGitSha": "38c364cf5014650b3cc67567aae05f5848700d4b",
+      "originalRemoteGitSha": "38c364cf5014650b3cc67567aae05f5848700d4b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260521193000_device_software_status_unique_device_id.sql",
+      "bytes": 127,
+      "rawGitSha": "11b59ac8829964341ba458ffda5f2aa21e1cfe39",
+      "normalizedLFGitSha": "a77d0ac9445e10bda632d85d11d4aebe22b8901c",
+      "originalRemoteGitSha": "a77d0ac9445e10bda632d85d11d4aebe22b8901c",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260523120000_software_release_intent.sql",
+      "bytes": 592,
+      "rawGitSha": "73c5780aa8672f3a18460e7b007375a68bd6de8f",
+      "normalizedLFGitSha": "238ff13795751fb7f611f79c1211d9ca4e4ab8a0",
+      "originalRemoteGitSha": "238ff13795751fb7f611f79c1211d9ca4e4ab8a0",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260523133000_software_release_package_metadata.sql",
+      "bytes": 913,
+      "rawGitSha": "16d1018e1d284cb3c4305df25641085ebcc39906",
+      "normalizedLFGitSha": "9f47b1280aedec9f14cb2dae385e2e9515c834fc",
+      "originalRemoteGitSha": "9f47b1280aedec9f14cb2dae385e2e9515c834fc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260608120000_device_local_identity_bridge.sql",
+      "bytes": 1161,
+      "rawGitSha": "2157ccbcc8faf84a7cb6e9bb3424c556945e9a0b",
+      "normalizedLFGitSha": "0d02cc1322e811c106157d754c2cbd7c6a729440",
+      "originalRemoteGitSha": "0d02cc1322e811c106157d754c2cbd7c6a729440",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260608143000_main_desktop_replacement.sql",
+      "bytes": 5742,
+      "rawGitSha": "c762cefd005781c1c478099ce3c18e6ac73d18af",
+      "normalizedLFGitSha": "e2d176d9b05e33aaf369aaaae797285006376dc5",
+      "originalRemoteGitSha": "e2d176d9b05e33aaf369aaaae797285006376dc5",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260614225000_repair_shop_delete_full_wipe_coverage.sql",
+      "bytes": 11776,
+      "rawGitSha": "16ebe874b583f5109d7fb6671a46ad6b9ac73861",
+      "normalizedLFGitSha": "624f503c5e88b479501dbfa9958ab59d880c14fc",
+      "originalRemoteGitSha": "624f503c5e88b479501dbfa9958ab59d880c14fc",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260904123134_deny_legacy_manufacturing_client_access.sql",
+      "bytes": 2551,
+      "rawGitSha": "0aa1c96014b27428b024d04245509a01fe9d0c86",
+      "normalizedLFGitSha": "ff72a7fac98a643198d8633d2e5160abcd108864",
+      "originalRemoteGitSha": "ff72a7fac98a643198d8633d2e5160abcd108864",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260904124500_employee_client_access_boundary.sql",
+      "bytes": 18875,
+      "rawGitSha": "8b7625099164fb2263185e5b2cbb973b156e0053",
+      "normalizedLFGitSha": "420c1781926cb7096a7d50c5f276a2d81f262671",
+      "originalRemoteGitSha": "420c1781926cb7096a7d50c5f276a2d81f262671",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260904131500_messaging_client_authority_boundary.sql",
+      "bytes": 63611,
+      "rawGitSha": "62d87ee4691aacb9f3b3b610da01746d108c4aac",
+      "normalizedLFGitSha": "d7e7e14e36b41a58b1dacd06bf6cfaa6e8809602",
+      "originalRemoteGitSha": "d7e7e14e36b41a58b1dacd06bf6cfaa6e8809602",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/migrations/20260906120000_administrative_completion_employee_authority.sql",
+      "bytes": 8507,
+      "rawGitSha": "1844357b2d2eb23d827d1dab753508cae0817366",
+      "normalizedLFGitSha": "14f6f51197ce94a33816896273da3faf3cea27c3",
+      "originalRemoteGitSha": "14f6f51197ce94a33816896273da3faf3cea27c3",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/tests/f04_legacy_manufacturing_lockdown.sql",
+      "bytes": 3991,
+      "rawGitSha": "e8b8776188bc4e27a5771cd1ddd31d540da4d894",
+      "normalizedLFGitSha": "44f349be915a6245f91d51ad25f3e1c378cd7ea7",
+      "originalRemoteGitSha": "44f349be915a6245f91d51ad25f3e1c378cd7ea7",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/tests/f05_employee_client_boundary_actor.sql",
+      "bytes": 12010,
+      "rawGitSha": "46064eb01a6e8b89427dee6ffdf1583636912aba",
+      "normalizedLFGitSha": "bea2e49d785c8dc1d402f6befe15b690e3e7c562",
+      "originalRemoteGitSha": "bea2e49d785c8dc1d402f6befe15b690e3e7c562",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/tests/f05_employee_client_boundary_catalog.sql",
+      "bytes": 10751,
+      "rawGitSha": "2b692457e9fed19892fb92324b4d7e20fbd1827f",
+      "normalizedLFGitSha": "c06de20cd854dfc724d37451d57c487dada6c5c8",
+      "originalRemoteGitSha": "c06de20cd854dfc724d37451d57c487dada6c5c8",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/tests/f06_messaging_actor_matrix.sql",
+      "bytes": 29573,
+      "rawGitSha": "7df691ae7dbf950103d6bb0b86370b1d33c0bfc4",
+      "normalizedLFGitSha": "2579a3885695d1550f253221939226fdca420667",
+      "originalRemoteGitSha": "2579a3885695d1550f253221939226fdca420667",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "supabase/tests/f06_messaging_boundary_catalog.sql",
+      "bytes": 16555,
+      "rawGitSha": "50048385d6a863d294ed547581b59bc827d91ec7",
+      "normalizedLFGitSha": "e341b3f615cba3d5d145e32f66579dc1e700416b",
+      "originalRemoteGitSha": "e341b3f615cba3d5d145e32f66579dc1e700416b",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 764,
+      "rawGitSha": "8c0f928aaac9d23b05f04562e22fb0a3ca36a2a3",
+      "normalizedLFGitSha": "acbf71f617748090fc8383947cc6ac361e8a62dd",
+      "originalRemoteGitSha": "acbf71f617748090fc8383947cc6ac361e8a62dd",
+      "status": "line-ending-only"
+    },
+    {
+      "path": "vercel.json",
+      "bytes": 110,
+      "rawGitSha": "19a49515f39389fcc3516550673b9071d7ea5533",
+      "normalizedLFGitSha": "87056607badcfceb2dddb95864942180b10c438f",
+      "originalRemoteGitSha": "87056607badcfceb2dddb95864942180b10c438f",
+      "status": "line-ending-only"
+    }
+  ]
+}

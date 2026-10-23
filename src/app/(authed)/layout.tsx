@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -83,12 +84,9 @@ export default async function AuthedLayout({
         email={email}
         roleLabel="Platform admin"
         statuses={headerStatuses}
-        companies={companyContext?.authorizedShops ?? []}
         selectedCompanyId={companyContext?.selectedCompanyId ?? null}
-        companyUnavailable={companyContext?.companyUnavailable ?? false}
-        companyError={companyError}
       >
-        {companyError || companyContext?.companyUnavailable ? <section role="alert" style={{ padding: 16, border: "1.25px solid #5E7DA5", borderRadius: 9, background: "#FFFFFF" }}><h1 style={{ marginTop: 0, fontSize: 24 }}>Company unavailable</h1><p>{companyError ?? "This company is no longer available to this session. Choose another company from the sidebar."}</p></section> : children}
+        {companyError || companyContext?.companyUnavailable ? <section role="alert" style={{ padding: 16, border: "1.25px solid #5E7DA5", borderRadius: 9, background: "#FFFFFF" }}><h1 style={{ marginTop: 0, fontSize: 24 }}>Company unavailable</h1><p>{companyError ?? "This shop is no longer available to this session. Open Shops to choose an available shop."}</p><Link href="/shops" prefetch={false}>Open Shops</Link></section> : children}
       </ControlAppShell>
     </>
   );
