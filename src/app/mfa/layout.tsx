@@ -1,7 +1,8 @@
-// REPLACE ENTIRE FILE: src/app/mfa/layout.tsx
-
 import React from "react";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { isPlatformAdmin } from "@/lib/authz";
+import { CONTROL_REQUEST_PATH_HEADER, mfaReturnFromRequestPath } from "@/lib/auth/mfaReturn";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -18,16 +19,11 @@ export default async function MfaLayout({ children }: { children: React.ReactNod
   const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const aal = (aalData?.currentLevel as "aal1" | "aal2" | "aal3" | null) ?? "aal1";
 
-  const { data: row } = await supabase
-    .from("rb_control_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const isPlatformAdmin = !!row;
-
-  if (!isPlatformAdmin) redirect("/shops");
-  if (aal === "aal2") redirect("/shops");
+  if (!(await isPlatformAdmin(user.id))) redirect("/restricted");
+  if (aal === "aal2") {
+    const requestHeaders = await headers();
+    redirect(mfaReturnFromRequestPath(requestHeaders.get(CONTROL_REQUEST_PATH_HEADER)));
+  }
 
   return <>{children}</>;
 }

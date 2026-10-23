@@ -5,6 +5,7 @@ import ControlActionButton from "@/components/control/ControlActionButton";
 import ControlPanel from "@/components/control/ControlPanel";
 import { controlTheme as t } from "@/components/control/controlTheme";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { mfaReturnFromRequestPath } from "@/lib/auth/mfaReturn";
 
 const inputStyle: CSSProperties = {
   minHeight: 38,
@@ -27,16 +28,12 @@ export default function MFAPage() {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState("Loading...");
   const [loading, setLoading] = useState(false);
-  const [trustThisDevice, setTrustThisDevice] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
       setStatus("Loading MFA factors...");
-
-      // ensure device id cookie exists (for trust)
-      await fetch("/api/user/ensure-device-id", { method: "POST", credentials: "include" }).catch(() => {});
 
       const { data, error } = await supabase.auth.mfa.listFactors();
       if (cancelled) return;
@@ -46,9 +43,9 @@ export default function MFAPage() {
         return;
       }
 
-      const totp = (data?.totp ?? [])[0];
+      const totp = (data?.totp ?? []).find((factor) => factor.status === "verified");
       if (!totp?.id) {
-        setStatus("No authenticator is enabled for this account. Go to Settings and enable it first.");
+        setStatus("No verified authenticator is available for this account. Use your established account recovery process.");
         return;
       }
 
@@ -93,11 +90,11 @@ export default function MFAPage() {
       const { error: refErr } = await supabase.auth.refreshSession();
       if (refErr) throw refErr;
 
-      if (trustThisDevice) {
-        await fetch("/api/user/trust-device", { method: "POST", credentials: "include" }).catch(() => {});
-      }
+      const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assuranceError) throw assuranceError;
+      if (assurance?.currentLevel !== "aal2") throw new Error("MFA verification did not establish an AAL2 session. Try again.");
 
-      window.location.href = "/shops";
+      window.location.href = mfaReturnFromRequestPath("/mfa" + window.location.search);
     } catch (e: unknown) {
       setStatus(errorMessage(e));
       setLoading(false);
@@ -113,7 +110,7 @@ export default function MFAPage() {
         <h1 style={{ fontSize: 30, lineHeight: 1.08, margin: 0, color: t.color.text }}>MFA verification</h1>
       </div>
 
-      <ControlPanel title="Authenticator required" description="Platform admin access requires a 6-digit code from your authenticator app.">
+      <ControlPanel title="Authenticator required" description="Verify your authenticator to continue with Control administration. You will return to your previous page; submit the action again after verification.">
         <div style={{ display: "grid", gap: 10 }}>
           <input
             placeholder="6-digit code"
@@ -127,14 +124,6 @@ export default function MFAPage() {
             }}
           />
 
-          <label style={{ display: "flex", gap: 8, alignItems: "center", color: t.color.textSecondary, fontSize: 12.5 }}>
-            <input
-              type="checkbox"
-              checked={trustThisDevice}
-              onChange={(e) => setTrustThisDevice(e.target.checked)}
-            />
-            Trust this device for 24 hours (skip MFA redirect on this browser)
-          </label>
 
           <ControlActionButton
             onClick={verify}

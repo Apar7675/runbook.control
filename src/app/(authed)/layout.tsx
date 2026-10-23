@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import ControlAppShell from "@/components/control/ControlAppShell";
 import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
@@ -9,29 +9,10 @@ import { getViewerContext, type ViewerContext } from "@/lib/control/summary";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { buildControlHeaderStatuses } from "@/lib/connection-status";
 import { isPlatformAdmin } from "@/lib/authz";
+import { CONTROL_REQUEST_PATH_HEADER, mfaStepUpHref } from "@/lib/auth/mfaReturn";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-async function isTrustedDevice(supabase: any, userId: string) {
-  try {
-    const jar = await cookies();
-    const deviceId = jar.get("rb_device_id")?.value ?? "";
-    if (!deviceId) return false;
-
-    const { data: row } = await supabase
-      .from("rb_trusted_devices")
-      .select("trusted_until")
-      .eq("user_id", userId)
-      .eq("device_id", deviceId)
-      .maybeSingle();
-
-    if (!row?.trusted_until) return false;
-    return new Date(row.trusted_until).getTime() > Date.now();
-  } catch {
-    return false;
-  }
-}
 
 export default async function AuthedLayout({
   children,
@@ -69,8 +50,8 @@ export default async function AuthedLayout({
   }
 
   if (aal !== "aal2") {
-    const trusted = await isTrustedDevice(supabase, user.id);
-    if (!trusted) redirect("/mfa");
+    const requestHeaders = await headers();
+    redirect(mfaStepUpHref(requestHeaders.get(CONTROL_REQUEST_PATH_HEADER)));
   }
 
   let companyContext: ViewerContext | null = null;

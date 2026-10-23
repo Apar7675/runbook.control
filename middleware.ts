@@ -1,6 +1,7 @@
 ﻿import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { COMPANY_HEADER, companyRequest } from "@/lib/control/companyScope";
+import { CONTROL_REQUEST_PATH_HEADER } from "@/lib/auth/mfaReturn";
 
 const PUBLIC_PATHS = [
   "/",
@@ -44,6 +45,8 @@ export async function middleware(req: NextRequest) {
 
   const headers = new Headers(req.headers);
   headers.set(COMPANY_HEADER, companyRequest(pathname, req.nextUrl.searchParams));
+  // Overwrite any client header with the actual request path and query.
+  headers.set(CONTROL_REQUEST_PATH_HEADER, pathname + req.nextUrl.search);
   headers.set("x-url", pathname);
   headers.set("x-original-url", pathname);
   headers.set("next-url", pathname);

@@ -48,6 +48,9 @@ jobs:
       - name: Authorized shop directory and company scope regressions
         run: npm run test:company-scope
 
+      - name: Control MFA step-up and return regressions
+        run: node scripts/verify-control-mfa-stepup.js
+
   timeclock-summary-db:
     runs-on: ubuntu-latest
     timeout-minutes: 10
