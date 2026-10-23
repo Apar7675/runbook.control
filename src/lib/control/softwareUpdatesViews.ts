@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/ui/dates";
+import { compareSoftwareVersions, parseSoftwareVersion, completeSoftwarePackage, softwarePackageMatchesApp } from "@/lib/control/softwareUpdatePolicy";
 import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
 
 export type WorkspaceTabKey = "overview" | "releases" | "devices" | "rollouts" | "upload-package" | "settings";
@@ -121,7 +122,8 @@ export type SoftwareReleasePublishReadiness = {
 };
 
 export type SoftwareUpdatesWorkspaceData = {
-  sourceKind: "demo" | "mixed" | "live";
+  sourceKind: "demo" | "mixed" | "live" | "unavailable";
+  availabilityMessage: string | null;
   schemaAvailable: boolean;
   releaseCrudEnabled: boolean;
   packageCrudEnabled: boolean;
@@ -249,10 +251,14 @@ function isPositiveWholeNumber(value: string) {
   return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0;
 }
 
-export function deriveReleasePublishReadiness(release: SoftwareReleaseRecord): SoftwareReleasePublishReadiness {
+export function deriveReleasePublishReadiness(release: SoftwareReleaseRecord, packages: SoftwarePackageRecord[] = []): SoftwareReleasePublishReadiness {
   const resolvedIntent = resolveReleaseIntent(release.release_intent, release.required);
-  const checksumText = asText(release.package_sha256);
-  const sizeText = asText(release.package_size_bytes);
+  const packageRows = packages.filter((row) => row.release_id === release.id)
+    .map((row) => ({ ...row, size_bytes: row.size_bytes ? Number(row.size_bytes) : null }));
+  const linkedPackage = packageRows.find((row) =>
+    completeSoftwarePackage(row) && softwarePackageMatchesApp(row, release.app_name));
+  const checksumText = asText(linkedPackage?.sha256 ?? release.package_sha256);
+  const sizeText = asText(linkedPackage?.size_bytes ?? release.package_size_bytes);
 
   const items: SoftwareReleaseReadinessItem[] = [
     {
@@ -264,7 +270,7 @@ export function deriveReleasePublishReadiness(release: SoftwareReleaseRecord): S
     {
       key: "version",
       label: "Version",
-      state: asText(release.version) ? "ready" : "missing",
+      state: !asText(release.version) ? "missing" : parseSoftwareVersion(release.version) ? "ready" : "review",
       detail: asText(release.version) ? `Version ${release.version} is recorded.` : "Add a release version before publishing.",
     },
     {
@@ -284,19 +290,19 @@ export function deriveReleasePublishReadiness(release: SoftwareReleaseRecord): S
     {
       key: "package_url",
       label: "Package URL",
-      state: asText(release.package_url) ? "ready" : "missing",
-      detail: asText(release.package_url) ? "Package URL metadata is recorded." : "Record where the package can be retrieved later.",
+      state: linkedPackage ? "ready" : "missing",
+      detail: linkedPackage ? "A complete linked package location is recorded." : "Add a complete linked package row; inline metadata alone is not deliverable.",
     },
     {
       key: "package_file_name",
       label: "Package File Name",
-      state: asText(release.package_file_name) ? "ready" : "missing",
-      detail: asText(release.package_file_name) ? "Package file name is recorded." : "Record the package file name.",
+      state: linkedPackage ? "ready" : "missing",
+      detail: linkedPackage ? "A complete linked package file name is recorded." : "Add a complete linked package row.",
     },
     {
       key: "package_sha256",
       label: "Package SHA256",
-      state: !checksumText ? "missing" : isValidChecksum(checksumText) ? "ready" : "review",
+      state: !checksumText ? "missing" : linkedPackage && isValidChecksum(checksumText) ? "ready" : "review",
       detail: !checksumText
         ? "Record a SHA256 checksum."
         : isValidChecksum(checksumText)
@@ -306,7 +312,7 @@ export function deriveReleasePublishReadiness(release: SoftwareReleaseRecord): S
     {
       key: "package_size_bytes",
       label: "Package Size",
-      state: !sizeText ? "missing" : isPositiveWholeNumber(sizeText) ? "ready" : "review",
+      state: !sizeText ? "missing" : linkedPackage && isPositiveWholeNumber(sizeText) ? "ready" : "review",
       detail: !sizeText
         ? "Record package size in bytes."
         : isPositiveWholeNumber(sizeText)
@@ -356,55 +362,26 @@ function isMissingRelationError(message: string) {
   return text.includes("does not exist") || text.includes("could not find the table") || text.includes("schema cache");
 }
 
-export function buildDemoSoftwareUpdatesData(): SoftwareUpdatesWorkspaceData {
+export function buildUnavailableSoftwareUpdatesData(
+  message = "Software update data is unavailable. No release, device or rollout status has been loaded.",
+): SoftwareUpdatesWorkspaceData {
   return {
-    sourceKind: "demo",
+    sourceKind: "unavailable",
+    availabilityMessage: message,
     schemaAvailable: false,
     releaseCrudEnabled: false,
     packageCrudEnabled: false,
     rolloutCrudEnabled: false,
-    overviewStats: [
-      { label: "Latest Desktop Version", value: "1.4.2", meta: "Stable channel package currently surfaced in local demo data.", tone: "success" },
-      { label: "Latest Service Version", value: "1.4.2", meta: "Control-only release metadata placeholder for future service rollout approval.", tone: "success" },
-      { label: "Latest Workstation Version", value: "1.4.2", meta: "Demo release visibility only. No local install behavior is wired.", tone: "success" },
-      { label: "Mobile Minimum Version", value: "1.2.0", meta: "Control tracks current/minimum supported store versions, not app-store installs.", tone: "info" },
-      { label: "Devices Current", value: "42", meta: "Sample count from local demo data until device update status is backed by the database.", tone: "success" },
-      { label: "Devices Pending Update", value: "9", meta: "Devices behind an approved release in this Phase 1 mock workspace.", tone: "warning" },
-      { label: "Failed Installs", value: "2", meta: "Placeholder operational visibility for future service-reported update outcomes.", tone: "danger" },
-      { label: "Blocked Devices", value: "3", meta: "Demo count for devices that cannot proceed because policy or version state is blocked.", tone: "danger" },
-    ],
-    releaseRows: [
-      { app: "Desktop", version: "1.4.2", channel: "stable", status: "active", intent: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Desktop-1.4.2.zip" },
-      { app: "Service", version: "1.4.2", channel: "stable", status: "active", intent: "recommended", released: "2026-05-18 09:10 ET", packageName: "RunBook.Service-1.4.2.zip" },
-      { app: "Workstation", version: "1.4.2", channel: "stable", status: "active", intent: "optional", released: "2026-05-18 09:10 ET", packageName: "RunBook.Workstation-1.4.2.zip" },
-      { app: "Mobile", version: "1.2.0", channel: "stable", status: "minimum supported", intent: "required", released: "2026-05-12 08:30 ET", packageName: "App store tracked" },
-    ],
+    overviewStats: [],
+    releaseRows: [],
     releaseRecords: [],
     packageRecords: [],
     rolloutRecords: [],
     shopOptions: [],
     deviceOptions: [],
-    deviceRows: [
-      { device: "RB-WS-014", shop: "Ten MFG East", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", channel: "stable", status: "current", lastCheck: "2026-05-21 08:04 ET", lastError: "None reported" },
-      { device: "RB-WS-019", shop: "Ten MFG East", desktop: "1.4.1", service: "1.4.2", workstation: "1.4.1", mobile: "1.2.0", channel: "stable", status: "pending update", lastCheck: "2026-05-21 07:42 ET", lastError: "None reported" },
-      { device: "RB-SVC-003", shop: "North River Fab", desktop: "n/a", service: "1.4.0", workstation: "n/a", mobile: "n/a", channel: "stable", status: "required update", lastCheck: "2026-05-21 07:15 ET", lastError: "None reported" },
-      { device: "RB-MOB-221", shop: "North River Fab", desktop: "n/a", service: "n/a", workstation: "n/a", mobile: "1.1.8", channel: "stable", status: "blocked", lastCheck: "2026-05-20 18:11 ET", lastError: "Store minimum version policy not met" },
-      { device: "RB-WS-030", shop: "Summit Tool", desktop: "1.4.2", service: "1.4.2", workstation: "1.4.2", mobile: "1.2.0", channel: "stable", status: "failed", lastCheck: "2026-05-21 06:58 ET", lastError: "Installer exited before completion" },
-    ],
-    rolloutRows: [
-      { release: "Desktop 1.4.2", target: "Pilot shops", channel: "stable", required: "optional", status: "approved", starts: "2026-05-22 21:00 ET", progress: "6/12 devices current" },
-      { release: "Service 1.4.2", target: "All enrolled services", channel: "stable", required: "required", status: "awaiting start", starts: "2026-05-24 02:00 ET", progress: "0/18 started" },
-      { release: "Workstation 1.4.2", target: "East region", channel: "stable", required: "optional", status: "in review", starts: "Not scheduled", progress: "Approval pending" },
-      { release: "Mobile 1.2.0", target: "All mobile users", channel: "stable", required: "minimum", status: "published policy", starts: "2026-05-12 08:30 ET", progress: "Store version floor only" },
-    ],
+    deviceRows: [],
+    rolloutRows: [],
   };
-}
-
-function sourceKindForSections(sections: boolean[]) {
-  const populated = sections.filter(Boolean).length;
-  if (populated === 0) return "live" as const;
-  if (populated === sections.length) return "live" as const;
-  return "mixed" as const;
 }
 
 function targetLabel(row: RolloutDbRow, shopNames: Map<string, string>, deviceNames: Map<string, string>) {
@@ -417,13 +394,13 @@ function targetLabel(row: RolloutDbRow, shopNames: Map<string, string>, deviceNa
 }
 
 function currentReleaseForApp(rows: ReleaseDbRow[], appName: string) {
-  return rows.find((row) => asText(row.app_name).toLowerCase() === appName && asText(row.status).toLowerCase() === "active")
-    ?? rows.find((row) => asText(row.app_name).toLowerCase() === appName)
-    ?? null;
+  return rows.filter((row) =>
+    asText(row.app_name).toLowerCase() === appName &&
+    asText(row.status).toLowerCase() === "active" && parseSoftwareVersion(row.version))
+    .sort((a, b) => (compareSoftwareVersions(b.version, a.version) ?? 0) || asText(a.id).localeCompare(asText(b.id)))[0] ?? null;
 }
 
 export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdatesWorkspaceData> {
-  const demo = buildDemoSoftwareUpdatesData();
 
   try {
     const admin = supabaseAdmin();
@@ -451,10 +428,10 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
 
     const allErrors = [releasesResult.error, packagesResult.error, deviceStatusesResult.error, rolloutsResult.error].filter(Boolean);
     if (allErrors.some((error) => isMissingRelationError(String(error?.message ?? "")))) {
-      return demo;
+      return buildUnavailableSoftwareUpdatesData();
     }
     if (allErrors.length > 0) {
-      return demo;
+      return buildUnavailableSoftwareUpdatesData();
     }
 
     const releases = asArray<ReleaseDbRow>(releasesResult.data);
@@ -480,6 +457,10 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
         ? admin.from("rb_devices").select("id,name").in("id", deviceIds)
         : Promise.resolve({ data: [], error: null }),
     ]);
+
+    if (shopsResult.error || devicesResult.error) {
+      return buildUnavailableSoftwareUpdatesData("Software update target data could not be loaded. No fleet status has been loaded.");
+    }
 
     const shopNames = new Map(asArray<ShopDbRow>(shopsResult.data).map((row) => [asText(row.id), asText(row.name) || "Unnamed shop"]));
     const deviceNames = new Map(asArray<DeviceDbRow>(devicesResult.data).map((row) => [asText(row.id), asText(row.name) || "Unnamed device"]));
@@ -647,13 +628,9 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       { label: "Blocked Devices", value: String(blockedDevices), meta: "Devices reporting blocked status from Control-backed software status reporting.", tone: blockedDevices > 0 ? "danger" : "success" },
     ];
 
-    const populatedReleases = liveReleaseRows.length > 0;
-    const populatedDevices = liveDeviceRows.length > 0;
-    const populatedRollouts = liveRolloutRows.length > 0;
-    const sourceKind = sourceKindForSections([populatedReleases, populatedDevices, populatedRollouts]);
-
     return {
-      sourceKind,
+      sourceKind: "live",
+      availabilityMessage: null,
       schemaAvailable: true,
       releaseCrudEnabled: true,
       packageCrudEnabled: true,
@@ -669,6 +646,6 @@ export async function loadSoftwareUpdatesWorkspaceData(): Promise<SoftwareUpdate
       rolloutRows: liveRolloutRows,
     };
   } catch {
-    return demo;
+    return buildUnavailableSoftwareUpdatesData();
   }
 }

@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requirePlatformAdminAal2 } from "@/lib/authz";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { releaseActivationError, type SoftwareUpdatePackage } from "@/lib/control/softwareUpdatePolicy";
 
 const allowedApps = new Set(["desktop", "service", "workstation", "mobile", "control"]);
 const allowedChannels = new Set(["dev", "beta", "stable"]);
@@ -252,6 +253,7 @@ function validateRolloutFields(fields: RolloutEditorFields) {
   if (!allowedRolloutStatuses.has(fields.status)) return "Choose a valid rollout status.";
   if (fields.target_type === "shop" && !fields.target_shop_id) return "Choose a shop target.";
   if (fields.target_type === "device" && !fields.target_device_id) return "Choose a device target.";
+  if (fields.starts_at && !Number.isFinite(Date.parse(fields.starts_at))) return "Choose a valid rollout start date.";
   return "";
 }
 
@@ -259,13 +261,22 @@ async function loadReleaseOrThrow(releaseId: string) {
   const admin = supabaseAdmin();
   const { data, error } = await admin
     .from("rb_software_releases")
-    .select("id,published_at,package_uploaded_at")
+    .select("id,app_name,version,channel,status,required,release_notes,minimum_supported_version,rollback_version,published_at,package_uploaded_at")
     .eq("id", releaseId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data?.id) throw new Error("Release not found.");
   return data;
+}
+
+async function loadReleasePackagesOrThrow(releaseId: string): Promise<SoftwareUpdatePackage[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("rb_software_packages")
+    .select("id,release_id,file_name,download_url,storage_path,sha256,size_bytes,platform,architecture")
+    .eq("release_id", releaseId);
+  if (error) throw new Error(error.message);
+  return Array.isArray(data) ? data as SoftwareUpdatePackage[] : [];
 }
 
 async function loadPackageOrThrow(packageId: string) {
@@ -328,6 +339,11 @@ export async function saveSoftwareReleaseAction(formData: FormData) {
   const hasReleasePackageMetadata = !!fields.package_url || !!fields.package_file_name || !!fields.package_sha256 || !!fields.package_size_bytes;
 
   try {
+    if (isActivating) {
+      const packages = fields.release_id ? await loadReleasePackagesOrThrow(fields.release_id) : [];
+      const activationError = releaseActivationError(fields, packages);
+      if (activationError) throw new Error(activationError);
+    }
     if (fields.release_id) {
       const existing = await loadReleaseOrThrow(fields.release_id);
       const payload = {
@@ -403,6 +419,8 @@ export async function activateSoftwareReleaseAction(formData: FormData) {
 
   try {
     const existing = await loadReleaseOrThrow(releaseId);
+    const activationError = releaseActivationError(existing, await loadReleasePackagesOrThrow(releaseId));
+    if (activationError) throw new Error(activationError);
     const admin = supabaseAdmin();
     const { error } = await admin
       .from("rb_software_releases")

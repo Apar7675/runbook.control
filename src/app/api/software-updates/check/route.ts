@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { hashToken } from "@/lib/device/tokens";
+import {
+  parseSoftwareVersion, selectEligibleSoftwareUpdates, validSoftwareTarget,
+  type SoftwareUpdateRelease as ReleaseRow,
+  type SoftwareUpdatePackage as PackageRow,
+  type SoftwareUpdateRollout as RolloutRow,
+} from "@/lib/control/softwareUpdatePolicy";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,41 +23,8 @@ type CheckBody = {
   workstationVersion: string | null;
   mobileVersion: string | null;
   channel: string;
-};
-
-type ReleaseRow = {
-  id: string | null;
-  app_name: string | null;
-  version: string | null;
-  channel: string | null;
-  required: boolean | null;
-  release_notes: string | null;
-  minimum_supported_version: string | null;
-  rollback_version: string | null;
-};
-
-type PackageRow = {
-  id: string | null;
-  release_id: string | null;
-  file_name: string | null;
-  download_url: string | null;
-  storage_path: string | null;
-  sha256: string | null;
-  size_bytes: number | null;
-  platform: string | null;
-  architecture: string | null;
-};
-
-type RolloutRow = {
-  id: string | null;
-  release_id: string | null;
-  target_type: string | null;
-  target_shop_id: string | null;
-  target_device_id: string | null;
-  channel: string | null;
-  required: boolean | null;
-  status: string | null;
-  starts_at: string | null;
+  platform: string;
+  architecture: string;
 };
 
 function rbAssertUuid(label: string, value: string) {
@@ -96,33 +69,9 @@ function readBody(body: Record<string, unknown>): CheckBody {
     workstationVersion: asOptionalText(body.workstationVersion, 64),
     mobileVersion: asOptionalText(body.mobileVersion, 64),
     channel: asText(body.channel).toLowerCase(),
+    platform: asText(body.platform).toLowerCase() || "windows",
+    architecture: asText(body.architecture).toLowerCase() || "x64",
   };
-}
-
-function currentVersionForApp(fields: CheckBody, appName: string) {
-  if (appName === "desktop") return fields.desktopVersion;
-  if (appName === "service") return fields.serviceVersion;
-  if (appName === "workstation") return fields.workstationVersion;
-  if (appName === "mobile") return fields.mobileVersion;
-  return null;
-}
-
-function rolloutMatches(rollout: RolloutRow, args: { deviceId: string; shopId: string; channel: string; now: number }) {
-  if (asText(rollout.status).toLowerCase() !== "active") return false;
-  if (asText(rollout.channel).toLowerCase() !== args.channel) return false;
-
-  const startsAt = asText(rollout.starts_at);
-  if (startsAt) {
-    const parsed = Date.parse(startsAt);
-    if (Number.isFinite(parsed) && parsed > args.now) return false;
-  }
-
-  const targetType = asText(rollout.target_type).toLowerCase();
-  if (targetType === "all") return true;
-  if (targetType === "shop") return asText(rollout.target_shop_id) === args.shopId;
-  if (targetType === "device") return asText(rollout.target_device_id) === args.deviceId;
-  if (targetType === "beta") return args.channel === "beta";
-  return false;
 }
 
 function summarizeCheck(args: { updateCount: number; requiredCount: number; channel: string }) {
@@ -148,6 +97,10 @@ export async function POST(req: Request) {
 
     if (!allowedChannels.has(fields.channel)) {
       return NextResponse.json({ ok: false, error: "channel must be dev, beta, or stable." }, { status: 400 });
+    }
+
+    if (!validSoftwareTarget(fields.platform, fields.architecture)) {
+      return NextResponse.json({ ok: false, error: "Unsupported software update platform or architecture." }, { status: 400 });
     }
 
     const admin = supabaseAdmin();
@@ -211,69 +164,21 @@ export async function POST(req: Request) {
     const packages = (Array.isArray(packagesResult.data) ? packagesResult.data : []) as PackageRow[];
     const rollouts = (Array.isArray(rolloutsResult.data) ? rolloutsResult.data : []) as RolloutRow[];
 
-    const packageByReleaseId = new Map<string, PackageRow>();
-    for (const row of packages) {
-      const releaseId = asText(row.release_id);
-      if (!releaseId || packageByReleaseId.has(releaseId)) continue;
-      packageByReleaseId.set(releaseId, row);
-    }
-
-    const now = Date.now();
-    const matchingRolloutByReleaseId = new Map<string, RolloutRow>();
-    for (const rollout of rollouts) {
-      const releaseId = asText(rollout.release_id);
-      if (!releaseId) continue;
-      if (!rolloutMatches(rollout, { deviceId: fields.deviceId, shopId: fields.shopId, channel: fields.channel, now })) continue;
-      if (!matchingRolloutByReleaseId.has(releaseId)) {
-        matchingRolloutByReleaseId.set(releaseId, rollout);
-      }
-    }
-
-    const updates = releases
-      .map((release) => {
-        const releaseId = asText(release.id);
-        const appName = asText(release.app_name).toLowerCase();
-        const version = asText(release.version);
-        if (!releaseId || !appName || !version || appName === "control") return null;
-
-        const pkg = packageByReleaseId.get(releaseId);
-        const rollout = matchingRolloutByReleaseId.get(releaseId);
-        if (!pkg || !rollout) return null;
-
-        const currentVersion = currentVersionForApp(fields, appName);
-        if (currentVersion && currentVersion === version) return null;
-
-        // TODO: Replace this simple equality check with strict semver comparison before any forced-update behavior ships.
-        return {
-          releaseId,
-          appName,
-          version,
-          channel: asText(release.channel) || fields.channel,
-          required: !!(release.required || rollout.required),
-          releaseNotes: asText(release.release_notes) || null,
-          minimumSupportedVersion: asText(release.minimum_supported_version) || null,
-          rollbackVersion: asText(release.rollback_version) || null,
-          package: {
-            packageId: asText(pkg.id),
-            fileName: asText(pkg.file_name),
-            downloadUrl: asText(pkg.download_url) || null,
-            storagePath: asText(pkg.storage_path) || null,
-            sha256: asText(pkg.sha256),
-            sizeBytes: pkg.size_bytes ?? null,
-            platform: asText(pkg.platform) || "windows",
-            architecture: asText(pkg.architecture) || "x64",
-          },
-          rollout: {
-            rolloutId: asText(rollout.id),
-            targetType: asText(rollout.target_type) || "all",
-            required: !!rollout.required,
-          },
-        };
-      })
-      .filter((row): row is NonNullable<typeof row> => !!row);
+    const versions = {
+      desktop: fields.desktopVersion, service: fields.serviceVersion,
+      workstation: fields.workstationVersion, mobile: fields.mobileVersion,
+    };
+    const updates = selectEligibleSoftwareUpdates({
+      releases, packages, rollouts, versions,
+      deviceId: fields.deviceId, shopId: fields.shopId, channel: fields.channel,
+      platform: fields.platform, architecture: fields.architecture, now: Date.now(),
+    });
+    const reportedVersions = Object.values(versions).filter((version) => !!version);
+    const versionStateUnknown = reportedVersions.length === 0 ||
+      reportedVersions.some((version) => !parseSoftwareVersion(version));
 
     const requiredCount = updates.filter((row) => row.required).length;
-    const updateStatus = requiredCount > 0 ? "required" : updates.length > 0 ? "available" : "current";
+    const updateStatus = requiredCount > 0 ? "required" : updates.length > 0 ? "available" : versionStateUnknown ? "unknown" : "current";
     const checkedAt = new Date().toISOString();
     const summary = summarizeCheck({ updateCount: updates.length, requiredCount, channel: fields.channel });
 
@@ -317,6 +222,7 @@ export async function POST(req: Request) {
       shopId: fields.shopId,
       channel: fields.channel,
       updatesAvailable: updates.length > 0,
+      versionStateUnknown,
       updates,
     });
   } catch (error: unknown) {

@@ -20,7 +20,7 @@ import {
   saveSoftwareRolloutAction,
 } from "@/app/(authed)/software-updates/actions";
 import {
-  buildDemoSoftwareUpdatesData,
+  buildUnavailableSoftwareUpdatesData,
   deriveReleasePublishReadiness,
   type SoftwareReleasePublishReadiness,
   type SoftwareUpdatesWorkspaceData,
@@ -36,7 +36,7 @@ const tabItems = [
   { key: "settings", label: "Settings", href: "/software-updates?tab=settings" },
 ] as const;
 
-const demoData = buildDemoSoftwareUpdatesData();
+const unavailableData = buildUnavailableSoftwareUpdatesData();
 
 export type SoftwareReleaseEditorView = {
   mode: "new" | "edit" | null;
@@ -333,7 +333,7 @@ function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] 
         "Write operator-facing release notes.",
         "Record minimum supported and rollback versions if known.",
       ],
-      statusLabel: releaseCount > 0 ? countLabel(releaseCount, "release") : data.sourceKind === "demo" ? "Demo guidance only" : "No release yet",
+      statusLabel: releaseCount > 0 ? countLabel(releaseCount, "release") : data.sourceKind === "unavailable" ? "Data unavailable" : "No release yet",
       statusTone: releaseCount > 0 ? "success" : "warning",
     },
     {
@@ -346,7 +346,7 @@ function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] 
         "Save SHA256 checksum.",
         "Confirm platform and architecture match the build.",
       ],
-      statusLabel: packageCount > 0 ? countLabel(packageCount, "package record") : data.sourceKind === "demo" ? "Phase 2C metadata only" : "Metadata missing",
+      statusLabel: packageCount > 0 ? countLabel(packageCount, "package record") : data.sourceKind === "unavailable" ? "Phase 2C metadata only" : "Metadata missing",
       statusTone: packageCount > 0 ? "success" : "warning",
     },
     {
@@ -372,7 +372,7 @@ function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] 
         "Use device-specific rollouts for focused validation if needed.",
         "Mark rollout required only when justified.",
       ],
-      statusLabel: rolloutCount > 0 ? countLabel(rolloutCount, "rollout") : data.sourceKind === "demo" ? "Demo guidance only" : "No targets selected",
+      statusLabel: rolloutCount > 0 ? countLabel(rolloutCount, "rollout") : data.sourceKind === "unavailable" ? "Data unavailable" : "No targets selected",
       statusTone: rolloutCount > 0 ? "success" : "warning",
     },
     {
@@ -387,7 +387,7 @@ function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] 
       ],
       statusLabel: activeReleaseCount > 0 || activeRolloutCount > 0
         ? `${countLabel(activeReleaseCount, "active release")} / ${countLabel(activeRolloutCount, "active rollout")}`
-        : data.sourceKind === "demo" ? "Demo guidance only" : "Not published",
+        : data.sourceKind === "unavailable" ? "Data unavailable" : "Not published",
       statusTone: activeReleaseCount > 0 || activeRolloutCount > 0 ? "success" : "warning",
     },
     {
@@ -402,7 +402,7 @@ function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] 
       ],
       statusLabel: monitoredDeviceCount > 0
         ? `${countLabel(monitoredDeviceCount, "device")} monitored`
-        : data.sourceKind === "demo" ? "Demo monitoring data" : "Waiting for device reports",
+        : data.sourceKind === "unavailable" ? "No device reports loaded" : "Waiting for device reports",
       statusTone: monitoredDeviceCount > 0 ? "success" : "warning",
     },
     {
@@ -443,7 +443,7 @@ function StepByStepGuide({
       description="Use this page to safely prepare, publish, and monitor RunBook updates. Start internal, test one shop, then expand rollout only after devices report clean results."
       actions={
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <ControlStatusChip label={data.sourceKind === "live" ? "Live workflow data" : data.sourceKind === "mixed" ? "Mixed workflow data" : "Manual workflow guidance"} tone={data.sourceKind === "live" ? "success" : "warning"} />
+          <ControlStatusChip label={data.sourceKind === "live" ? "Live workflow data" : data.sourceKind === "mixed" ? "Mixed workflow data" : "Data unavailable"} tone={data.sourceKind === "live" ? "success" : "warning"} />
           <ControlStatusChip label="No install execution" tone="neutral" />
         </div>
       }
@@ -638,7 +638,7 @@ function OverviewTab({ overviewStats, sourceKind }: { overviewStats: SoftwareUpd
       </div>
 
       <ControlPanel
-        title={sourceKind === "live" ? "Phase 2E foundation" : sourceKind === "mixed" ? "Phase 2E mixed source" : "Phase 1 scope"}
+        title={sourceKind === "live" ? "Phase 2E foundation" : sourceKind === "mixed" ? "Phase 2E mixed source" : "Data unavailable"}
         description={sourceKind === "live"
           ? "This workspace is reading the new Control software update tables. Control remains the metadata and approval authority only; download and install behavior still belongs to future Service-owned execution paths."
           : sourceKind === "mixed"
@@ -646,7 +646,7 @@ function OverviewTab({ overviewStats, sourceKind }: { overviewStats: SoftwareUpd
             : "Control is only surfacing release metadata, rollout approval posture, and device-reported update status in this pass. Download, verification, staging, and installation remain future Service-owned behaviors."}
       >
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <ControlStatusChip label={sourceKind === "live" ? "Database-backed" : sourceKind === "mixed" ? "Mixed live + demo" : "Local demo data"} tone={sourceKind === "live" ? "success" : "warning"} />
+          <ControlStatusChip label={sourceKind === "live" ? "Database-backed" : sourceKind === "mixed" ? "Partial workspace" : "Data unavailable"} tone={sourceKind === "live" ? "success" : "warning"} />
           <ControlStatusChip label="No install logic" tone="neutral" />
           <ControlStatusChip label="No package upload wiring" tone="neutral" />
         </div>
@@ -688,14 +688,14 @@ function ReleasesTab({
     : [];
   const selectedTruth = selectedRelease ? releaseTruthSummary(selectedRelease, selectedReleaseRollouts) : null;
   const selectedPackageState = packageStateSummary(selectedRelease, packageRecords);
-  const selectedReadiness = selectedRelease ? deriveReleasePublishReadiness(selectedRelease) : null;
+  const selectedReadiness = selectedRelease ? deriveReleasePublishReadiness(selectedRelease, packageRecords) : null;
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <ControlPanel
         title="Release catalog"
-        description={sourceKind === "demo"
-          ? "Local demo rows appear only while the software updates schema is unavailable."
+        description={sourceKind === "unavailable"
+          ? "Release data could not be loaded. No sample releases are shown."
           : "Release rows are reading from rb_software_releases and rb_software_packages when records are available."}
         actions={
           releaseCrudEnabled
@@ -895,7 +895,7 @@ function ReleasesTab({
                       <div style={{ display: "grid", gap: 4 }}>
                         <div>{row.version}</div>
                         <div style={{ color: t.color.textMuted, fontSize: 11.5 }}>
-                          {record?.id ? `Release id ${record.id.slice(0, 8)}...` : "Demo row"}
+                          {record?.id ? `Release id ${record.id.slice(0, 8)}...` : "Unavailable row"}
                         </div>
                       </div>
                     </ControlTableCell>
@@ -975,7 +975,7 @@ function ReleasesTab({
                       ) : (
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
                           <span style={{ color: t.color.textMuted, fontSize: 12 }}>
-                            {releaseCrudEnabled ? "No real row yet" : "Demo fallback only"}
+                            {releaseCrudEnabled ? "No real row yet" : "Data unavailable"}
                           </span>
                         </div>
                       )}
@@ -1161,8 +1161,8 @@ function ReleasesTab({
 
       <ControlPanel
         title="Package metadata"
-        description={sourceKind === "demo"
-          ? "Package metadata is demo-only until the schema is available."
+        description={sourceKind === "unavailable"
+          ? "Package metadata could not be loaded. No sample packages are shown."
           : "Manage package metadata rows tied to each release. This remains metadata-only and does not upload or install anything."}
         actions={
           selectedRelease && packageCrudEnabled
@@ -1343,11 +1343,11 @@ function DevicesTab({ deviceRows, sourceKind }: { deviceRows: SoftwareUpdatesWor
   return (
     <ControlPanel
       title="Device update status"
-      description={sourceKind === "demo"
+      description={sourceKind === "unavailable"
         ? "Sample rows show how Control can become the remote visibility layer for reported desktop, service, workstation, and mobile versions without taking on local installation authority."
         : "Device status rows are reading from rb_device_software_status when records are available, without giving Control local installation authority."}
     >
-      {deviceRows.length === 0 && sourceKind !== "demo" ? (
+      {deviceRows.length === 0 && sourceKind !== "unavailable" ? (
         <div style={{ fontSize: 12.5, color: t.color.textMuted }}>
           No device software status has been reported yet. Devices will appear here after RunBook.Service or other approved local clients post software status to Control.
         </div>
@@ -1417,8 +1417,8 @@ function RolloutsTab({
   return (
     <ControlPanel
       title="Rollout approvals"
-      description={sourceKind === "demo"
-        ? "Demo rollout rows still appear if the schema is unavailable. When the schema exists, you can create real rollout approval records here even before any devices report progress."
+      description={sourceKind === "unavailable"
+        ? "Rollout data could not be loaded. No sample targets or device progress are shown."
         : "Rollout rows are reading from rb_software_rollouts when records are available. Approval metadata lives in Control; execution remains out of scope."}
       actions={
         rolloutCrudEnabled
@@ -1604,7 +1604,7 @@ function RolloutsTab({
                       </div>
                     ) : (
                       <span style={{ color: t.color.textMuted, fontSize: 12 }}>
-                        {rolloutCrudEnabled ? "No real row yet" : "Demo fallback only"}
+                        {rolloutCrudEnabled ? "No real row yet" : "Data unavailable"}
                       </span>
                     )}
                   </ControlTableCell>
@@ -1759,7 +1759,7 @@ function SettingsTab() {
 
 export default function SoftwareUpdatesWorkspace({
   activeTab,
-  data = demoData,
+  data = unavailableData,
   releaseEditor,
   packageEditor,
   rolloutEditor,
@@ -1819,13 +1819,19 @@ export default function SoftwareUpdatesWorkspace({
         padding={12}
         actions={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <ControlStatusChip label={data.sourceKind === "live" ? "Database-backed" : data.sourceKind === "mixed" ? "Mixed source" : "Local demo data"} tone={data.sourceKind === "live" ? "success" : data.sourceKind === "mixed" ? "warning" : "warning"} />
+            <ControlStatusChip label={data.sourceKind === "live" ? "Database-backed" : data.sourceKind === "mixed" ? "Mixed source" : "Data unavailable"} tone={data.sourceKind === "live" ? "success" : data.sourceKind === "mixed" ? "warning" : "warning"} />
             <ControlStatusChip label="Phase 2E workspace" tone="info" />
           </div>
         }
       >
         <ControlTabNav activeKey={activeTab} items={tabItems.map((item) => ({ ...item }))} />
       </ControlPanel>
+
+      {data.sourceKind === "unavailable" ? (
+        <ControlPanel title="Software update data unavailable" description={data.availabilityMessage ?? "No release, device or rollout status has been loaded."}>
+          <div style={{ color: t.color.textMuted, fontSize: 12.5 }}>Restore database access before editing update policy.</div>
+        </ControlPanel>
+      ) : null}
 
       {content}
 

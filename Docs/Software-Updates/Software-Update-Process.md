@@ -62,17 +62,19 @@ Important:
 
 ## Publish Readiness
 
-The Publish Readiness panel is derived UI guidance only.
+Release activation and saving an active release use the same server-side metadata checks. A release needs a valid app, channel and version, release notes, and at least one complete linked `rb_software_packages` row for that app. The package row needs a file name, download URL or storage path, SHA256, positive whole-number byte size, platform and architecture. Create a draft first, add package metadata, then activate it.
 
-It helps admins see whether a release appears complete enough to publish by reviewing existing recorded fields, but it does not:
+Legacy inline package fields remain visible as recorded metadata. They do not replace a linked package row because they do not identify a target platform or architecture. An optional minimum supported version must be valid and no newer than the release; an optional rollback version must be valid and older.
 
-- Block publishing
-- Download anything
-- Install anything
-- Verify checksums
-- Enforce rollout safety automatically
+These checks validate recorded metadata. They do not download a package, verify bytes against its checksum, install software, or prove that a location contains the recorded file.
 
-It is guidance, not execution.
+## Availability Checks
+
+The check endpoint accepts the existing Windows x64 request body by default. Clients can explicitly supply a supported `platform` and `architecture`; only matching package metadata, or a universal package for that platform, is eligible.
+
+Versions support three numeric components and the fourth revision reported by .NET. An omitted revision compares as zero. Prerelease labels follow SemVer precedence and build metadata does not affect ordering. Equal versions and downgrades are never offered. Missing or invalid installed versions do not receive an update or a required-update decision. For each app, only the highest newer release with an eligible package and matching active rollout is returned. A nonempty invalid rollout start date fails closed.
+
+Database errors and missing update tables produce an explicitly unavailable, empty workspace. They never substitute sample releases, customers, devices or fleet counts. A successful empty query is shown as live data with no records.
 
 ## Safe Release Order
 
