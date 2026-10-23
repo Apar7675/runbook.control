@@ -60,7 +60,7 @@ export default function FileUpload({
         display: "grid",
         gap: 8,
         border: `1px solid ${t.color.softBorder}`,
-        background: "rgba(7, 10, 15, 0.34)",
+        background: t.color.elevated,
         borderRadius: t.radius.md,
         padding: 12,
       }}

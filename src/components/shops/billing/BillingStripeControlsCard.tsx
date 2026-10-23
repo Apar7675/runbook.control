@@ -45,14 +45,14 @@ export default function BillingStripeControlsCard({
     >
       <div style={{ display: "grid", gap: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-          <div style={{ padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)", display: "grid", gap: 8 }}>
+          <div style={{ padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF", display: "grid", gap: 8 }}>
             <div style={{ fontSize: 12, color: theme.text.secondary }}>Current Stripe plan</div>
             <div style={{ fontWeight: 800 }}>{snapshot?.shop.subscription_plan ?? "Not set"}</div>
             <div style={{ fontSize: 12, color: theme.text.quiet }}>
               Stored amount: {snapshot?.shop.billing_amount ?? "Not set"}{snapshot?.shop.billing_interval ? ` / ${snapshot.shop.billing_interval}` : ""}
             </div>
           </div>
-          <div style={{ padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)", display: "grid", gap: 8 }}>
+          <div style={{ padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF", display: "grid", gap: 8 }}>
             <div style={{ fontSize: 12, color: theme.text.secondary }}>Portal support</div>
             <div style={{ fontWeight: 800 }}>{canOpenPortal ? "Ready" : "Unavailable"}</div>
             <div style={{ fontSize: 12, color: theme.text.quiet }}>
@@ -73,7 +73,7 @@ export default function BillingStripeControlsCard({
           </ControlButton>
         </div>
 
-        <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)" }}>
+        <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF" }}>
           <div style={{ fontSize: 13, fontWeight: 800 }}>Not supported yet</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <ControlButton disabled tone="secondary">Pause Billing</ControlButton>

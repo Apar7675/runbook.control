@@ -3,6 +3,7 @@ import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 
 const fieldStyle: React.CSSProperties = {
   width: "100%",
+  boxSizing: "border-box",
   minHeight: 32,
   borderRadius: t.radius.sm,
   border: `1px solid ${t.color.border}`,
@@ -10,7 +11,6 @@ const fieldStyle: React.CSSProperties = {
   color: t.color.text,
   padding: "6px 10px",
   fontSize: 12.5,
-  outline: "none",
 };
 
 export function ControlInputV2(props: React.InputHTMLAttributes<HTMLInputElement>) {

@@ -4,11 +4,11 @@ import { controlTheme as t } from "@/components/control/controlTheme";
 export type ControlStatusTone = "neutral" | "info" | "success" | "warning" | "danger";
 
 function toneStyles(tone: ControlStatusTone) {
-  if (tone === "success") return { color: t.color.success, border: "rgba(34, 197, 94, 0.28)", background: "rgba(34, 197, 94, 0.10)" };
-  if (tone === "warning") return { color: t.color.warning, border: "rgba(245, 158, 11, 0.28)", background: "rgba(245, 158, 11, 0.10)" };
-  if (tone === "danger") return { color: t.color.danger, border: "rgba(239, 68, 68, 0.28)", background: "rgba(239, 68, 68, 0.10)" };
-  if (tone === "info") return { color: t.color.cyan, border: "rgba(6, 182, 212, 0.28)", background: "rgba(6, 182, 212, 0.10)" };
-  return { color: t.color.textSecondary, border: t.color.softBorder, background: "rgba(148, 163, 184, 0.08)" };
+  if (tone === "success") return { color: t.color.success, border: "#C9EDDD", background: "#E2F7EE" };
+  if (tone === "warning") return { color: t.color.warning, border: "#F8E5BF", background: "#FFF3DD" };
+  if (tone === "danger") return { color: t.color.danger, border: "#F3CDDA", background: "#FFF0F3" };
+  if (tone === "info") return { color: t.color.cyan, border: "#CAE4F5", background: "#E9F5FC" };
+  return { color: t.color.textSecondary, border: t.color.softBorder, background: "#EEF2FF" };
 }
 
 export default function ControlStatusChip({
@@ -26,14 +26,14 @@ export default function ControlStatusChip({
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        minHeight: 22,
-        padding: "0 8px",
+        minHeight: 30,
+        padding: "3px 11px",
         borderRadius: t.radius.pill,
         border: `1px solid ${styles.border}`,
         background: styles.background,
         color: styles.color,
-        fontSize: 11.5,
-        fontWeight: 700,
+        fontSize: 14,
+        fontWeight: 600,
         whiteSpace: "nowrap",
       }}
     >

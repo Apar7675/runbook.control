@@ -93,7 +93,7 @@ export default function BillingAccessOverrideCard({
               color: theme.text.primary,
               padding: "12px 14px",
               resize: "vertical",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 24px rgba(0,0,0,0.18)",
+              boxShadow: "0 4px 14px rgba(36,66,132,0.05)",
             }}
           />
           <div style={{ fontSize: 12, color: theme.text.quiet }}>
@@ -104,7 +104,7 @@ export default function BillingAccessOverrideCard({
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800 }}>Extend access window</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)" }}>
+            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF" }}>
               <div style={{ fontSize: 12, color: theme.text.secondary }}>Current trial end</div>
               <div style={{ fontWeight: 800 }}>{currentTrialEndsAt ? formatDateTime(currentTrialEndsAt) : "Not set"}</div>
               <div style={{ fontSize: 12, color: theme.text.quiet }}>+30 days would move access to {previewDate(currentTrialEndsAt, 30)}</div>
@@ -118,7 +118,7 @@ export default function BillingAccessOverrideCard({
               </div>
             </div>
 
-            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)" }}>
+            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF" }}>
               <div style={{ fontSize: 12, color: theme.text.secondary }}>Custom trial extension</div>
               <ControlInput
                 type="number"
@@ -145,7 +145,7 @@ export default function BillingAccessOverrideCard({
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800 }}>Grace and manual allow / restrict behavior</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)" }}>
+            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF" }}>
               <div style={{ fontSize: 12, color: theme.text.secondary }}>Current grace end</div>
               <div style={{ fontWeight: 800 }}>{currentGraceEndsAt ? formatDateTime(currentGraceEndsAt) : "Not set"}</div>
               <ControlInput
@@ -168,7 +168,7 @@ export default function BillingAccessOverrideCard({
               </ControlButton>
             </div>
 
-            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "rgba(255,255,255,0.03)" }}>
+            <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 18, border: theme.border.muted, background: "#F5F7FF" }}>
               <div style={{ fontSize: 12, color: theme.text.secondary }}>Entitlement override</div>
               <ControlSelect value={overrideValue} onChange={(event) => setOverrideValue(event.target.value)}>
                 <option value="normal">Normal logic</option>

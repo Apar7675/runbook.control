@@ -31,7 +31,7 @@ const inputStyle: React.CSSProperties = {
   padding: "0 11px",
   borderRadius: t.radius.sm,
   border: `1px solid ${t.color.softBorder}`,
-  background: "rgba(7, 10, 15, 0.68)",
+  background: "#ffffff",
   color: t.color.text,
   outline: "none",
 };
@@ -177,7 +177,7 @@ function LoginInner() {
         <ControlPanel title="Sign in" description="Use your platform-admin credentials. MFA/AAL2 is enforced by the protected Control shell.">
           <div style={{ display: "grid", gap: 10 }}>
             {callbackError ? (
-              <div style={{ fontSize: 12, color: "#FECACA", whiteSpace: "pre-wrap" }}>
+              <div style={{ fontSize: 12, color: "#bb2b37", whiteSpace: "pre-wrap" }}>
                 {callbackError}
               </div>
             ) : null}

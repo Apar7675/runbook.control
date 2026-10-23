@@ -176,7 +176,7 @@ export default function ShopUsersManager({
                       padding: 16,
                       borderRadius: 18,
                       border: theme.border.muted,
-                      background: "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+                      background: "#F5F7FF",
                       cursor: "pointer",
                     }}
                   >

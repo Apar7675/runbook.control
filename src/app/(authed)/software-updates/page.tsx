@@ -159,10 +159,11 @@ function buildRolloutEditor(searchParams: SearchParams | undefined, data: Awaite
 }
 
 export default async function SoftwareUpdatesPage({
-  searchParams,
+  searchParams: pendingSearchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams?: Promise<SearchParams>;
 }) {
+  const searchParams = await pendingSearchParams;
   const data = await loadSoftwareUpdatesWorkspaceData();
   const releaseEditor = buildReleaseEditor(searchParams, data.releaseRecords);
   const packageEditor = buildPackageEditor(searchParams, data);

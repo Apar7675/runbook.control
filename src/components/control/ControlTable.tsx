@@ -8,11 +8,14 @@ export function ControlTableWrap({
 }) {
   return (
     <div
+      role="region"
+      aria-label="Scrollable data table"
+      tabIndex={0}
       style={{
         overflowX: "auto",
         borderRadius: t.radius.md,
-        border: `1px solid ${t.color.softBorder}`,
-        background: "rgba(7, 10, 15, 0.34)",
+        border: `1.25px solid ${t.color.border}`,
+        background: t.color.surface,
       }}
     >
       {children}
@@ -28,7 +31,7 @@ export function ControlTable({
   minWidth?: number;
 }) {
   return (
-    <table style={{ width: "100%", minWidth, borderCollapse: "collapse" }}>
+    <table className="control-table" style={{ width: "100%", minWidth, borderCollapse: "collapse" }}>
       {children}
     </table>
   );
@@ -44,15 +47,13 @@ export function ControlTableHeadCell({
   return (
     <th
       style={{
-        padding: "9px 12px",
-        borderBottom: `1px solid ${t.color.softBorder}`,
-        color: t.color.textMuted,
-        fontSize: 10.5,
-        fontWeight: 800,
-        letterSpacing: 0.5,
-        textTransform: "uppercase",
+        padding: "11px 14px",
+        borderBottom: `1px solid ${t.color.divider}`,
+        color: t.color.textSecondary,
+        fontSize: 16,
+        fontWeight: 600,
         textAlign: align,
-        background: "rgba(16, 23, 34, 0.72)",
+        background: t.color.elevated,
       }}
     >
       {children}
@@ -70,13 +71,13 @@ export function ControlTableCell({
   return (
     <td
       style={{
-        padding: "9px 12px",
-        borderBottom: `1px solid rgba(148, 163, 184, 0.10)`,
+        padding: "14px",
+        borderBottom: `1px solid ${t.color.divider}`,
         color: t.color.textSecondary,
-        fontSize: 12.5,
+        fontSize: 16,
         lineHeight: 1.45,
         textAlign: align,
-        verticalAlign: "top",
+        verticalAlign: "middle",
       }}
     >
       {children}

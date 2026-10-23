@@ -167,7 +167,7 @@ export default function BillingSummaryCard({
         />
 
         {showStripeDetails ? (
-          <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.08)", display: "grid", gap: 10, fontSize: 13 }}>
+          <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid #EEF2FF", display: "grid", gap: 10, fontSize: 13 }}>
             <div>Stripe customer: <strong>{snapshot.shop.stripe_customer_id ?? "Not set"}</strong></div>
             <div>Stripe subscription: <strong>{snapshot.shop.stripe_subscription_id ?? "Not set"}</strong></div>
           </div>

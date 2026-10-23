@@ -287,9 +287,9 @@ export default async function DeviceDetailPage({ params, searchParams }: Props) 
                       style={{
                         padding: 14,
                         borderRadius: 14,
-                        border: "1px solid rgba(148, 163, 184, 0.16)",
-                        background: "rgba(7, 10, 15, 0.34)",
-                        color: "#CBD5E1",
+                        border: "1px solid #DEE6FA",
+                        background: "#F5F7FF",
+                        color: "#233D78",
                         fontSize: 13,
                         lineHeight: 1.55,
                       }}

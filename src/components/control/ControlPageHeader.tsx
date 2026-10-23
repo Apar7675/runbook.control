@@ -15,13 +15,13 @@ export default function ControlPageHeader({
   compact?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
+    <div className="control-page-header" style={{ display: "flex", justifyContent: "space-between", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
       <div style={{ display: "grid", gap: 5 }}>
         {eyebrow ? (
           <div
             style={{
               color: t.color.textMuted,
-              fontSize: 10.5,
+              fontSize: 13,
               fontWeight: 800,
               letterSpacing: 0.6,
               textTransform: "uppercase",
@@ -31,11 +31,11 @@ export default function ControlPageHeader({
           </div>
         ) : null}
         <div style={{ display: "grid", gap: 4 }}>
-          <h1 style={{ margin: 0, fontSize: compact ? 25 : 30, lineHeight: 1.1, fontWeight: 800, color: t.color.text }}>{title}</h1>
-          {description ? <div style={{ maxWidth: 920, fontSize: compact ? 12 : 13.5, lineHeight: 1.45, color: compact ? "#94A3B8" : t.color.textMuted }}>{description}</div> : null}
+          <h1 style={{ margin: 0, fontSize: compact ? 40 : 44, lineHeight: 1.15, fontWeight: 700, letterSpacing: -0.7, color: t.color.text }}>{title}</h1>
+          {description ? <div className="control-page-description" style={{ maxWidth: 920, fontSize: 20, lineHeight: 1.45, color: t.color.textMuted }}>{description}</div> : null}
         </div>
       </div>
-      {actions ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div> : null}
+      {actions ? <div className="control-page-actions" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>{actions}</div> : null}
     </div>
   );
 }

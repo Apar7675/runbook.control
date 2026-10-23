@@ -80,7 +80,7 @@ export default function ControlDashboard({ metrics, summary, alerts, healthRows,
         {summary.map((item) => <Link key={item.label} href={item.href}><strong>{item.value}</strong> {item.label}</Link>)}
       </div>
       <div className="dashboard-middle">
-        <ControlPanel title={`Needs attention (${ordered.length})`} padding={12}>
+        <ControlPanel title={`Needs attention (${ordered.length})`} padding={10} surface="work">
           {ordered.length === 0 ? <p className="dashboard-empty">No active issues in current scope.</p> : <>
             <div className="dashboard-preview">{ordered.slice(0, 4).map((alert) => <Alert key={alert.key} alert={alert} />)}</div>
             <div className="dashboard-muted">Showing {Math.min(4, ordered.length)} of {ordered.length} · Highest priority first</div>
@@ -90,14 +90,14 @@ export default function ControlDashboard({ metrics, summary, alerts, healthRows,
             </details>
           </>}
         </ControlPanel>
-        <ControlPanel title="System health" padding={12} actions={<Link href="/status">View status</Link>}>
+        <ControlPanel title="System health" padding={10} actions={<Link href="/status">View status</Link>}>
           <div>{healthRows.map((row) => <div className="dashboard-health" key={row.service}>
             <div>{row.service}<span className="dashboard-health-detail dashboard-muted">{row.detail}</span></div>
             <ControlStatusChip label={row.status} tone={row.tone} />
           </div>)}</div>
         </ControlPanel>
       </div>
-      <ControlPanel title="Recent activity" padding={12} actions={<Link href="/audit">Open audit log</Link>}>
+      <ControlPanel title="Recent activity" padding={10} actions={<Link href="/audit">Open audit log</Link>}>
         {recentActivity.length === 0 ? <p className="dashboard-empty">No recent audit activity in current scope.</p> :
           <div className="dashboard-activity">{recentActivity.slice(0, 3).map((row) => <div key={row.id}>
             <strong>{row.action}</strong>
@@ -111,38 +111,38 @@ export default function ControlDashboard({ metrics, summary, alerts, healthRows,
         </Link>)}
       </div>
       <style>{`
-        .control-dashboard { display:grid; gap:12px; font-size:13px; line-height:1.4; color:#F8FAFC; }
+        .control-dashboard { display:grid; gap:16px; font-size:16px; line-height:1.5; color:#12234A; }
         .control-dashboard *, .control-dashboard *::before, .control-dashboard *::after { box-sizing:border-box; }
-        .control-dashboard a { color:#C4B5FD; text-decoration:none; }
+        .control-dashboard a { color:#0755ff; text-decoration:none; }
         .control-dashboard a:hover { text-decoration:underline; }
-        .control-dashboard :is(a,summary):focus-visible { outline:2px solid #C4B5FD; outline-offset:3px; border-radius:4px; }
+        .control-dashboard :is(a,summary):focus-visible { outline:2px solid #0755ff; outline-offset:3px; border-radius:4px; }
         .control-dashboard :is(strong,p,span,time,summary), .dashboard-alert > div { overflow-wrap:anywhere; }
-        .dashboard-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
-        .dashboard-summary { display:flex; flex-wrap:wrap; gap:8px 22px; padding:2px 1px 10px; border-bottom:1px solid #243247; font-size:12px; }
-        .dashboard-summary a { color:#94A3B8; }
-        .dashboard-summary strong { color:#F8FAFC; margin-right:4px; }
-        .dashboard-middle { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:12px; align-items:start; }
-        .control-dashboard section { min-width:0; gap:8px !important; background:#101722 !important; align-content:start; border-color:#243247 !important; }
-        .control-dashboard h2 { font-size:14px !important; }
-        .dashboard-alert { display:grid; grid-template-columns:72px minmax(0,1fr) auto; gap:10px; padding:8px 0; border-top:1px solid #243247; align-items:center; }
+        .dashboard-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+        .dashboard-summary { display:flex; flex-wrap:wrap; gap:10px 24px; padding:12px 16px; border:1.25px solid #5E7DA5; border-radius:9px; background:#DFECFD; font-size:15px; }
+        .dashboard-summary a { color:#52617B; }
+        .dashboard-summary strong { color:#12234A; margin-right:4px; }
+        .dashboard-middle { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:18px; align-items:start; }
+        .control-dashboard section { min-width:0; gap:10px !important; align-content:start; }
+        .control-dashboard h2 { font-size:20px !important; }
+        .dashboard-alert { display:grid; grid-template-columns:94px minmax(0,1fr) auto; gap:12px; padding:10px 0; border-top:1px solid #B3C6E2; align-items:center; }
         .dashboard-alert > span { justify-self:start; }
         .dashboard-alert strong { font-weight:600; }
-        .dashboard-muted { color:#94A3B8; font-size:12px; }
-        .dashboard-all-alerts summary { cursor:pointer; color:#C4B5FD; padding:4px 0; font-size:12px; }
+        .dashboard-muted { color:#52617B; font-size:14px; }
+        .dashboard-all-alerts summary { cursor:pointer; color:#0755ff; padding:8px 0; font-size:14px; }
         .dashboard-full-alerts { margin-top:8px; }
-        .dashboard-health { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-top:1px solid #243247; }
+        .dashboard-health { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid #B3C6E2; }
         .dashboard-health > div { min-width:0; }
         .dashboard-health-detail { display:block; }
         .dashboard-activity { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
         .dashboard-activity > div { min-width:0; }
         .dashboard-activity strong,.dashboard-activity time { display:block; }
-        .dashboard-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-        .dashboard-shortcut { display:grid; gap:3px; padding:10px 12px; min-width:0; border:1px solid #243247; border-radius:9px; background:#101722; }
-        .dashboard-shortcut strong { color:#CBD5E1; }
-        .dashboard-shortcut span { color:#94A3B8; font-size:12px; }
-        .dashboard-empty { margin:0; color:#94A3B8; padding:8px 0; }
+        .dashboard-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+        .dashboard-shortcut { display:grid; gap:5px; padding:14px 16px; min-width:0; border:1.25px solid #5E7DA5; border-radius:9px; background:#DFECFD; }
+        .dashboard-shortcut strong { color:#12234A; }
+        .dashboard-shortcut span { color:#52617B; font-size:14px; }
+        .dashboard-empty { margin:0; color:#52617B; padding:8px 0; }
         @media(max-width:1199px) { .dashboard-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .dashboard-middle { grid-template-columns:1fr; } }
-        @media(max-width:600px) { .dashboard-metrics,.dashboard-shortcuts,.dashboard-activity { grid-template-columns:1fr; } .dashboard-alert { grid-template-columns:72px minmax(0,1fr); } .dashboard-alert > a { grid-column:2; justify-self:start; } .dashboard-health { flex-wrap:wrap; } }
+        @media(max-width:600px) { .dashboard-metrics,.dashboard-shortcuts,.dashboard-activity { grid-template-columns:1fr; } .dashboard-alert { grid-template-columns:94px minmax(0,1fr); } .dashboard-alert > a { grid-column:2; justify-self:start; } .dashboard-health { flex-wrap:wrap; } }
       `}</style>
     </div>
   );

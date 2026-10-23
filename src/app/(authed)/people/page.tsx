@@ -118,7 +118,7 @@ export default async function PeoplePage({
             padding: "12px 14px",
             borderRadius: t.radius.lg,
             border: `1px solid ${t.color.softBorder}`,
-            background: "rgba(18, 27, 40, 0.72)",
+            background: "#F5F7FF",
             color: t.color.textMuted,
             fontSize: 13,
             lineHeight: 1.55,
@@ -137,7 +137,7 @@ export default async function PeoplePage({
               padding: 8,
               borderRadius: t.radius.lg,
               border: `1px solid ${t.color.softBorder}`,
-              background: "rgba(7, 10, 15, 0.34)",
+              background: "#F5F7FF",
             }}
           >
             {PEOPLE_TABS.map((tab) => {
@@ -154,7 +154,7 @@ export default async function PeoplePage({
           <select
             name="shop"
             defaultValue={shopFilter}
-            style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }}
+            style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }}
           >
             <option value="">All shops</option>
             {shopOptions.map((shop) => (
@@ -164,7 +164,7 @@ export default async function PeoplePage({
           <input type="hidden" name="tab" value={activeTab === "all" ? "" : activeTab} />
           <button
             type="submit"
-            style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid rgba(37, 99, 235, 0.36)", background: "rgba(37, 99, 235, 0.18)", color: "#F8FAFC", fontWeight: 700, cursor: "pointer" }}
+            style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid #0755ff", background: "#0755ff", color: "#ffffff", fontWeight: 700, cursor: "pointer" }}
           >
             Apply
           </button>

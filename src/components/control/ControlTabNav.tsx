@@ -23,7 +23,7 @@ export default function ControlTabNav({
         padding: 5,
         borderRadius: t.radius.md,
         border: `1px solid ${t.color.softBorder}`,
-        background: "linear-gradient(180deg, rgba(16, 23, 34, 0.92), rgba(11, 16, 24, 0.92))",
+        background: t.color.elevated,
       }}
     >
       {items.map((item) => (

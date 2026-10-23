@@ -257,9 +257,9 @@ function PaywallOverlay(props: { title: string; subtitle: string; shopId: string
           width: "min(640px, 100%)",
           borderRadius: 16,
           padding: 18,
-          background: "rgba(10,12,20,0.85)",
-          border: "1px solid rgba(120,130,170,0.25)",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.45)",
+          background: "#ffffff",
+          border: "1px solid #DEE6FA",
+          boxShadow: "0 8px 28px rgba(36,66,132,0.12)",
         }}
       >
         <div style={{ fontSize: 18, fontWeight: 900 }}>{props.title}</div>
@@ -273,8 +273,8 @@ function PaywallOverlay(props: { title: string; subtitle: string; shopId: string
               borderRadius: 12,
               fontWeight: 900,
               textDecoration: "none",
-              background: "rgba(110,120,255,0.25)",
-              border: "1px solid rgba(140,150,255,0.35)",
+              background: "#EDF3FF",
+              border: "1px solid #8FAEFF",
               color: "inherit",
             }}
           >
@@ -288,8 +288,8 @@ function PaywallOverlay(props: { title: string; subtitle: string; shopId: string
               borderRadius: 12,
               fontWeight: 900,
               textDecoration: "none",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
+              background: "#F5F7FF",
+              border: "1px solid #DEE6FA",
               color: "inherit",
             }}
           >

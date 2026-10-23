@@ -209,7 +209,7 @@ export default async function SupportPage() {
                     padding: 14,
                     borderRadius: t.radius.md,
                     border: `1px solid ${t.color.softBorder}`,
-                    background: "rgba(7, 10, 15, 0.34)",
+                    background: "#F5F7FF",
                   }}
                 >
                   <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.72, textTransform: "uppercase", color: t.color.textMuted }}>{label}</div>

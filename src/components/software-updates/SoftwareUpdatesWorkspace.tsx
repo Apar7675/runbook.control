@@ -120,7 +120,7 @@ function plannedField(children: React.ReactNode) {
         padding: 10,
         borderRadius: t.radius.sm,
         border: `1px solid ${t.color.softBorder}`,
-        background: "rgba(7, 10, 15, 0.34)",
+        background: t.color.elevated,
       }}
     >
       {children}
@@ -135,7 +135,7 @@ function disabledInputStyle(multiline = false): React.CSSProperties {
     padding: "9px 11px",
     borderRadius: 8,
     border: `1px solid ${t.color.softBorder}`,
-    background: "rgba(15, 23, 36, 0.88)",
+    background: t.color.elevated,
     color: t.color.textSecondary,
     fontSize: 12.5,
     opacity: 0.7,
@@ -149,10 +149,9 @@ function inputStyle(multiline = false): React.CSSProperties {
     padding: "9px 11px",
     borderRadius: 8,
     border: `1px solid ${t.color.softBorder}`,
-    background: "rgba(7, 10, 15, 0.68)",
+    background: t.color.surface,
     color: t.color.text,
     fontSize: 12.5,
-    outline: "none",
   };
 }
 
@@ -457,7 +456,7 @@ function StepByStepGuide({
             padding: 10,
             borderRadius: t.radius.md,
             border: `1px solid ${t.color.softBorder}`,
-            background: "rgba(7, 10, 15, 0.24)",
+            background: t.color.elevated,
           }}
         >
           {steps.map((item) => (
@@ -470,7 +469,7 @@ function StepByStepGuide({
                 padding: "6px 10px",
                 borderRadius: 999,
                 border: `1px solid ${t.color.softBorder}`,
-                background: "rgba(18, 29, 43, 0.44)",
+                background: t.color.surface,
                 color: t.color.textSecondary,
                 fontSize: 12,
               }}
@@ -490,7 +489,7 @@ function StepByStepGuide({
                 padding: 12,
                 borderRadius: t.radius.md,
                 border: `1px solid ${t.color.softBorder}`,
-                background: "rgba(7, 10, 15, 0.34)",
+                background: t.color.elevated,
               }}
               open={item.step === 1}
             >
@@ -517,7 +516,7 @@ function StepByStepGuide({
                       color: t.color.text,
                       fontSize: 12,
                       fontWeight: 800,
-                      background: "rgba(18, 29, 43, 0.72)",
+                      background: t.color.surface,
                     }}
                   >
                     {item.step}
@@ -564,7 +563,7 @@ function StepByStepGuide({
                     padding: "7px 9px",
                     borderRadius: 10,
                     border: `1px solid ${t.color.softBorder}`,
-                    background: "rgba(7, 10, 15, 0.18)",
+                    background: t.color.elevated,
                   }}
                 >
                   <span style={{ color: t.color.textMuted, fontWeight: 800, minWidth: 14 }}>{index + 1}</span>
@@ -601,7 +600,7 @@ function StepByStepGuide({
                     padding: "8px 9px",
                     borderRadius: 10,
                     border: `1px solid ${t.color.softBorder}`,
-                    background: "rgba(7, 10, 15, 0.18)",
+                    background: t.color.elevated,
                   }}
                 >
                   <input type="checkbox" disabled />
@@ -714,7 +713,7 @@ function ReleasesTab({
               padding: 12,
               borderRadius: t.radius.md,
               border: `1px solid ${t.color.softBorder}`,
-              background: "rgba(7, 10, 15, 0.34)",
+              background: t.color.elevated,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -1090,7 +1089,7 @@ function ReleasesTab({
                           padding: 10,
                           borderRadius: t.radius.sm,
                           border: `1px solid ${t.color.softBorder}`,
-                          background: "rgba(7, 10, 15, 0.34)",
+                          background: t.color.elevated,
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1195,7 +1194,7 @@ function ReleasesTab({
               padding: 12,
               borderRadius: t.radius.md,
               border: `1px solid ${t.color.softBorder}`,
-              background: "rgba(7, 10, 15, 0.34)",
+              background: t.color.elevated,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -1437,7 +1436,7 @@ function RolloutsTab({
             padding: 12,
             borderRadius: t.radius.md,
             border: `1px solid ${t.color.softBorder}`,
-            background: "rgba(7, 10, 15, 0.34)",
+            background: t.color.elevated,
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>

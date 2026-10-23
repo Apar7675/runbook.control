@@ -14,7 +14,7 @@ const inputStyle: CSSProperties = {
   padding: "0 11px",
   borderRadius: t.radius.sm,
   border: `1px solid ${t.color.softBorder}`,
-  background: "rgba(7, 10, 15, 0.68)",
+  background: "#ffffff",
   color: t.color.text,
   outline: "none",
 };

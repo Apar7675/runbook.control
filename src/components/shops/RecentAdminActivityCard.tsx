@@ -83,7 +83,7 @@ export default function RecentAdminActivityCard({
                   padding: 14,
                   borderRadius: 16,
                   border: theme.border.muted,
-                  background: "rgba(255,255,255,0.03)",
+                  background: "#F5F7FF",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>

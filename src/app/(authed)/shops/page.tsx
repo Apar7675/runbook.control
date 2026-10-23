@@ -227,8 +227,8 @@ export default async function ShopsPage() {
                   <tr key={row.id}>
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 6 }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#F8FAFC" }}>{row.name}</div>
-                        <div style={{ fontSize: 12, color: "#64748B" }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#08164F" }}>{row.name}</div>
+                        <div style={{ fontSize: 12, color: "#536A96" }}>
                           Role: {row.member_role.replaceAll("_", " ")}
                           {row.snapshot.health.offline_devices > 0 ? ` | ${row.snapshot.health.offline_devices} offline device${row.snapshot.health.offline_devices === 1 ? "" : "s"}` : ""}
                         </div>
@@ -243,26 +243,26 @@ export default async function ShopsPage() {
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 8 }}>
                         <ControlStatusChip label={row.access_display_status} tone={accessTone(row.snapshot)} />
-                        <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{row.access_summary}</div>
+                        <div style={{ fontSize: 12, color: "#536A96", lineHeight: 1.5 }}>{row.access_summary}</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>{formatPlan(row.plan)}</ControlTableCell>
                     <ControlTableCell align="right">
                       <div style={{ display: "grid", gap: 4, justifyItems: "end" }}>
-                        <div style={{ color: "#F8FAFC", fontWeight: 700 }}>{row.devices_total}</div>
-                        <div style={{ fontSize: 12, color: "#64748B" }}>{row.snapshot.counts.devices_active} active</div>
+                        <div style={{ color: "#08164F", fontWeight: 700 }}>{row.devices_total}</div>
+                        <div style={{ fontSize: 12, color: "#536A96" }}>{row.snapshot.counts.devices_active} active</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell align="right">
                       <div style={{ display: "grid", gap: 4, justifyItems: "end" }}>
-                        <div style={{ color: "#F8FAFC", fontWeight: 700 }}>{row.workstations_total}</div>
-                        <div style={{ fontSize: 12, color: "#64748B" }}>{row.snapshot.counts.workstations_active} active</div>
+                        <div style={{ color: "#08164F", fontWeight: 700 }}>{row.workstations_total}</div>
+                        <div style={{ fontSize: 12, color: "#536A96" }}>{row.snapshot.counts.workstations_active} active</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell align="right">
                       <div style={{ display: "grid", gap: 4, justifyItems: "end" }}>
-                        <div style={{ color: "#F8FAFC", fontWeight: 700 }}>{row.members_total}</div>
-                        <div style={{ fontSize: 12, color: "#64748B" }}>{row.snapshot.counts.employees_active} active</div>
+                        <div style={{ color: "#08164F", fontWeight: 700 }}>{row.members_total}</div>
+                        <div style={{ fontSize: 12, color: "#536A96" }}>{row.snapshot.counts.employees_active} active</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>{formatMaybeDate(row.created_at)}</ControlTableCell>

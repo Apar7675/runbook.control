@@ -125,7 +125,7 @@ export default function DeleteOperationStatusCard({
                     padding: 12,
                     borderRadius: 14,
                     border: theme.border.muted,
-                    background: "rgba(255,255,255,0.03)",
+                    background: "#F5F7FF",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>

@@ -85,13 +85,13 @@ export function Icon({
 }) {
   const color =
     tone === "accent"
-      ? theme.text.accentSoft
+      ? "currentColor"
       : tone === "healthy"
-        ? "#c7f6dc"
+        ? "#007452"
         : tone === "warning"
-          ? "#ffe7be"
+          ? "#985600"
           : tone === "critical"
-            ? "#ffd2d2"
+            ? "#bb2b37"
             : theme.text.secondary;
 
   const common = {
@@ -242,33 +242,33 @@ export function Icon({
 function badgePalette(tone: "healthy" | "warning" | "critical" | "neutral") {
   if (tone === "healthy") {
     return {
-      background: "rgba(86, 220, 154, 0.10)",
-      borderColor: "rgba(86, 220, 154, 0.20)",
-      color: "#c7f6dc",
-      glow: "rgba(86, 220, 154, 0.34)",
+      background: "#e5f7f0",
+      borderColor: "#bfe9da",
+      color: "#007452",
+      glow: "rgba(0, 140, 104, 0.12)",
     };
   }
   if (tone === "warning") {
     return {
-      background: "rgba(255, 196, 107, 0.12)",
-      borderColor: "rgba(255, 196, 107, 0.22)",
-      color: "#ffe7be",
-      glow: "rgba(255, 196, 107, 0.34)",
+      background: "#fff3df",
+      borderColor: "#f4deb4",
+      color: "#985600",
+      glow: "rgba(173, 97, 0, 0.12)",
     };
   }
   if (tone === "critical") {
     return {
-      background: "rgba(255, 119, 119, 0.14)",
-      borderColor: "rgba(255, 119, 119, 0.25)",
-      color: "#ffd2d2",
-      glow: "rgba(255, 119, 119, 0.34)",
+      background: "#fff0f1",
+      borderColor: "#f4c9cb",
+      color: "#bb2b37",
+      glow: "rgba(187, 43, 55, 0.12)",
     };
   }
   return {
-    background: "rgba(148, 164, 255, 0.11)",
-    borderColor: "rgba(148, 164, 255, 0.20)",
-    color: "#d7dcff",
-    glow: "rgba(148, 164, 255, 0.28)",
+    background: "#eef2ff",
+    borderColor: "#dce5ff",
+    color: "#263d79",
+    glow: "rgba(7, 85, 255, 0.08)",
   };
 }
 
@@ -293,10 +293,9 @@ export function StatusBadge({
         border: `1px solid ${styles.borderColor}`,
         background: styles.background,
         color: styles.color,
-        fontSize: 9.5,
-        fontWeight: 900,
-        letterSpacing: 0.52,
-        textTransform: "uppercase",
+        fontSize: 11.5,
+        fontWeight: 700,
+        letterSpacing: 0,
         whiteSpace: "nowrap",
       }}
     >
@@ -397,13 +396,13 @@ export function ActionLink({
         padding: primary ? "8px 12px" : "8px 11px",
         borderRadius: theme.radius.md,
         textDecoration: "none",
-        fontWeight: 900,
+        fontWeight: 700,
         letterSpacing: 0.14,
-        color: primary ? "#f7f9ff" : theme.text.primary,
+        color: primary ? "#ffffff" : theme.text.accent,
         border: primary ? theme.border.accentStrong : theme.border.accentSoft,
         background: primary
-          ? "linear-gradient(135deg, rgba(88,107,255,0.78), rgba(70,170,255,0.34) 60%, rgba(116,108,255,0.32))"
-          : "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
+          ? "#0755ff"
+          : "#ffffff",
         boxShadow: primary
           ? "0 8px 16px rgba(27,52,138,0.18)"
           : theme.shadow.button,
@@ -459,8 +458,8 @@ export function MetricCard({
           background: theme.bg.panelCritical,
           border: theme.border.critical,
           boxShadow: theme.shadow.critical,
-          valueColor: "#fff2f2",
-          titleColor: "#ffd3d3",
+          valueColor: "#bb2b37",
+          titleColor: "#bb2b37",
           iconTone: "critical" as const,
         }
       : tone === "warning"
@@ -468,8 +467,8 @@ export function MetricCard({
             background: theme.bg.panelWarning,
             border: theme.border.warning,
             boxShadow: theme.shadow.warning,
-            valueColor: "#fff7eb",
-            titleColor: "#ffe2b2",
+            valueColor: "#985600",
+            titleColor: "#985600",
             iconTone: "warning" as const,
           }
         : tone === "healthy"
@@ -478,7 +477,7 @@ export function MetricCard({
               border: theme.border.healthy,
               boxShadow: "none",
               valueColor: theme.text.primary,
-              titleColor: "#c8f4dc",
+              titleColor: "#007452",
               iconTone: "healthy" as const,
             }
           : tone === "subtle"
@@ -544,8 +543,8 @@ export function MetricCard({
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.04)",
+                  border: theme.border.soft,
+                  background: theme.bg.panelSoft,
                   flexShrink: 0,
                 }}
               >
@@ -633,14 +632,14 @@ export function DataList({
 
 const fieldBaseStyle: React.CSSProperties = {
   width: "100%",
+  boxSizing: "border-box",
   minHeight: 36,
   borderRadius: theme.radius.md,
   border: theme.border.accentSoft,
   background: theme.bg.panelInset,
   color: theme.text.primary,
   padding: "7px 10px",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 14px rgba(0,0,0,0.12)",
+  boxShadow: "none",
 };
 
 export function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -668,23 +667,20 @@ export function ControlButton({
     tone === "primary"
       ? {
           border: theme.border.accentStrong,
-          background:
-            "linear-gradient(135deg, rgba(96,134,198,0.82), rgba(90,130,214,0.38) 60%, rgba(109,130,255,0.24))",
-          color: "#f7f9ff",
+          background: "#0755ff",
+          color: "#ffffff",
           boxShadow: "0 8px 16px rgba(27, 52, 138, 0.20)",
         }
       : tone === "danger"
         ? {
             border: theme.border.critical,
-            background:
-              "linear-gradient(180deg, rgba(64,24,28,0.94), rgba(29,16,18,0.94))",
-            color: "#ffd8d8",
+            background: "#fff0f1",
+            color: "#bb2b37",
           }
         : {
             border: theme.border.accentSoft,
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
-            color: theme.text.primary,
+            background: "#ffffff",
+            color: theme.text.accent,
             boxShadow: theme.shadow.button,
           };
 
@@ -695,7 +691,7 @@ export function ControlButton({
         minHeight: 34,
         borderRadius: theme.radius.md,
         padding: "7px 11px",
-        fontWeight: 900,
+        fontWeight: 700,
         letterSpacing: 0.12,
         cursor: props.disabled ? "not-allowed" : "pointer",
         opacity: props.disabled ? 0.68 : 1,
@@ -725,9 +721,8 @@ export function EmptyState({
         position: "relative",
         overflow: "hidden",
         borderRadius: theme.radius.xl,
-        border: "1px dashed rgba(255,255,255,0.14)",
-        background:
-          "radial-gradient(circle at top left, rgba(122,157,214,0.10), transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
+        border: "1px dashed #c8d6ff",
+        background: "#f5f7ff",
         padding: 20,
         display: "grid",
         gap: 10,

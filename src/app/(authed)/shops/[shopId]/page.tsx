@@ -549,7 +549,7 @@ function IssueList({
             padding: 14,
             borderRadius: t.radius.md,
             border: `1px solid ${t.color.softBorder}`,
-            background: "rgba(7, 10, 15, 0.32)",
+            background: "#F5F7FF",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -631,7 +631,7 @@ function ReadinessDetails({
                 padding: 10,
                 borderRadius: t.radius.sm,
                 border: `1px solid ${t.color.softBorder}`,
-                background: "rgba(7, 10, 15, 0.32)",
+                background: "#F5F7FF",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -725,15 +725,15 @@ export default async function ShopPage({ params, searchParams }: Props) {
   ];
 
   return (
-    <div style={{ display: "grid", gap: 18 }}>
+    <div className="control-shop-page" style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <ControlPageHeader
         eyebrow="Shop Profile"
         title={snapshot.name}
-        description="Cloud authority view of this shop's identity, billing outcomes, access modes, members, enrolled devices, and support metadata."
+        description="Manage this shop's access, billing, people, devices and support."
         actions={headerActions}
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      <div className="control-shop-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 12 }}>
         <ControlMetricCard
           label="Billing Status"
           value={humanizeLabel(snapshot.billing_status, "Unknown")}
@@ -770,11 +770,11 @@ export default async function ShopPage({ params, searchParams }: Props) {
       />
 
       {activeTab === "overview" ? (
-        <div style={{ display: "grid", gap: 18 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 0.8fr)", gap: 18 }}>
+        <div style={{ display: "grid", gap: 14 }}>
+          <div className="control-shop-overview-columns" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 0.8fr)", gap: 14 }}>
             <ControlPanel
               title="Shop Identity"
-              description="Core shop identity and the Control-side access posture for this authorized workspace."
+              description="Shop details and current access."
             >
               <ControlKeyValueGrid
                 items={[
@@ -790,7 +790,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
 
             <ControlPanel
               title="RunBook Access Modes"
-              description="These are the effective product outcomes for the current entitlement state, not just raw Stripe metadata."
+              description="Access allowed by the current plan and policies."
             >
               <ControlKeyValueGrid
                 items={[
@@ -805,24 +805,24 @@ export default async function ShopPage({ params, searchParams }: Props) {
             </ControlPanel>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+          <div className="control-shop-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: 12 }}>
             <ControlMetricCard label="Members" value={String(memberData.rows.length)} meta={`${snapshot.counts.employees_active} active employee record${snapshot.counts.employees_active === 1 ? "" : "s"}.`} tone="neutral" />
             <ControlMetricCard label="Devices" value={String(snapshot.counts.devices_total)} meta={`${snapshot.counts.devices_active} active device${snapshot.counts.devices_active === 1 ? "" : "s"}.`} tone={snapshot.health.offline_devices > 0 ? "warning" : "success"} />
             <ControlMetricCard label="Workstations" value={String(snapshot.counts.workstations_total)} meta={`${snapshot.counts.workstations_active} active workstation${snapshot.counts.workstations_active === 1 ? "" : "s"}.`} tone={snapshot.access.workstation_mode === "full" ? "success" : "warning"} />
             <ControlMetricCard label="Mobile Users" value={String(snapshot.counts.employees_mobile_ready)} meta={`${memberData.counts.mobileReviewCount} review queue item${memberData.counts.mobileReviewCount === 1 ? "" : "s"}.`} tone={memberData.counts.mobileReviewCount > 0 ? "warning" : "info"} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.95fr) minmax(0, 1.05fr)", gap: 18 }}>
+          <div className="control-shop-overview-columns" style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.95fr) minmax(0, 1.05fr)", gap: 14 }}>
             <ControlPanel
               title="Recent Issues"
-              description="Current shop-level conditions that need attention from billing, device, or access support."
+              description="Billing, device and access items that need review."
             >
               <IssueList issues={issues} />
             </ControlPanel>
 
             <ControlPanel
               title="Recent Activity"
-              description="Latest audit rows recorded for this shop scope."
+              description="Latest audit activity for this shop."
               actions={<ControlActionLink href={`/shops/${shop.id}?tab=audit`}>Open audit</ControlActionLink>}
             >
               <ActivityTable rows={auditRows.slice(0, 6)} />
@@ -973,7 +973,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
               />
             ) : (
               <div style={{ display: "grid", gap: 16 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+                <div className="control-shop-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))", gap: 12 }}>
                   <ControlMetricCard
                     label="Reports"
                     value={String(readinessData.summary.totalReports)}
@@ -1224,6 +1224,23 @@ export default async function ShopPage({ params, searchParams }: Props) {
           ) : null}
         </div>
       ) : null}
+      <style>{`
+        .control-shop-page { container-type: inline-size; }
+        .control-shop-page .control-shop-overview-columns > *,
+        .control-shop-page .control-shop-metrics > * { min-width: 0; }
+        @container (max-width: 760px) {
+          .control-shop-page .control-shop-overview-columns { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        @container (max-width: 480px) {
+          .control-shop-page .control-shop-metrics { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        @media (max-width: 900px) {
+          .control-shop-page .control-shop-overview-columns { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        @media (max-width: 600px) {
+          .control-shop-page .control-shop-metrics { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+      `}</style>
     </div>
   );
 }

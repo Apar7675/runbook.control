@@ -165,7 +165,7 @@ export default function DeviceAdminActionsPanel({
         </ControlActionButton>
       </div>
 
-      {status ? <div style={{ color: "#CBD5E1", fontSize: 13, lineHeight: 1.55 }}>{status}</div> : null}
+      {status ? <div style={{ color: "#233D78", fontSize: 13, lineHeight: 1.55 }}>{status}</div> : null}
 
       {revealedToken ? (
         <div
@@ -174,13 +174,13 @@ export default function DeviceAdminActionsPanel({
             gap: 8,
             padding: 14,
             borderRadius: 14,
-            border: "1px solid rgba(148, 163, 184, 0.16)",
-            background: "rgba(7, 10, 15, 0.34)",
+            border: "1px solid #DEE6FA",
+            background: "#F5F7FF",
           }}
         >
-          <div style={{ color: "#F8FAFC", fontSize: 13, fontWeight: 700 }}>New token</div>
-          <code style={{ color: "#CBD5E1", fontSize: 12, wordBreak: "break-all" }}>{revealedToken}</code>
-          <div style={{ color: "#64748B", fontSize: 12 }}>Store this token now. Control will not show the plaintext value again after refresh.</div>
+          <div style={{ color: "#08164F", fontSize: 13, fontWeight: 700 }}>New token</div>
+          <code style={{ color: "#233D78", fontSize: 12, wordBreak: "break-all" }}>{revealedToken}</code>
+          <div style={{ color: "#536A96", fontSize: 12 }}>Store this token now. Control will not show the plaintext value again after refresh.</div>
         </div>
       ) : null}
     </ControlPanel>

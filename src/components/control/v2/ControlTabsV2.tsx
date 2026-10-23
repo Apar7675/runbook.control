@@ -26,9 +26,9 @@ export default function ControlTabsV2({
               textDecoration: "none",
               fontSize: 12,
               fontWeight: 700,
-              color: active ? t.color.text : t.color.textQuiet,
-              border: active ? `1px solid ${t.color.borderStrong}` : "1px solid transparent",
-              background: active ? t.color.surface : "transparent",
+              color: active ? t.color.accent : t.color.textMuted,
+              border: active ? `1px solid ${t.color.accentBorder}` : "1px solid transparent",
+              background: active ? t.color.accentSurface : "transparent",
             }}
           >
             {tab.label}

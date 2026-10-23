@@ -13,7 +13,7 @@ function palette(tone: "success" | "warning" | "danger" | "neutral") {
   if (tone === "success") return { bg: t.color.successSurface, border: t.color.successBorder, text: t.color.success };
   if (tone === "warning") return { bg: t.color.warningSurface, border: t.color.warningBorder, text: t.color.warning };
   if (tone === "danger") return { bg: t.color.dangerSurface, border: t.color.dangerBorder, text: t.color.danger };
-  return { bg: "rgba(255,255,255,0.04)", border: t.color.borderStrong, text: t.color.textMuted };
+  return { bg: t.color.surfaceAlt, border: t.color.borderStrong, text: t.color.textMuted };
 }
 
 export default function ControlBadgeV2({
@@ -36,9 +36,9 @@ export default function ControlBadgeV2({
         border: `1px solid ${colors.border}`,
         background: colors.bg,
         color: colors.text,
-        fontSize: 10,
-        fontWeight: 800,
-        letterSpacing: 0.4,
+        fontSize: 11.5,
+        fontWeight: 700,
+        letterSpacing: 0,
         whiteSpace: "nowrap",
       }}
     >

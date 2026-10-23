@@ -89,20 +89,20 @@ export default async function AuditPage({
       >
         <form method="get" style={{ display: "grid", gap: 8 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 8 }}>
-            <input name="action" defaultValue={filters.action} placeholder="Action contains" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }} />
-            <input name="actor_email" defaultValue={filters.actor_email} placeholder="Actor email" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }} />
-            <select name="shop_id" defaultValue={filters.shop_id} style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }}>
+            <input name="action" defaultValue={filters.action} placeholder="Action contains" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
+            <input name="actor_email" defaultValue={filters.actor_email} placeholder="Actor email" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
+            <select name="shop_id" defaultValue={filters.shop_id} style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }}>
               <option value="">All shops</option>
               {data.context.shops.map((shop) => (
                 <option key={shop.id} value={shop.id}>{shop.name}</option>
               ))}
             </select>
-            <input name="target_id" defaultValue={filters.target_id} placeholder="Target id" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }} />
-            <input name="before" defaultValue={filters.before} placeholder="Before (ISO)" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }} />
-            <input name="limit" defaultValue={filters.limit} placeholder="Limit" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "rgba(18, 27, 40, 0.95)", color: t.color.text, padding: "0 12px" }} />
+            <input name="target_id" defaultValue={filters.target_id} placeholder="Target id" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
+            <input name="before" defaultValue={filters.before} placeholder="Before (ISO)" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
+            <input name="limit" defaultValue={filters.limit} placeholder="Limit" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <button type="submit" style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid rgba(37, 99, 235, 0.36)", background: "rgba(37, 99, 235, 0.18)", color: "#F8FAFC", fontWeight: 700, cursor: "pointer" }}>Apply</button>
+            <button type="submit" style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid #0755ff", background: "#0755ff", color: "#ffffff", fontWeight: 700, cursor: "pointer" }}>Apply</button>
             <ControlActionLink href="/audit">Clear</ControlActionLink>
             <div style={{ fontSize: 12, color: t.color.textMuted }}>{data.rows.length} row{data.rows.length === 1 ? "" : "s"} loaded</div>
           </div>

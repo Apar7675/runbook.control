@@ -5,9 +5,9 @@ import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 function toneStyle(tone: "primary" | "secondary" | "danger" | "ghost"): React.CSSProperties {
   if (tone === "primary") {
     return {
-      border: `1px solid ${t.color.accentBorder}`,
-      background: t.color.accentSurface,
-      color: t.color.text,
+      border: `1px solid ${t.color.accent}`,
+      background: t.color.accent,
+      color: "#ffffff",
     };
   }
   if (tone === "danger") {
@@ -25,9 +25,9 @@ function toneStyle(tone: "primary" | "secondary" | "danger" | "ghost"): React.CS
     };
   }
   return {
-    border: `1px solid ${t.color.border}`,
-    background: t.color.surfaceAlt,
-    color: t.color.text,
+    border: `1px solid ${t.color.accentBorder}`,
+    background: t.color.surface,
+    color: t.color.accent,
   };
 }
 

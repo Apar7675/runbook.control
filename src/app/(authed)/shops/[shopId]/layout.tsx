@@ -66,10 +66,11 @@ export default async function ShopLayout({ params, children }: Props) {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: 0,
+        minWidth: 0,
         display: "flex",
         flexDirection: "column",
-        background: theme.bg.appGlow,
+        background: "transparent",
         color: theme.text.primary,
       }}
     >
@@ -77,52 +78,51 @@ export default async function ShopLayout({ params, children }: Props) {
 
       <header
         style={{
-          borderBottom: theme.border.accentSoft,
-          background: theme.bg.headerGlass,
-          backdropFilter: "blur(16px)",
-          boxShadow: "0 18px 38px rgba(0, 0, 0, 0.2)",
+          border: theme.border.soft,
+          borderRadius: theme.radius.md,
+          background: theme.bg.header,
+          overflow: "hidden",
         }}
       >
         <div
           style={{
-            height: 3,
-            background:
-              "linear-gradient(90deg, rgba(79,102,255,0.9), rgba(68,177,255,0.72), rgba(167,188,255,0.30))",
+            height: 2,
+            background: theme.text.accent,
           }}
         />
         <div
           style={{
             maxWidth: theme.spacing.contentWidth,
             width: "100%",
+            boxSizing: "border-box",
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: 16,
+            alignItems: "center",
+            gap: 12,
             flexWrap: "wrap",
-            padding: `14px ${theme.spacing.shellX}px`,
+            padding: "10px 14px",
+            fontSize: 12.5,
           }}
         >
-          <div style={{ display: "grid", gap: 6 }}>
+          <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <Link
                 href="/shops"
-                style={{ color: theme.text.secondary, textDecoration: "none", fontWeight: 800 }}
+                style={{ color: theme.text.accent, textDecoration: "none", fontWeight: 600 }}
               >
                 Back to Shop List
               </Link>
               <span
                 style={{
                   display: "inline-flex",
-                  padding: "6px 10px",
+                  padding: "3px 8px",
                   borderRadius: theme.radius.pill,
-                  border: "1px solid rgba(146, 163, 255, 0.22)",
-                  background: "rgba(92, 108, 255, 0.15)",
+                  border: theme.border.soft,
+                  background: theme.bg.panelSoft,
                   color: theme.text.accentSoft,
-                  fontWeight: 900,
-                  fontSize: 10,
-                  letterSpacing: 0.7,
-                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  fontSize: 11,
                 }}
               >
                 Shop Workspace
@@ -130,20 +130,21 @@ export default async function ShopLayout({ params, children }: Props) {
             </div>
             <div
               style={{
-                color: theme.text.secondary,
-                fontSize: 12.5,
-                lineHeight: 1.5,
+                color: theme.text.muted,
+                fontSize: 12,
+                lineHeight: 1.4,
                 maxWidth: 760,
+                overflowWrap: "anywhere",
               }}
             >
-              {email} - Manage health, access, billing, and support state for {shopName} without exposing platform internals.
+              {email} · Manage access, billing, devices and support for {shopName}.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Link
               href="/status"
-              style={{ color: theme.text.secondary, textDecoration: "none", fontWeight: 800 }}
+              style={{ color: theme.text.accent, textDecoration: "none", fontWeight: 600 }}
             >
               Status
             </Link>
@@ -158,15 +159,15 @@ export default async function ShopLayout({ params, children }: Props) {
           width: "100%",
           maxWidth: theme.spacing.contentWidth,
           margin: "0 auto",
-          padding: `${theme.spacing.shellY}px ${theme.spacing.shellX}px ${theme.spacing.xxl}px`,
+          padding: "14px 0 0",
           display: "block",
         }}
       >
-        <main style={{ minWidth: 0, display: "grid", gap: 18 }}>
+        <div style={{ minWidth: 0, display: "grid", gap: 14 }}>
           {/* The parent layout authenticates platform admins. Shop billing must stay
               reachable here so admins can restore access for an expired shop. */}
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );

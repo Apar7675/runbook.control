@@ -38,9 +38,9 @@ export default function WriteLock(props: {
             width: "min(520px, 100%)",
             borderRadius: 14,
             padding: 14,
-            background: "rgba(10,12,20,0.85)",
-            border: "1px solid rgba(120,130,170,0.25)",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.45)",
+            background: "#ffffff",
+            border: "1px solid #DEE6FA",
+            boxShadow: "0 8px 28px rgba(36,66,132,0.12)",
           }}
         >
           <div style={{ fontSize: 14, fontWeight: 900 }}>

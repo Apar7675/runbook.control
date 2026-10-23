@@ -46,6 +46,7 @@ export default function DataTable<T>({
                   letterSpacing: 0.4,
                   padding: "10px 12px",
                   color: theme.text.muted,
+                  background: "#EEF2FF",
                   borderBottom: theme.border.soft,
                   width: c.width,
                 }}
@@ -64,7 +65,7 @@ export default function DataTable<T>({
                 background:
                   i % 2 === 0
                     ? "transparent"
-                    : "rgba(255,255,255,0.03)",
+                    : "#F5F7FF",
               }}
             >
               {columns.map((c) => (

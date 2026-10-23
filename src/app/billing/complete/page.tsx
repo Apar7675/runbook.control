@@ -66,7 +66,7 @@ export default function BillingCompletePage() {
   }, [paramsReady, shopId, sessionId]);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#07081a", color: "rgba(255,255,255,0.92)", padding: 24 }}>
+    <div style={{ minHeight: "100vh", background: "#EEF2FF", color: "#08164F", padding: 24 }}>
       <div style={{ maxWidth: 760, margin: "0 auto", paddingTop: 40 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>RunBook Billing</h1>
         <p style={{ opacity: 0.8, marginTop: 10 }}>{msg}</p>
@@ -76,8 +76,8 @@ export default function BillingCompletePage() {
             marginTop: 20,
             padding: 16,
             borderRadius: 16,
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: "#F5F7FF",
+            border: "1px solid #DEE6FA",
           }}
         >
           {state === "working" && <div style={{ fontWeight: 900 }}>Working...</div>}

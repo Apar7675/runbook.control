@@ -66,6 +66,7 @@ export default async function DevicesPage({
   const statusFilter = firstParam(params.status).trim().toLowerCase() || "all";
   const shopFilter = firstParam(params.shop).trim();
   const accessFilter = firstParam(params.access).trim().toLowerCase() || "all";
+  const queryFilter = firstParam(params.q).trim();
 
   const { context, rows } = await loadDeviceViewRows();
 
@@ -89,6 +90,7 @@ export default async function DevicesPage({
   }
 
   const filteredRows = rows.filter((row) => {
+    if (queryFilter && !row.name.toLowerCase().includes(queryFilter.toLowerCase())) return false;
     if (typeFilter !== "all" && String(row.device_type ?? "").trim().toLowerCase() !== typeFilter) return false;
     if (statusFilter !== "all" && String(row.status ?? "").trim().toLowerCase() !== statusFilter) return false;
     if (shopFilter && String(row.shop_id ?? "") !== shopFilter) return false;
@@ -105,31 +107,29 @@ export default async function DevicesPage({
   const uniqueShops = [...new Map(rows.filter((row) => row.shop_id).map((row) => [row.shop_id as string, row.shop_name ?? row.shop_id as string])).entries()];
 
   return (
-    <div style={{ display: "grid", gap: 18 }}>
+    <div className="control-devices" style={{ display: "grid", gap: 20 }}>
       <ControlPageHeader
         eyebrow="Devices"
         title="Devices"
-        description="Cloud authority view of enrolled Desktop and Workstation devices, token activity, update posture, and capability telemetry."
-        actions={<ControlActionLink href="/workstations">Open workstations</ControlActionLink>}
+        description="Review each enrolled device, its access and last reported activity."
+        actions={<><ControlActionLink href="/workstations">Open workstations</ControlActionLink><ControlActionLink href={`/devices?${new URLSearchParams({ type: typeFilter, status: statusFilter, shop: shopFilter, access: accessFilter, q: queryFilter })}`}>Refresh</ControlActionLink></>}
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))", gap: 12 }}>
         <ControlMetricCard label="Total Devices" value={String(totalDevices)} meta="All enrolled Desktop and Workstation device rows in Control." tone="neutral" />
-        <ControlMetricCard label="Online / Recently Seen" value={String(onlineDevices)} meta="Merged from device last check-in and active token heartbeat." tone={onlineDevices > 0 ? "success" : "warning"} />
+        <ControlMetricCard label="Check-ins recorded" value={String(onlineDevices)} meta="Latest device report or active token heartbeat; not a live connection." tone={onlineDevices > 0 ? "success" : "warning"} />
         <ControlMetricCard label="Disabled / Blocked" value={String(blockedDevices)} meta="Includes disabled records and devices blocked by current access mode." tone={blockedDevices > 0 ? "danger" : "success"} />
         <ControlMetricCard label="Update Attention" value={String(updateAttention)} meta={updateAttention > 0 ? "Some devices are below minimum, pinned-mismatched, or missing version data." : "No update warnings are currently inferred from policy."} tone={updateAttention > 0 ? "warning" : "success"} />
         <ControlMetricCard label="Capability Warnings" value={String(capabilityWarnings)} meta={rows.some((row) => row.capability) ? "Warnings are derived from the latest capability snapshot per device." : "Capability snapshots are not surfaced in the current data set."} tone={capabilityWarnings > 0 ? "warning" : rows.some((row) => row.capability) ? "success" : "neutral"} />
       </div>
 
-      <ControlPanel
-        title="Device Directory"
-        description="Table-first device authority surface with real enrollment, heartbeat, version, and policy data."
-      >
-        <form method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <form className="control-device-filters" method="get" aria-label="Filter devices" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", padding: 12, background: "#DFECFD", borderRadius: 12, border: "1.25px solid #5E7DA5" }}>
+          <input name="q" type="search" aria-label="Find a device" placeholder="Find a device…" defaultValue={queryFilter} style={{ flex: "1 1 220px", minWidth: 0, minHeight: 44, borderRadius: 7, border: "1.25px solid #5E7DA5", color: "#12234A", background: "#FFFFFF", padding: "0 12px", font: "inherit", fontSize: 16 }} />
           <select
             name="type"
+            aria-label="Device type"
             defaultValue={typeFilter}
-            style={{ minHeight: 38, minWidth: 150, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 44, minWidth: 150, borderRadius: 7, border: "1.25px solid #5E7DA5", background: "#FFFFFF", color: "#12234A", padding: "0 12px" }}
           >
             <option value="all">All types</option>
             <option value="desktop">Desktop</option>
@@ -137,8 +137,9 @@ export default async function DevicesPage({
           </select>
           <select
             name="status"
+            aria-label="Device status"
             defaultValue={statusFilter}
-            style={{ minHeight: 38, minWidth: 150, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 44, minWidth: 150, borderRadius: 7, border: "1.25px solid #5E7DA5", background: "#FFFFFF", color: "#12234A", padding: "0 12px" }}
           >
             <option value="all">All statuses</option>
             <option value="active">Active</option>
@@ -146,8 +147,9 @@ export default async function DevicesPage({
           </select>
           <select
             name="shop"
+            aria-label="Shop"
             defaultValue={shopFilter}
-            style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 44, minWidth: 180, maxWidth: "100%", borderRadius: 7, border: "1.25px solid #5E7DA5", background: "#FFFFFF", color: "#12234A", padding: "0 12px" }}
           >
             <option value="">All shops</option>
             {uniqueShops.map(([shopId, shopName]) => (
@@ -156,8 +158,9 @@ export default async function DevicesPage({
           </select>
           <select
             name="access"
+            aria-label="Access mode"
             defaultValue={accessFilter}
-            style={{ minHeight: 38, minWidth: 180, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 44, minWidth: 150, borderRadius: 7, border: "1.25px solid #5E7DA5", background: "#FFFFFF", color: "#12234A", padding: "0 12px" }}
           >
             <option value="all">All access modes</option>
             <option value="full">Full</option>
@@ -166,13 +169,14 @@ export default async function DevicesPage({
           </select>
           <button
             type="submit"
-            style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid rgba(37, 99, 235, 0.36)", background: "rgba(37, 99, 235, 0.18)", color: "#F8FAFC", fontWeight: 700, cursor: "pointer" }}
+            style={{ minHeight: 44, padding: "0 14px", borderRadius: 7, border: "1px solid #0755FF", background: "#0755FF", color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}
           >
             Apply
           </button>
           <ControlActionLink href="/devices">Clear</ControlActionLink>
         </form>
 
+      <ControlPanel title="Registered devices" description="Use Open to review access, tokens and update policy for a device.">
         {filteredRows.length === 0 ? (
           <ControlEmptyState
             title="No devices matched the current filters"
@@ -200,33 +204,33 @@ export default async function DevicesPage({
                   <tr key={row.id}>
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 4 }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#F8FAFC" }}>{row.name}</div>
-                        <div style={{ fontSize: 12, color: "#64748B" }}>{row.id}</div>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: "#12234A" }}>{row.name}</div>
+                        <div style={{ fontSize: 14, color: "#536A96" }}>{row.id}</div>
                       </div>
                     </ControlTableCell>
-                    <ControlTableCell>{row.device_type ? row.device_type.replaceAll("_", " ") : "Not surfaced"}</ControlTableCell>
+                    <ControlTableCell><span style={{ whiteSpace: "nowrap" }}>{row.device_type ? row.device_type.replaceAll("_", " ") : "Not surfaced"}</span></ControlTableCell>
                     <ControlTableCell>{row.shop_name ?? row.shop_id ?? "Unassigned"}</ControlTableCell>
                     <ControlTableCell>
-                      <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
                         <ControlStatusChip label={row.status ? row.status.replaceAll("_", " ") : "Unknown"} tone={toneFromDeviceStatus(row.status)} />
-                        <div style={{ fontSize: 12, color: "#64748B" }}>{row.active_token_count} active token{row.active_token_count === 1 ? "" : "s"}</div>
+                        <div style={{ fontSize: 14, color: "#536A96" }}>{row.active_token_count} active token{row.active_token_count === 1 ? "" : "s"}</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>{formatMaybeDate(row.merged_last_seen_at)}</ControlTableCell>
                     <ControlTableCell>{row.reported_version ?? "Not surfaced"}</ControlTableCell>
                     <ControlTableCell>
-                      <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
                         <ControlStatusChip label={row.access_mode} tone={row.access_mode.toLowerCase() === "full" ? "success" : row.access_mode.toLowerCase() === "blocked" ? "danger" : "warning"} />
-                        <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{row.access_reason}</div>
+                        <div style={{ fontSize: 14, color: "#536A96", lineHeight: 1.5 }}>{row.access_reason}</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>
                       <ControlStatusChip label={capabilityLabel(row)} tone={toneFromCapability(row)} />
                     </ControlTableCell>
                     <ControlTableCell>
-                      <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
                         <ControlStatusChip label={row.update_label} tone={toneFromUpdateStatus(row)} />
-                        <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>
+                        <div style={{ fontSize: 14, color: "#536A96", lineHeight: 1.5 }}>
                           {row.update_policy
                             ? `Channel ${row.update_policy.channel ?? "stable"}${row.update_policy.min_version ? ` | Min ${row.update_policy.min_version}` : ""}${row.update_policy.pinned_version ? ` | Pin ${row.update_policy.pinned_version}` : ""}`
                             : "Not surfaced"}
@@ -242,7 +246,19 @@ export default async function DevicesPage({
             </ControlTable>
           </ControlTableWrap>
         )}
+        <p style={{ margin: 0, fontSize: 16, color: "#536A96" }}>Last check-in shows the latest report, not a live connection. Scroll the table to see every column.</p>
       </ControlPanel>
+      <style>{`
+        .control-devices .control-table th:last-child,
+        .control-devices .control-table td:last-child {
+          position: sticky; right: 0; background: #FFFFFF; box-shadow: -1px 0 #5E7DA5;
+        }
+        .control-devices .control-table th:last-child { background: #EDF3FC; }
+        @media (max-width: 650px) {
+          .control-device-filters > input,
+          .control-device-filters > select { flex: 1 1 100% !important; width: 100%; min-width: 0 !important; }
+        }
+      `}</style>
     </div>
   );
 }

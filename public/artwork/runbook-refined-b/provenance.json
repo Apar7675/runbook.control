@@ -1,0 +1,156 @@
+{
+  "wave": {
+    "source": "F:\\PortableWorkspace\\RunBook\\Office\\RunBook.Desktop\\Assets\\Images\\Email\\FloatingV1\\message-header.png",
+    "sha256": "93a85957f1551d92d6d6c0ad86b13128b701b1af38d1042abd065d62f2259e5e",
+    "use": "Approved whole message header; scaled to panel bounds, no cropping"
+  },
+  "reference": "F:\\DesignReferences\\RunBook-RefinedB\\Reference\\Approved Refined B.png",
+  "dictionary": {
+    "source": "F:\\PortableWorkspace\\RunBook\\Office\\RunBook.Desktop\\Resources\\Themes\\RunBookV5.Icons.xaml",
+    "sha256": "856806fe5b15bf109d98a2bc88eaea397ef05513c54a2a356c9dea64c83ce3ca"
+  },
+  "icons": [
+    {
+      "asset": "dashboard.svg",
+      "resourceKey": "RunBookV5.Dashboard.Light.Image",
+      "conversion": "Original path coordinates and pen values serialized to SVG; no redrawing or recoloring",
+      "sha256": "3139c13a4de9c14515aa2aa50426f99ab475eea59c23a42e33d47153a6c2e68e"
+    },
+    {
+      "asset": "people.svg",
+      "resourceKey": "RunBookV5.PeopleCompany.Light.Image",
+      "conversion": "Original path coordinates and pen values serialized to SVG; no redrawing or recoloring",
+      "sha256": "51939d826f070966b03d30239c2454ad6cb723162da816e545ade85b5e1f9d31"
+    },
+    {
+      "asset": "timeclock.svg",
+      "resourceKey": "RunBookV5.TimeClock.Color.Image",
+      "conversion": "Original path coordinates and pen values serialized to SVG; no redrawing or recoloring",
+      "sha256": "01821bf436bd86d082e19c2c5aaae9405ec66ac102fbed515214e69834976e9a"
+    },
+    {
+      "asset": "settings.svg",
+      "resourceKey": "RunBookV5.Settings.Light.Image",
+      "conversion": "Original path coordinates and pen values serialized to SVG; no redrawing or recoloring",
+      "sha256": "8fb73ecb68419fc35b802d2617118069264b21834d3441af05ded7f68bbc96e0"
+    },
+    {
+      "asset": "devices.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Original source dictionaries\\RunBookV5.Icons.xaml",
+      "resourceKey": "RunBookV5.Sessions.Light.Image",
+      "route": "/devices",
+      "semanticEvidence": "Existing Control SideNav.tsx:178-181 and ui.tsx monitor glyph establish device semantics; original drawing depicts monitor plus secondary device, not an original Control route binding.",
+      "conversion": "Original path coordinates and pen values serialized to SVG; no redrawing or recoloring",
+      "sha256": "16aa74279b3265695d817f581869c601765cf46b862d3622e4036a6e4766b71f"
+    },
+    {
+      "asset": "support.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Original source dictionaries\\RunBookV5.Icons.xaml",
+      "resourceKey": "RunBookV5.Help.Light.Image",
+      "route": "/support",
+      "semanticEvidence": "Existing Control SideNav.tsx:231-234 and ui.tsx support question-mark establish Help/Support equivalence; no claim of active Desktop Help navigation.",
+      "conversion": "Original path coordinates and pen values serialized to SVG; no redrawing or recoloring",
+      "sha256": "8e15a2a06f3964e7ff62dbc274c856bf5fe8bb654119c2b2d9e370142c1f7309"
+    },
+    {
+      "asset": "shops.png",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Original artwork\\Email\\FloatingV1\\companies.png",
+      "route": "/shops",
+      "semanticEvidence": "Original RunBookWave.FolderCompanies (RunBookWave.Theme.xaml:10) is company-directory building artwork; Control Shops Directory is the cloud shop/company identity directory. Reused whole; not the Production Factory icon.",
+      "conversion": "Byte-identical original raster; original aspect ratio preserved via object-fit:contain",
+      "sha256": "0a749a294252b4e05d025d2b013411726d31daf0d6a69332b661ea26b2e72843"
+    },
+    {
+      "asset": "workstations.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023\\Proposed SVGs\\Workstations - candidate.svg",
+      "sha256": "c4b5fe0cd2508f4e5bf775b0f3ced33a693962f8884451a0df83c0a5ef19ff59",
+      "route": "/workstations",
+      "meaning": [
+        "Enrolled workstation computers",
+        "Monitor with a compact keyboard"
+      ],
+      "origin": "New code-native candidate supplied by artwork owner; owner approved and downloaded before this integration",
+      "approvalEvidence": "Trusted parent relay of Sentinel_07e807ed611881918845c2452eccfb4a: approved and downloaded",
+      "reviewLibraryId": "libfile_c0598ced2edc81919346defee2a39baa",
+      "conversion": "None; byte-identical supplied SVG; historical review-only text inside source retained unchanged",
+      "tile": "#2858C8"
+    },
+    {
+      "asset": "mobile-access.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023\\Proposed SVGs\\Mobile Access - candidate.svg",
+      "sha256": "7ffa10f2ed7c885636d082f11148e0a5d17c5a0c736218ce968d629436504258",
+      "route": "/mobile-access",
+      "meaning": [
+        "Employee mobile-device access",
+        "Phone with an access key"
+      ],
+      "origin": "New code-native candidate supplied by artwork owner; owner approved and downloaded before this integration",
+      "approvalEvidence": "Trusted parent relay of Sentinel_07e807ed611881918845c2452eccfb4a: approved and downloaded",
+      "reviewLibraryId": "libfile_c0598ced2edc81919346defee2a39baa",
+      "conversion": "None; byte-identical supplied SVG; historical review-only text inside source retained unchanged",
+      "tile": "#2858C8"
+    },
+    {
+      "asset": "billing-plans.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023\\Proposed SVGs\\Billing and Plans - candidate.svg",
+      "sha256": "6f783047d4da383f0983c3df6e01a6db3e1a6e6f8e647a2023c1e818df6f3524",
+      "route": "/billing-access",
+      "meaning": [
+        "Subscription billing and plan details",
+        "Payment card with plan-detail lines"
+      ],
+      "origin": "New code-native candidate supplied by artwork owner; owner approved and downloaded before this integration",
+      "approvalEvidence": "Trusted parent relay of Sentinel_07e807ed611881918845c2452eccfb4a: approved and downloaded",
+      "reviewLibraryId": "libfile_c0598ced2edc81919346defee2a39baa",
+      "conversion": "None; byte-identical supplied SVG; historical review-only text inside source retained unchanged",
+      "tile": "#2858C8"
+    },
+    {
+      "asset": "software-updates.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023\\Proposed SVGs\\Software Updates - candidate.svg",
+      "sha256": "98796b5e27050148f85d4d95b92bf7e007638a06ab5c91e36f5833db28c0c2ed",
+      "route": "/software-updates",
+      "meaning": [
+        "Release and package administration",
+        "Package with an upward release arrow"
+      ],
+      "origin": "New code-native candidate supplied by artwork owner; owner approved and downloaded before this integration",
+      "approvalEvidence": "Trusted parent relay of Sentinel_07e807ed611881918845c2452eccfb4a: approved and downloaded",
+      "reviewLibraryId": "libfile_c0598ced2edc81919346defee2a39baa",
+      "conversion": "None; byte-identical supplied SVG; historical review-only text inside source retained unchanged",
+      "tile": "#2858C8"
+    },
+    {
+      "asset": "updates.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023\\Proposed SVGs\\Updates - version policy candidate.svg",
+      "sha256": "d6a37c82e28155dee826de746c77fe3989525ea6e372ec3329e0bd66684969ab",
+      "route": "/updates",
+      "meaning": [
+        "Package inventory and version rules",
+        "Policy document with two rule sliders"
+      ],
+      "origin": "New code-native candidate supplied by artwork owner; owner approved and downloaded before this integration",
+      "approvalEvidence": "Trusted parent relay of Sentinel_07e807ed611881918845c2452eccfb4a: approved and downloaded",
+      "reviewLibraryId": "libfile_c0598ced2edc81919346defee2a39baa",
+      "conversion": "None; byte-identical supplied SVG; historical review-only text inside source retained unchanged",
+      "tile": "#2858C8"
+    },
+    {
+      "asset": "audit.svg",
+      "source": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023\\Proposed SVGs\\Audit Log - candidate.svg",
+      "sha256": "938685e67efafd48053c154f64633ce16d08d8bf30a986c588a30540975b7492",
+      "route": "/audit",
+      "meaning": [
+        "Cloud and admin event history",
+        "Event ledger with a history clock"
+      ],
+      "origin": "New code-native candidate supplied by artwork owner; owner approved and downloaded before this integration",
+      "approvalEvidence": "Trusted parent relay of Sentinel_07e807ed611881918845c2452eccfb4a: approved and downloaded",
+      "reviewLibraryId": "libfile_c0598ced2edc81919346defee2a39baa",
+      "conversion": "None; byte-identical supplied SVG; historical review-only text inside source retained unchanged",
+      "tile": "#2858C8"
+    }
+  ],
+  "missingIcons": [],
+  "approvedCandidateSource": "F:\\DesignReferences\\RunBook-RefinedB\\Candidates\\Control sidebar icons - review 20261023"
+}

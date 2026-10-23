@@ -23,7 +23,7 @@ export default function ControlMetricCard({
     tone === "warning" ? "Watch" :
     tone === "success" ? "OK" :
     tone === "info" ? "Info" :
-    "Live";
+    "Info";
 
   const body = (
     <div
@@ -31,20 +31,20 @@ export default function ControlMetricCard({
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) auto",
         alignItems: "center",
-        gap: 12,
-        minHeight: compact ? 72 : 78,
+        gap: 16,
+        minHeight: compact ? 92 : 100,
         boxSizing: compact ? "border-box" : undefined,
-        padding: "11px 12px",
+        padding: "12px 14px",
         borderRadius: t.radius.md,
-        border: `1px solid ${t.color.softBorder}`,
-        background: `linear-gradient(180deg, rgba(16, 23, 34, 0.98), rgba(11, 16, 24, 0.98))`,
+        border: `1.25px solid ${t.color.border}`,
+        background: t.color.support,
       }}
     >
       <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
-        <div style={{ color: t.color.textSecondary, fontSize: 12, fontWeight: 800 }}>{label}</div>
-        {compact ? <div style={{ fontSize: 12, lineHeight: 1.35, color: "#94A3B8" }}>{meta}</div> : <div
+        <div style={{ color: t.color.textSecondary, fontSize: 16, fontWeight: 600 }}>{label}</div>
+        {compact ? <div style={{ fontSize: 14, lineHeight: 1.35, color: t.color.textMuted }}>{meta}</div> : <div
           style={{
-            fontSize: 12,
+            fontSize: 14,
             lineHeight: 1.35,
             color: t.color.textMuted,
             overflow: "hidden",
@@ -57,7 +57,7 @@ export default function ControlMetricCard({
         </div>}
       </div>
       <div style={{ display: "grid", gap: 6, justifyItems: "end", minWidth: compact ? undefined : 76 }}>
-        <div style={{ fontSize: compact ? 27 : 22, lineHeight: 1.05, fontWeight: 800, color: t.color.text, textAlign: "right" }}>{value}</div>
+        <div style={{ fontSize: compact ? 34 : 30, lineHeight: 1.05, fontWeight: 800, color: t.color.text, textAlign: "right" }}>{value}</div>
         {compact ? null : <ControlStatusChip label={statusLabel} tone={tone} />}
       </div>
     </div>

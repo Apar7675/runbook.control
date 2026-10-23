@@ -18,18 +18,18 @@ export default function ControlKeyValueGrid({
           key={item.label}
           style={{
             display: "grid",
-            gap: 4,
-            padding: "10px 11px",
+            gap: 6,
+            padding: "10px 12px",
             borderRadius: t.radius.md,
-            border: `1px solid ${t.color.softBorder}`,
-            background: "rgba(7, 10, 15, 0.36)",
-            minHeight: 62,
+            border: `1.25px solid ${t.color.border}`,
+            background: t.color.elevated,
+            minHeight: 80,
           }}
         >
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: t.color.textMuted }}>
+          <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", color: t.color.textMuted }}>
             {item.label}
           </div>
-          <div style={{ color: t.color.textSecondary, fontSize: 12.5, lineHeight: 1.45 }}>{item.value}</div>
+          <div style={{ color: t.color.textSecondary, fontSize: 16, lineHeight: 1.5 }}>{item.value}</div>
         </div>
       ))}
     </div>

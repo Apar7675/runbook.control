@@ -103,7 +103,7 @@ export default async function WorkstationsPage({
           <select
             name="status"
             defaultValue={statusFilter}
-            style={{ minHeight: 38, minWidth: 150, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 38, minWidth: 150, borderRadius: 12, border: "1px solid #DEE6FA", background: "#ffffff", color: "#08164F", padding: "0 12px" }}
           >
             <option value="all">All statuses</option>
             <option value="active">Active</option>
@@ -112,7 +112,7 @@ export default async function WorkstationsPage({
           <select
             name="shop"
             defaultValue={shopFilter}
-            style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: "1px solid #DEE6FA", background: "#ffffff", color: "#08164F", padding: "0 12px" }}
           >
             <option value="">All shops</option>
             {uniqueShops.map(([shopId, shopName]) => (
@@ -122,7 +122,7 @@ export default async function WorkstationsPage({
           <select
             name="access"
             defaultValue={accessFilter}
-            style={{ minHeight: 38, minWidth: 180, borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.16)", background: "rgba(18, 27, 40, 0.95)", color: "#F8FAFC", padding: "0 12px" }}
+            style={{ minHeight: 38, minWidth: 180, borderRadius: 12, border: "1px solid #DEE6FA", background: "#ffffff", color: "#08164F", padding: "0 12px" }}
           >
             <option value="all">All access modes</option>
             <option value="full">Full</option>
@@ -130,7 +130,7 @@ export default async function WorkstationsPage({
           </select>
           <button
             type="submit"
-            style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid rgba(37, 99, 235, 0.36)", background: "rgba(37, 99, 235, 0.18)", color: "#F8FAFC", fontWeight: 700, cursor: "pointer" }}
+            style={{ minHeight: 38, padding: "0 14px", borderRadius: 12, border: "1px solid #0755ff", background: "#0755ff", color: "#ffffff", fontWeight: 700, cursor: "pointer" }}
           >
             Apply
           </button>
@@ -162,8 +162,8 @@ export default async function WorkstationsPage({
                   <tr key={row.id}>
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 4 }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#F8FAFC" }}>{row.name}</div>
-                        <div style={{ fontSize: 12, color: "#64748B" }}>{row.id}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#08164F" }}>{row.name}</div>
+                        <div style={{ fontSize: 12, color: "#536A96" }}>{row.id}</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>{row.shop_name ?? row.shop_id ?? "Unassigned"}</ControlTableCell>
@@ -171,7 +171,7 @@ export default async function WorkstationsPage({
                     <ControlTableCell>
                       <div style={{ display: "grid", gap: 6 }}>
                         <ControlStatusChip label={row.update_label} tone={updateTone(row.update_label)} />
-                        <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{row.update_detail}</div>
+                        <div style={{ fontSize: 12, color: "#536A96", lineHeight: 1.5 }}>{row.update_detail}</div>
                       </div>
                     </ControlTableCell>
                     <ControlTableCell>{formatMaybeDate(row.merged_last_seen_at)}</ControlTableCell>

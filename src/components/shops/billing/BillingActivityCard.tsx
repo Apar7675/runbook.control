@@ -96,7 +96,7 @@ export default function BillingActivityCard({
                 padding: 14,
                 borderRadius: 18,
                 border: theme.border.muted,
-                background: "rgba(255,255,255,0.03)",
+                background: "#F5F7FF",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>

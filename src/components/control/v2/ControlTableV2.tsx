@@ -24,10 +24,12 @@ export function ControlTableHeadCellV2({
     <th
       style={{
         textAlign: align,
-        padding: "10px 12px",
+        padding: "9px 12px",
         background: t.color.tableHead,
-        color: t.color.textQuiet,
-        ...t.type.label,
+        color: t.color.text,
+        fontSize: 12,
+        fontWeight: 700,
+        borderBottom: `1px solid ${t.color.border}`,
       }}
     >
       {children}
@@ -46,10 +48,11 @@ export function ControlTableCellV2({
     <td
       style={{
         textAlign: align,
-        padding: "10px 12px",
+        padding: "9px 12px",
         verticalAlign: "top",
         borderTop: `1px solid ${t.color.border}`,
         color: t.color.textMuted,
+        lineHeight: 1.45,
       }}
     >
       {children}
