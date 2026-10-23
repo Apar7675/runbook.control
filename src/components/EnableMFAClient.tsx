@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { mfaStepUpHref, safeMfaReturnTo } from "@/lib/auth/mfaReturn";
-import { cancelTotpEnrollment, loadTotpEnrollmentState, startTotpEnrollment, verifyTotpEnrollment, type TotpEnrollment } from "@/lib/auth/mfaEnrollment";
+import { discardTotpEnrollment, loadTotpEnrollmentState, startTotpEnrollment, verifyTotpEnrollment, type TotpEnrollment } from "@/lib/auth/mfaEnrollment";
 
 type Props = { required?: boolean; returnTo?: string };
 
@@ -39,8 +39,9 @@ export default function EnableMFAClient({ required, returnTo }: Props) {
     });
     const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
       if (!active.current) return;
-      if (userRef.current && session?.user.id !== userRef.current) {
+      if (_event !== "INITIAL_SESSION" || (userRef.current && session?.user.id !== userRef.current)) {
         epoch.current++;
+        if (enrollmentRef.current) discardTotpEnrollment(enrollmentRef.current);
         enrollmentRef.current = null;
         userRef.current = null;
         busyRef.current = false;
@@ -50,12 +51,13 @@ export default function EnableMFAClient({ required, returnTo }: Props) {
         setUserId(null);
         setPendingFactorIds([]);
         setBusy(false);
-        setStatus("The signed-in account changed. Reload before continuing.");
+        setStatus("The signed-in session changed. Reload before continuing.");
       }
     });
     return () => {
       active.current = false;
       epoch.current++;
+      if (enrollmentRef.current) discardTotpEnrollment(enrollmentRef.current);
       enrollmentRef.current = null;
       subscription.unsubscribe();
     };
@@ -80,8 +82,8 @@ export default function EnableMFAClient({ required, returnTo }: Props) {
     if (generation === null || !userId) return;
     setStatus("Starting authenticator setup...");
     try {
-      const setup = await startTotpEnrollment(auth, userId);
-      if (!valid(generation)) return;
+      const setup = await startTotpEnrollment(auth, userId, () => valid(generation));
+      if (!valid(generation)) { discardTotpEnrollment(setup); return; }
       enrollmentRef.current = setup;
       setEnrollment(setup);
       setCode("");
@@ -90,6 +92,7 @@ export default function EnableMFAClient({ required, returnTo }: Props) {
       showError(error, generation);
       // An interrupted/invalid provider response can still leave an unverified factor.
       try {
+        if (!valid(generation)) return;
         const state = await loadTotpEnrollmentState(auth);
         if (valid(generation) && state.userId === userId) {
           setPendingFactorIds(state.pendingFactorIds);
@@ -120,39 +123,13 @@ export default function EnableMFAClient({ required, returnTo }: Props) {
     finally { finish(generation); }
   }
 
-  async function cancel() {
-    const setup = enrollmentRef.current;
-    if (!setup) return;
-    const generation = begin();
-    if (generation === null) return;
-    setStatus("Canceling unfinished setup...");
-    try {
-      await cancelTotpEnrollment(auth, setup);
-      if (!valid(generation)) return;
-      enrollmentRef.current = null;
-      setEnrollment(null);
-      setCode("");
-      setStatus("Authenticator setup canceled.");
-    } catch (error: unknown) { showError(error, generation); }
-    finally { finish(generation); }
-  }
-
-  async function cancelUnfinished() {
-    const generation = begin();
-    if (generation === null || !userId) return;
-    setStatus("Canceling unfinished authenticator setup...");
-    try {
-      for (const factorId of pendingFactorIds) {
-        if (!valid(generation)) return;
-        await cancelTotpEnrollment(auth, { factorId, userId, qrImage: "", secret: "" });
-      }
-      const state = await loadTotpEnrollmentState(auth);
-      if (!valid(generation) || state.userId !== userId) return;
-      setPendingFactorIds(state.pendingFactorIds);
-      setEnabled(state.enabled);
-      setStatus("Unfinished setup canceled. You can start again.");
-    } catch (error: unknown) { showError(error, generation); }
-    finally { finish(generation); }
+  function closeSetup() {
+    if (busyRef.current) return;
+    if (enrollmentRef.current) discardTotpEnrollment(enrollmentRef.current);
+    enrollmentRef.current = null;
+    setEnrollment(null);
+    setCode("");
+    setStatus("Setup closed. Its unverified factor remains on your account. Contact your account administrator if setup is blocked.");
   }
 
   const button = { padding: 10, borderRadius: 8, fontWeight: 700 };
@@ -172,18 +149,16 @@ export default function EnableMFAClient({ required, returnTo }: Props) {
           </label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="submit" disabled={busy || !/^\d{6}$/.test(code)} style={button}>{busy ? "Working..." : "Verify and continue"}</button>
-            <button type="button" onClick={() => void cancel()} disabled={busy} style={button}>Cancel setup</button>
+            <button type="button" onClick={closeSetup} disabled={busy} style={button}>Close setup</button>
           </div>
         </form>
       ) : enabled ? (
         <button type="button" onClick={() => { window.location.href = mfaStepUpHref(destination); }} disabled={busy} style={button}>Verify now</button>
-      ) : userId && pendingFactorIds.length > 0 ? (
-        <div style={{ display: "grid", gap: 8 }}>
-          <p>An unfinished authenticator setup exists on this account. Cancel it before starting again.</p>
-          <button type="button" onClick={() => void cancelUnfinished()} disabled={busy} style={button}>Cancel unfinished setup</button>
-        </div>
       ) : userId ? (
-        <button type="button" onClick={() => void start()} disabled={busy} style={button}>Enable authenticator app</button>
+        <div style={{ display: "grid", gap: 8 }}>
+          {pendingFactorIds.length > 0 ? <p>Earlier unfinished setup remains on this account. You can start a new setup. Contact your account administrator if the provider blocks further setup.</p> : null}
+          <button type="button" onClick={() => void start()} disabled={busy} style={button}>Enable authenticator app</button>
+        </div>
       ) : null}
       <div id="mfa-enrollment-status" role="status" aria-live="polite" style={{ overflowWrap: "anywhere" }}>{status}</div>
     </section>

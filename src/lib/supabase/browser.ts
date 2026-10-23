@@ -1,19 +1,8 @@
-// NEW FILE: src/lib/supabase/browser.ts
-import { createBrowserClient } from "@supabase/ssr";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
-export function supabaseBrowser() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-  if (!url || !anon) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+export { supabaseBrowser };
 
-  return createBrowserClient(url, anon);
-}
-
-/**
- * Compatibility alias:
- * Older pages import getBrowserSupabase().
- * Newer helper is supabaseBrowser().
- */
+/** Compatibility alias for existing browser pages. */
 export function getBrowserSupabase() {
   return supabaseBrowser();
 }

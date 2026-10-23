@@ -25,7 +25,7 @@ function moduleAt(file, mocks = {}, globals = {}) {
     throw new Error("Unexpected real dependency: " + name + " in " + file);
   };
   vm.runInNewContext("(function(require,module,exports){" + result.outputText + "\n})", {
-    URL, URLSearchParams, Headers, Response, Request, console, ...globals,
+    URL, URLSearchParams, Headers, Response, Request, console, Error, ...globals,
   }, { filename: file })(requireMock, mod, mod.exports);
   return mod.exports;
 }
@@ -119,49 +119,103 @@ async function main() {
   apiResponse = await trustRoute.POST(new Request("https://control.invalid/api/user/trust-device", { method: "POST", body: "{}" }));
   check(apiResponse.status === 200 && writes === 1, "actual route permits AAL2");
 
-  async function verifyPage({ next = destination, aal = "aal2", failure = null, code = "123456" } = {}) {
-    const values = ["verified-factor", code, "", false];
-    let cursor = 0;
-    const statuses = [], calls = [], location = { search: "?next=" + encodeURIComponent(next), href: "" };
-    const client = { auth: {
-      mfa: {
-        challenge: async () => { calls.push("challenge"); return { data: { id: "challenge" }, error: failure }; },
-        verify: async () => { calls.push("verify"); return { error: null }; },
-        getAuthenticatorAssuranceLevel: async () => { calls.push("assurance"); return { data: { currentLevel: aal }, error: null }; },
+  const pump = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
+  const deferred = () => { let resolve; const promise = new Promise((yes) => { resolve = yes; }); return { promise, resolve }; };
+  async function pageHarness(options = {}) {
+    const states = [], refs = [], effects = [], cleanups = [], calls = [];
+    let stateIndex = 0, refIndex = 0, effectIndex = 0, listener;
+    const location = { pathname: "/mfa", search: "?next=" + encodeURIComponent(options.next ?? destination), href: "" };
+    const auth = {
+      onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() { calls.push("unsubscribe"); } } } }; },
+      mfa: new Proxy({}, { get() { throw new Error("Mutable main MFA must not be called by page"); } }),
+      setSession() { throw new Error("main setSession forbidden"); },
+      refreshSession() { throw new Error("main refresh forbidden"); },
+    };
+    const client = { auth };
+    const helpers = {
+      async loadTotpEnrollmentState(actual) {
+        assert.equal(actual, auth); calls.push("load");
+        if (options.loadGate) await options.loadGate.promise;
+        if (options.loadError) throw new Error("synthetic factor-list failure");
+        return { userId: USER, enabled: !options.noFactor, verifiedFactorId: options.noFactor ? null : "verified-factor", pendingFactorIds: [] };
       },
-      refreshSession: async () => { calls.push("refresh"); return { error: null }; },
-    } };
+      async verifyExistingTotp(actual, userId, factorId, code, current) {
+        assert.equal(actual, auth); assert.equal(userId, USER); assert.equal(factorId, "verified-factor"); assert.equal(code, "123456");
+        if (!current()) throw new Error("session changed");
+        calls.push("verify");
+        if (options.verifyGate) await options.verifyGate.promise;
+        if (!current()) throw new Error("session changed");
+        if (options.failure) throw new Error(options.failure);
+        calls.push("promoted");
+      },
+    };
     const page = moduleAt("src/app/mfa/page.tsx", {
-      react: { useEffect() {}, useState: () => {
-        const index = cursor++;
-        return [values[index], (value) => { values[index] = value; if (index === 2) statuses.push(value); }];
-      } },
+      react: {
+        useState(initial) { const index = stateIndex++; if (!(index in states)) states[index] = initial; return [states[index], (value) => { states[index] = value; }]; },
+        useRef(initial) { const index = refIndex++; if (!refs[index]) refs[index] = { current: initial }; return refs[index]; },
+        useEffect(work) { const index = effectIndex++; if (!effects[index]) effects[index] = work; },
+      },
       "@/components/EnableMFAClient": { __esModule: true, default: "enrollment" },
       "@/components/control/ControlActionButton": { __esModule: true, default: "action" },
       "@/components/control/ControlPanel": { __esModule: true, default: "panel" },
       "@/components/control/controlTheme": { controlTheme: { radius: { sm: 1 }, color: {} } },
       "@/lib/supabase/client": { supabaseBrowser: () => client },
       "@/lib/auth/mfaReturn": returns,
+      "@/lib/auth/mfaEnrollment": helpers,
     }, { window: { location } });
-    const nodes = [];
-    const walk = (node) => { if (!node || typeof node !== "object") return; nodes.push(node); const children = node.props?.children; (Array.isArray(children) ? children : [children]).forEach(walk); };
-    walk(page.default());
-    const button = nodes.find((node) => node.type === "action");
-    assert.ok(button, "actual verify action exists");
-    await button.props.onClick();
-    return { calls, location, statuses };
+    let tree;
+    const render = () => { stateIndex = 0; refIndex = 0; effectIndex = 0; tree = page.default(); return tree; };
+    const nodes = () => {
+      render(); const all = [];
+      const walk = (node) => { if (!node || typeof node !== "object") return; all.push(node); const children = node.props?.children; (Array.isArray(children) ? children : [children]).forEach(walk); };
+      walk(tree); return all;
+    };
+    render(); effects.forEach((work) => cleanups.push(work())); await pump(); render();
+    return {
+      states, refs, calls, location, nodes,
+      emit: (event, session) => listener(event, session),
+      unmount: () => cleanups.forEach((cleanup) => cleanup?.()),
+      verify(code = "123456") {
+        const input = nodes().find((node) => node.type === "input"); assert.ok(input);
+        input.props.onChange({ target: { value: code } });
+        const button = nodes().find((node) => node.type === "action"); assert.ok(button);
+        return button.props.onClick();
+      },
+    };
   }
-  let verification = await verifyPage();
-  check(verification.calls.join(",") === "challenge,verify,refresh,assurance", "actual client completes and confirms AAL2");
-  check(verification.location.href === destination, "actual client returns to company/tab");
-  verification = await verifyPage({ next: "//attacker.invalid" });
-  check(verification.location.href === "/dashboard", "actual client cannot return externally");
-  verification = await verifyPage({ aal: "aal1" });
-  check(!verification.location.href && verification.statuses.some((status) => /AAL2/.test(status)), "actual client refuses failed step-up");
-  verification = await verifyPage({ failure: new Error("synthetic challenge failure") });
-  check(!verification.location.href && verification.calls.join(",") === "challenge", "failed challenge cannot navigate");
-  verification = await verifyPage({ code: "12" });
-  check(!verification.location.href && verification.calls.length === 0, "invalid code cannot challenge");
-  console.log("PASS: " + cases + " MFA return, actual middleware/layout/client and AAL2 route-boundary checks.");
+  let prompt = await pageHarness();
+  await prompt.verify();
+  check(prompt.calls.join(",") === "load,verify,promoted", "actual page delegates to captured-flow helper only");
+  check(prompt.location.href === destination, "successful captured step-up returns to company/tab");
+  prompt = await pageHarness({ next: "//attacker.invalid" }); await prompt.verify();
+  check(prompt.location.href === "/dashboard", "actual page rejects external return");
+  for (const failure of ["MFA AAL2 not established", "Web Locks unavailable", "synthetic provider failure"]) {
+    prompt = await pageHarness({ failure }); await prompt.verify();
+    check(!prompt.location.href && !prompt.calls.includes("promoted"), "failed captured verification/promotion never navigates");
+  }
+  prompt = await pageHarness(); await prompt.verify("12");
+  check(!prompt.location.href && !prompt.calls.includes("verify"), "invalid code never invokes provider helper");
+  prompt = await pageHarness({ noFactor: true });
+  check(prompt.nodes().some((node) => node.type === "enrollment" && node.props.returnTo === destination), "no verified factor offers bounded enrollment with return context");
+  prompt = await pageHarness({ loadError: true });
+  check(!prompt.nodes().some((node) => node.type === "enrollment") && !prompt.calls.includes("verify"), "read failure cannot fabricate enrollment eligibility");
+
+  let gate = deferred(); prompt = await pageHarness({ loadGate: gate });
+  prompt.emit("SIGNED_IN", { user: { id: USER } }); gate.resolve(); await pump();
+  check(prompt.states[0] === null && prompt.states[5] === null && prompt.states[4] === false, "sign-in during initial loading retires stale factor eligibility");
+  for (const event of ["SIGNED_IN", "SIGNED_OUT", "TOKEN_REFRESHED"]) {
+    gate = deferred(); prompt = await pageHarness({ verifyGate: gate });
+    const pending = prompt.verify(); await pump();
+    prompt.emit(event, event === "SIGNED_OUT" ? null : { user: { id: USER } }); gate.resolve(); await pending; await pump();
+    check(!prompt.location.href && !prompt.calls.includes("promoted") && prompt.states[0] === null, "auth event during captured await prevents stale completion: " + event);
+  }
+  gate = deferred(); prompt = await pageHarness({ verifyGate: gate });
+  const first = prompt.verify(), second = prompt.verify(); await second; await pump();
+  check(prompt.calls.filter((call) => call === "verify").length === 1, "busy reference prevents duplicate step-up calls");
+  gate.resolve(); await first;
+  gate = deferred(); prompt = await pageHarness({ verifyGate: gate });
+  const pending = prompt.verify(); await pump(); prompt.unmount(); gate.resolve(); await pending;
+  check(!prompt.location.href && prompt.calls.includes("unsubscribe") && !prompt.calls.includes("promoted"), "unmount retires pending step-up and observer");
+  console.log("PASS: " + cases + " MFA return, actual middleware/layout/page and AAL2 route-boundary checks.");
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

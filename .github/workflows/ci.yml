@@ -54,6 +54,9 @@ jobs:
       - name: Control authenticator enrollment regressions
         run: node scripts/verify-control-mfa-enrollment.js
 
+      - name: Control MFA captured session and cookie publication regressions
+        run: node scripts/verify-control-mfa-session.js
+
   timeclock-summary-db:
     runs-on: ubuntu-latest
     timeout-minutes: 10

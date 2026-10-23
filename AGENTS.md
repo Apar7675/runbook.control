@@ -81,3 +81,7 @@ If a change depends on architecture details not present locally, fetch the relev
 ## Current development workflow
 
 Before work, read [RunBook-AI-Cloud-Workflow.md](../RunBook.Desktop/Docs/Architecture/RunBook-AI-Cloud-Workflow.md) for current development authority, startup, shared-session coordination and authorized scope. Use its current instructions before historical migration directions. [LOCAL-HANDOFF.md](../LOCAL-HANDOFF.md) preserves recovery evidence. Architecture and application/data ownership rules remain in force.
+
+## Required reading before every coding task
+
+Before every coding task, read the current canonical [System Bible](https://github.com/Apar7675/runbook-desktop/blob/main/Docs/Architecture/RunBook-System-Bible.md) and [AI Cloud Workflow](https://github.com/Apar7675/runbook-desktop/blob/main/Docs/Architecture/RunBook-AI-Cloud-Workflow.md), then the applicable app bible and source. Resolve GitHub `main` to an exact commit and read both documents at that revision, or use the current shared F workspace source identified by the workflow. Record which revision/source was read; distinguish intended policy, checked-in implementation, tested behavior and deployed behavior. These links point to the authority rather than duplicating its rules here.

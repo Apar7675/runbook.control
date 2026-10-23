@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { captureMfaFlow, type BoundMfaFlow } from "@/lib/auth/mfaSession";
 
 type Auth = SupabaseClient["auth"];
 export type TotpEnrollment = { factorId: string; userId: string; qrImage: string; secret: string };
+const enrollmentFlows = new WeakMap<TotpEnrollment, BoundMfaFlow>();
 
 async function currentUser(auth: Auth, expectedUserId?: string): Promise<string> {
   const { data, error } = await auth.getUser();
@@ -26,62 +28,82 @@ export async function loadTotpEnrollmentState(auth: Auth) {
   const { data, error } = await auth.mfa.listFactors();
   if (error) throw new Error(error.message);
   await currentUser(auth, userId);
+  const verifiedFactorId = (data?.totp ?? []).find((factor) => factor.status === "verified")?.id ?? null;
   return {
     userId,
-    enabled: (data?.totp ?? []).some((factor) => factor.status === "verified"),
+    enabled: verifiedFactorId !== null,
+    verifiedFactorId,
     pendingFactorIds: (data?.all ?? []).filter((factor) => factor.factor_type === "totp" && factor.status === "unverified").map((factor) => factor.id),
   };
 }
 
-export async function startTotpEnrollment(auth: Auth, expectedUserId: string): Promise<TotpEnrollment> {
-  await currentUser(auth, expectedUserId);
-  const { data: factors, error: factorsError } = await auth.mfa.listFactors();
-  if (factorsError) throw new Error(factorsError.message);
-  if ((factors?.totp ?? []).some((factor) => factor.status === "verified")) {
-    throw new Error("An authenticator is already enabled. Verify it to continue.");
+export async function startTotpEnrollment(auth: Auth, expectedUserId: string, isCurrent: () => boolean): Promise<TotpEnrollment> {
+  const flow = await captureMfaFlow(auth, expectedUserId, isCurrent);
+  let retained = false;
+  try {
+    flow.assertCurrent();
+    const { data: factors, error: factorsError } = await flow.auth.mfa.listFactors();
+    flow.assertCurrent();
+    if (factorsError) throw new Error(factorsError.message);
+    if ((factors?.totp ?? []).some((factor) => factor.status === "verified")) throw new Error("An authenticator is already enabled. Verify it to continue.");
+    const { data, error } = await flow.auth.mfa.enroll({ factorType: "totp", friendlyName: "RunBook Control " + crypto.randomUUID() });
+    flow.assertCurrent();
+    if (error) throw new Error(error.message);
+    if (!data || data.type !== "totp" || !data.id || !data.totp?.qr_code || !data.totp.secret) throw new Error("Authenticator setup did not return a QR code and setup key.");
+    const enrollment = { factorId: data.id, userId: expectedUserId, qrImage: qrImage(data.totp.qr_code), secret: data.totp.secret };
+    enrollmentFlows.set(enrollment, flow);
+    retained = true;
+    return enrollment;
+  } finally {
+    if (!retained) flow.dispose();
   }
-  if ((factors?.all ?? []).some((factor) => factor.factor_type === "totp" && factor.status === "unverified")) {
-    throw new Error("An unfinished authenticator setup exists. Reload and cancel it before starting again.");
-  }
-  await currentUser(auth, expectedUserId);
-  const { data, error } = await auth.mfa.enroll({ factorType: "totp", friendlyName: "RunBook Control" });
-  if (error) throw new Error(error.message);
-  if (!data || data.type !== "totp" || !data.id || !data.totp?.qr_code || !data.totp.secret) {
-    throw new Error("Authenticator setup did not return a QR code and setup key.");
-  }
-  await currentUser(auth, expectedUserId);
-  return { factorId: data.id, userId: expectedUserId, qrImage: qrImage(data.totp.qr_code), secret: data.totp.secret };
 }
 
-export async function verifyTotpEnrollment(auth: Auth, enrollment: TotpEnrollment, code: string, onVerified: () => void = () => {}) {
+async function verifyBoundTotp(flow: BoundMfaFlow, factorId: string, code: string, onVerified: () => void) {
   if (!/^\d{6}$/.test(code)) throw new Error("Enter the 6-digit code from your authenticator app.");
-  await currentUser(auth, enrollment.userId);
-  const { data: challenge, error: challengeError } = await auth.mfa.challenge({ factorId: enrollment.factorId });
+  flow.assertCurrent();
+  const { data: challenge, error: challengeError } = await flow.auth.mfa.challenge({ factorId });
+  flow.assertCurrent();
   if (challengeError) throw new Error(challengeError.message);
   if (!challenge?.id) throw new Error("Authenticator challenge is unavailable.");
-  const { error: verifyError } = await auth.mfa.verify({ factorId: enrollment.factorId, challengeId: challenge.id, code });
+  const { data: verified, error: verifyError } = await flow.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
   if (verifyError) throw new Error(verifyError.message);
-  // A verified factor is no longer cancelable setup. Clear its QR/key immediately.
+  // Do this even if the operation retired while verification was in flight.
   onVerified();
-  await currentUser(auth, enrollment.userId);
-  const { error: refreshError } = await auth.refreshSession();
-  if (refreshError) throw new Error("Authenticator enabled, but session refresh failed. Verify it again to continue.");
-  await currentUser(auth, enrollment.userId);
-  const { data: assurance, error: assuranceError } = await auth.mfa.getAuthenticatorAssuranceLevel();
-  if (assuranceError) throw new Error(assuranceError.message);
-  if (assurance?.currentLevel !== "aal2") throw new Error("Authenticator enabled, but an AAL2 session was not established. Verify it again to continue.");
+  flow.assertCurrent();
+  if (!verified?.access_token || !verified.refresh_token) throw new Error("Authenticator verified, but no session was returned. Sign in again.");
+  await flow.promote({ access_token: verified.access_token, refresh_token: verified.refresh_token });
+  flow.assertCurrent();
 }
 
-export async function cancelTotpEnrollment(auth: Auth, enrollment: TotpEnrollment) {
-  await currentUser(auth, enrollment.userId);
-  const { data, error } = await auth.mfa.listFactors();
-  if (error) throw new Error(error.message);
-  const factor = (data?.all ?? []).find((item) => item.id === enrollment.factorId);
-  if (!factor) return; // Already removed; never substitute or remove another factor.
-  if (factor.factor_type !== "totp" || factor.status !== "unverified") {
-    throw new Error("This authenticator is already enabled and cannot be canceled as unfinished setup.");
+export async function verifyTotpEnrollment(_auth: Auth, enrollment: TotpEnrollment, code: string, onVerified: () => void = () => {}) {
+  const flow = enrollmentFlows.get(enrollment);
+  if (!flow) throw new Error("This authenticator setup is no longer active. Reload before continuing.");
+  let verified = false;
+  try {
+    await verifyBoundTotp(flow, enrollment.factorId, code, () => { verified = true; onVerified(); });
+  } finally {
+    if (verified) discardTotpEnrollment(enrollment);
   }
-  await currentUser(auth, enrollment.userId);
-  const { error: cancelError } = await auth.mfa.unenroll({ factorId: enrollment.factorId });
-  if (cancelError) throw new Error(cancelError.message);
+}
+
+export async function verifyExistingTotp(auth: Auth, userId: string, factorId: string, code: string, isCurrent: () => boolean) {
+  if (!/^\d{6}$/.test(code)) throw new Error("Enter a valid 6-digit code.");
+  const flow = await captureMfaFlow(auth, userId, isCurrent);
+  try {
+    flow.assertCurrent();
+    const { data: factors, error } = await flow.auth.mfa.listFactors();
+    flow.assertCurrent();
+    if (error) throw new Error(error.message);
+    if (!(factors?.totp ?? []).some((factor) => factor.id === factorId && factor.status === "verified")) throw new Error("The selected authenticator is unavailable. Reload before continuing.");
+    await verifyBoundTotp(flow, factorId, code, () => {});
+  } finally {
+    flow.dispose();
+  }
+}
+
+/** Close local setup only. Provider factor deletion has no atomic unverified-only API. */
+export function discardTotpEnrollment(enrollment: TotpEnrollment) {
+  enrollmentFlows.get(enrollment)?.dispose();
+  enrollmentFlows.delete(enrollment);
 }
