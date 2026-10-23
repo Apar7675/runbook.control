@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { companyHref } from "@/lib/control/companyScope";
+import { useCompanyScope } from "@/components/control/CompanyScope";
 import { useRouter } from "next/navigation";
 import ControlActionButton from "@/components/control/ControlActionButton";
 import ControlPanel from "@/components/control/ControlPanel";
@@ -31,6 +33,7 @@ export default function DeviceAdminActionsPanel({
   disableDelete?: boolean;
 }) {
   const router = useRouter();
+  const { selectedId } = useCompanyScope();
   const [busy, setBusy] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState("");
   const [revealedToken, setRevealedToken] = React.useState<string | null>(null);
@@ -137,8 +140,7 @@ export default function DeviceAdminActionsPanel({
       return;
     }
 
-    router.push("/devices");
-    router.refresh();
+    window.location.assign(companyHref("/devices", selectedId));
   }
 
   return (

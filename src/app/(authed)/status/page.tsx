@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionButtonV2, ControlActionLinkV2 } from "@/components/control/v2/ControlActionButtonV2";
 import ControlBadgeV2 from "@/components/control/v2/ControlBadgeV2";
@@ -417,7 +418,7 @@ export default async function StatusPage({
         </div>
       </div>
 
-      <form method="get" style={{ display: "grid", gap: 8 }}>
+      <CompanyForm method="get" style={{ display: "grid", gap: 8 }}>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 2fr) repeat(3, minmax(0, 1fr))", gap: 8 }}>
           <ControlInputV2 name="q" defaultValue={firstParam(params.q)} placeholder="Search component, signal, detail" />
           <ControlSelectV2 name="scope" defaultValue={scopeFilter || "all"}>
@@ -447,7 +448,7 @@ export default async function StatusPage({
           {filteredRows.length} row{filteredRows.length === 1 ? "" : "s"} shown from {statusRows.length}.
           {loadError ? ` Load error: ${loadError}` : ""}
         </div>
-      </form>
+      </CompanyForm>
 
       <ControlTableWrapV2>
         <ControlTableV2 minWidth={1120}>

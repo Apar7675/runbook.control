@@ -13,6 +13,9 @@ export function ControlTableWrap({
       tabIndex={0}
       style={{
         overflowX: "auto",
+        overflowY: "auto",
+        maxHeight: "min(42dvh, 420px)",
+        scrollbarGutter: "stable",
         borderRadius: t.radius.md,
         border: `1.25px solid ${t.color.border}`,
         background: t.color.surface,
@@ -47,13 +50,16 @@ export function ControlTableHeadCell({
   return (
     <th
       style={{
-        padding: "11px 14px",
+        padding: "7px 10px",
         borderBottom: `1px solid ${t.color.divider}`,
         color: t.color.textSecondary,
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: 600,
         textAlign: align,
         background: t.color.elevated,
+        position: "sticky",
+        top: 0,
+        zIndex: 1,
       }}
     >
       {children}
@@ -71,10 +77,10 @@ export function ControlTableCell({
   return (
     <td
       style={{
-        padding: "14px",
+        padding: "7px 10px",
         borderBottom: `1px solid ${t.color.divider}`,
         color: t.color.textSecondary,
-        fontSize: 16,
+        fontSize: 14,
         lineHeight: 1.45,
         textAlign: align,
         verticalAlign: "middle",

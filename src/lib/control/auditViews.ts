@@ -101,7 +101,8 @@ function isHighRisk(action: string) {
   return normalized.includes("delete") || normalized.includes("revoke") || normalized.includes("grant") || normalized.includes("billing_access") || normalized.includes("failed") || normalized.includes("error");
 }
 
-async function fetchAuditRows(filters: AuditFilterValues) {
+async function fetchAuditRows(filters: AuditFilterValues, shopIds: string[]) {
+  if (shopIds.length === 0) return [] as AuditDbRow[];
   const admin = supabaseAdmin();
   const limitRaw = Number(filters.limit || "200");
   const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 200;
@@ -109,6 +110,7 @@ async function fetchAuditRows(filters: AuditFilterValues) {
   let query = admin
     .from("rb_audit_log")
     .select("id,created_at,actor_user_id,actor_email,action,target_type,target_id,shop_id,meta")
+    .in("shop_id", shopIds)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -123,9 +125,10 @@ async function fetchAuditRows(filters: AuditFilterValues) {
   return asArray<AuditDbRow>(data);
 }
 
-async function countAuditRows(filters: AuditFilterValues, sinceIso?: string) {
+async function countAuditRows(filters: AuditFilterValues, shopIds: string[], sinceIso?: string) {
+  if (shopIds.length === 0) return 0;
   const admin = supabaseAdmin();
-  let query = admin.from("rb_audit_log").select("id", { count: "exact", head: true });
+  let query = admin.from("rb_audit_log").select("id", { count: "exact", head: true }).in("shop_id", shopIds);
 
   if (filters.before.trim()) query = query.lt("created_at", filters.before.trim());
   if (filters.shop_id.trim()) query = query.eq("shop_id", filters.shop_id.trim());
@@ -141,7 +144,9 @@ async function countAuditRows(filters: AuditFilterValues, sinceIso?: string) {
 
 export async function loadAuditViews(filters: AuditFilterValues): Promise<AuditViewsData> {
   const context = await getViewerContext();
-  const rowsRaw = await fetchAuditRows(filters);
+  const shopIds = context.shops.map((shop) => shop.id);
+  filters = { ...filters, shop_id: shopIds[0] ?? "" };
+  const rowsRaw = await fetchAuditRows(filters, shopIds);
   const shopNameById = new Map(context.shops.map((shop) => [shop.id, shop.name]));
 
   const rows = rowsRaw.map((row) => {
@@ -167,8 +172,8 @@ export async function loadAuditViews(filters: AuditFilterValues): Promise<AuditV
   });
 
   const [totalVisible, eventsToday] = await Promise.all([
-    countAuditRows(filters),
-    countAuditRows(filters, startOfTodayIso()),
+    countAuditRows(filters, shopIds),
+    countAuditRows(filters, shopIds, startOfTodayIso()),
   ]);
 
   return {

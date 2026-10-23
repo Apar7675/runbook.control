@@ -1,5 +1,6 @@
 ﻿import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { COMPANY_HEADER, companyRequest } from "@/lib/control/companyScope";
 
 const PUBLIC_PATHS = [
   "/",
@@ -42,6 +43,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const headers = new Headers(req.headers);
+  headers.set(COMPANY_HEADER, companyRequest(pathname, req.nextUrl.searchParams));
   headers.set("x-url", pathname);
   headers.set("x-original-url", pathname);
   headers.set("next-url", pathname);
@@ -51,6 +53,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const res = NextResponse.next({ request: { headers } });
+  res.headers.set("Cache-Control", "private, no-store");
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";

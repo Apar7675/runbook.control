@@ -72,7 +72,7 @@ export default async function SupportPage() {
       <ControlPageHeader
         eyebrow="Support"
         title="Support"
-        description="Admin and support surface for bundle metadata, capability diagnostics, schema visibility, and cleanup or delete-operation tracking across Control."
+        description="Bundles, device diagnostics and cleanup history for the selected company. Platform schema diagnostics are labeled separately."
         actions={<ControlActionLink href="/support/bundle" tone="primary">Upload bundle</ControlActionLink>}
       />
 
@@ -186,7 +186,7 @@ export default async function SupportPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18 }}>
         <ControlPanel
-          title="Schema / Shop Summary"
+          title="Platform schema summary (all companies)"
           description="Server-side summary using the same admin data patterns that already exist in Control. This is a visibility panel, not a mutation surface."
           actions={<ControlActionLink href="/status">Open status page</ControlActionLink>}
         >

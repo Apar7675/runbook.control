@@ -325,7 +325,7 @@ export default async function DashboardPage() {
     recentActivity={recentActivity}
     shortcuts={[
       { title: "Support", href: "/support", detail: `${limitedCount(summaryRows.support.count, 50)} bundles in recent records`, latest: summaryRows.support.latest_at ? `Latest: ${summaryRows.support.latest_label ?? "bundle"} - ${formatMaybeDate(summaryRows.support.latest_at)}` : "No support bundle metadata in current scope." },
-      { title: "Software updates", href: "/updates", detail: `${limitedCount(summaryRows.updates.count, 50)} packages in recent records`, latest: summaryRows.updates.latest_at ? `Latest: ${summaryRows.updates.latest_label ?? "unknown"} - ${formatMaybeDate(summaryRows.updates.latest_at)}` : "No update-package metadata available." },
+      { title: "Software updates (platform-wide)", href: "/updates", detail: `${limitedCount(summaryRows.updates.count, 50)} packages in recent records`, latest: summaryRows.updates.latest_at ? `Latest: ${summaryRows.updates.latest_label ?? "unknown"} - ${formatMaybeDate(summaryRows.updates.latest_at)}` : "No update-package metadata available." },
       { title: "Audit log", href: "/audit", detail: "Browse recent activity", latest: summaryRows.audit.latest_at ? `Latest: ${summaryRows.audit.latest_label ?? "event"} - ${formatMaybeDate(summaryRows.audit.latest_at)}` : "No audit rows in current scope." },
     ]}
   />;

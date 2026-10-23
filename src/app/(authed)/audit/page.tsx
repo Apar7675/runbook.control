@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
@@ -45,8 +46,8 @@ export default async function AuditPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const filters = buildFilters(params);
-  const data = await loadAuditViews(filters);
+  const data = await loadAuditViews(buildFilters(params));
+  const filters = data.filters;
 
   if (!data.context.isPlatformAdmin) {
     return (
@@ -73,7 +74,7 @@ export default async function AuditPage({
         eyebrow="Audit"
         title="Audit Log"
         description="Cloud and admin audit record for Control. Filters stay grounded in the existing server-side audit API and export path."
-        actions={<ControlActionLink href={`/api/audit/export?limit=${encodeURIComponent(filters.limit || "200")}${filters.action ? `&action=${encodeURIComponent(filters.action)}` : ""}${filters.actor_email ? `&actor_email=${encodeURIComponent(filters.actor_email)}` : ""}${filters.shop_id ? `&shop_id=${encodeURIComponent(filters.shop_id)}` : ""}${filters.target_id ? `&target_id=${encodeURIComponent(filters.target_id)}` : ""}${filters.before ? `&before=${encodeURIComponent(filters.before)}` : ""}`} tone="primary">Export audit</ControlActionLink>}
+        actions={data.context.shops.length > 0 ? <ControlActionLink href={`/api/audit/export?limit=${encodeURIComponent(filters.limit || "200")}${filters.action ? `&action=${encodeURIComponent(filters.action)}` : ""}${filters.actor_email ? `&actor_email=${encodeURIComponent(filters.actor_email)}` : ""}${filters.shop_id ? `&shop_id=${encodeURIComponent(filters.shop_id)}` : ""}${filters.target_id ? `&target_id=${encodeURIComponent(filters.target_id)}` : ""}${filters.before ? `&before=${encodeURIComponent(filters.before)}` : ""}`} tone="primary">Export audit</ControlActionLink> : <span>Choose a company to export</span>}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
@@ -87,12 +88,12 @@ export default async function AuditPage({
         title="Audit Record"
         description="Dense audit table with real server-side filters only. No client-only fake filter controls are introduced here."
       >
-        <form method="get" style={{ display: "grid", gap: 8 }}>
+        <CompanyForm method="get" style={{ display: "grid", gap: 8 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 8 }}>
             <input name="action" defaultValue={filters.action} placeholder="Action contains" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
             <input name="actor_email" defaultValue={filters.actor_email} placeholder="Actor email" style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }} />
             <select name="shop_id" defaultValue={filters.shop_id} style={{ minHeight: 38, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }}>
-              <option value="">All shops</option>
+              <option value="">Selected company</option>
               {data.context.shops.map((shop) => (
                 <option key={shop.id} value={shop.id}>{shop.name}</option>
               ))}
@@ -106,7 +107,7 @@ export default async function AuditPage({
             <ControlActionLink href="/audit">Clear</ControlActionLink>
             <div style={{ fontSize: 12, color: t.color.textMuted }}>{data.rows.length} row{data.rows.length === 1 ? "" : "s"} loaded</div>
           </div>
-        </form>
+        </CompanyForm>
 
         {data.rows.length === 0 ? (
           <ControlEmptyState

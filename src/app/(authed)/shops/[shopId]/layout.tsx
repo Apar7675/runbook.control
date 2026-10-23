@@ -1,5 +1,7 @@
+import { getViewerContext as getCompanyViewer } from "@/lib/control/summary";
+import { notFound as companyNotFound } from "next/navigation";
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -38,6 +40,8 @@ type Props = {
 
 export default async function ShopLayout({ params, children }: Props) {
   const { shopId } = await params;
+  const companyViewer = await getCompanyViewer();
+  if (!companyViewer.shops.some((company) => company.id === shopId)) companyNotFound();
   const supabase = await supabaseServer();
 
   const { data: userRes } = await supabase.auth.getUser();
@@ -101,7 +105,7 @@ export default async function ShopLayout({ params, children }: Props) {
             alignItems: "center",
             gap: 12,
             flexWrap: "wrap",
-            padding: "10px 14px",
+            padding: "6px 10px",
             fontSize: 12.5,
           }}
         >
@@ -159,11 +163,11 @@ export default async function ShopLayout({ params, children }: Props) {
           width: "100%",
           maxWidth: theme.spacing.contentWidth,
           margin: "0 auto",
-          padding: "14px 0 0",
+          padding: "6px 0 0",
           display: "block",
         }}
       >
-        <div style={{ minWidth: 0, display: "grid", gap: 14 }}>
+        <div style={{ minWidth: 0, display: "grid", gap: 10 }}>
           {/* The parent layout authenticates platform admins. Shop billing must stay
               reachable here so admins can restore access for an expired shop. */}
           {children}

@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { COMPANY_HEADER, resolveCompany } from "@/lib/control/companyScope";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { describeShopAccess, type ShopAccessDecision } from "@/lib/billing/access";
@@ -16,6 +18,10 @@ export type ViewerContext = {
   email: string | null;
   isPlatformAdmin: boolean;
   shops: ViewerShop[];
+  authorizedShops?: ViewerShop[];
+  selectedCompanyId?: string | null;
+  companyUnavailable?: boolean;
+  companySelectionExplicit?: boolean;
 };
 
 export type ShopSnapshot = {
@@ -119,13 +125,20 @@ export async function getViewerContext(): Promise<ViewerContext> {
   if (adminError) throw new Error(adminError.message);
 
   const isPlatformAdmin = !!adminRow?.user_id || isPlatformAdminEmail(data.user.email ?? null);
-  const shops = await loadViewerRows(data.user.id, isPlatformAdmin);
+  const authorizedShops = await loadViewerRows(data.user.id, isPlatformAdmin);
+  const requested = (await headers()).get(COMPANY_HEADER) ?? "";
+  const scope = resolveCompany(authorizedShops, requested);
+  const shops = scope.selected ? [scope.selected] : [];
 
   return {
     userId: data.user.id,
     email: data.user.email ?? null,
     isPlatformAdmin,
     shops,
+    authorizedShops,
+    selectedCompanyId: scope.selected?.id ?? null,
+    companyUnavailable: scope.unavailable,
+    companySelectionExplicit: Boolean(requested),
   };
 }
 
@@ -133,7 +146,7 @@ export function selectPrimaryShop(shops: ViewerShop[], preferredShopId?: string 
   const preferred = asText(preferredShopId);
   if (preferred) {
     const match = shops.find((shop) => shop.id === preferred);
-    if (match) return match;
+    return match ?? null;
   }
 
   return shops[0] ?? null;
@@ -169,11 +182,11 @@ async function loadShopBilling(admin: ReturnType<typeof supabaseAdmin>, shopId: 
 async function countWhere(
   admin: ReturnType<typeof supabaseAdmin>,
   table: string,
-  filters: Array<{ column: string; value: unknown; op?: "eq" }>
+  filters: Array<{ column: string; value: unknown; op?: "eq" | "in" }>
 ) {
   let query = admin.from(table).select("id", { count: "exact", head: true });
   for (const filter of filters) {
-    query = query.eq(filter.column, filter.value as any);
+    query = filter.op === "in" ? query.in(filter.column, filter.value as string[]) : query.eq(filter.column, filter.value as any);
   }
   const { count, error } = await query;
   if (error) return 0;
@@ -291,12 +304,14 @@ export async function getShopSnapshot(shop: ViewerShop): Promise<ShopSnapshot> {
 }
 
 export async function getPlatformSnapshot(context: ViewerContext) {
+  const ids = context.shops.map((shop) => shop.id);
+  if (ids.length === 0) return { shopCount: 0, deviceCount: 0, employeeCount: 0, auditCount: 0, manageableShopCount: 0 };
   const admin = supabaseAdmin();
   const [shopCount, deviceCount, employeeCount, auditCount] = await Promise.all([
-    countWhere(admin, "rb_shops", []),
-    countWhere(admin, "rb_devices", []),
-    countWhere(admin, "employees", []),
-    countWhere(admin, "rb_audit_log", []),
+    countWhere(admin, "rb_shops", [{ column: "id", value: ids, op: "in" }]),
+    countWhere(admin, "rb_devices", [{ column: "shop_id", value: ids, op: "in" }]),
+    countWhere(admin, "employees", [{ column: "shop_id", value: ids, op: "in" }]),
+    countWhere(admin, "rb_audit_log", [{ column: "shop_id", value: ids, op: "in" }]),
   ]);
 
   return {

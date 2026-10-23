@@ -1,3 +1,5 @@
+import { getViewerContext as getCompanyViewer } from "@/lib/control/summary";
+import { notFound as companyNotFound } from "next/navigation";
 import React from "react";
 import { ActionLink, DataList, EmptyState, PageHeader, SectionBlock } from "@/components/control/ui";
 import MobileTimeclockPolicyEditor from "@/components/shops/MobileTimeclockPolicyEditor";
@@ -13,6 +15,8 @@ type Props = {
 
 export default async function ShopPolicyPage({ params }: Props) {
   const { shopId } = await params;
+  const companyViewer = await getCompanyViewer();
+  if (!companyViewer.shops.some((company) => company.id === shopId)) companyNotFound();
   const shop = await rbGetShop(shopId);
 
   if (!shop) {

@@ -539,14 +539,15 @@ function IssueList({
   }
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div className="control-shop-issues" role="region" aria-label="Shop issues" tabIndex={0} style={{ display: "grid", gap: 8, maxHeight: 240, overflowY: "auto" }}>
       {issues.map((issue) => (
         <div
           key={`${issue.title}:${issue.detail}`}
+          className="control-shop-issue"
           style={{
             display: "grid",
-            gap: 8,
-            padding: 14,
+            gap: 6,
+            padding: 8,
             borderRadius: t.radius.md,
             border: `1px solid ${t.color.softBorder}`,
             background: "#F5F7FF",
@@ -556,7 +557,7 @@ function IssueList({
             <div style={{ color: t.color.text, fontWeight: 800, fontSize: 14 }}>{issue.title}</div>
             <ControlStatusChip label={issue.tone === "danger" ? "Critical" : issue.tone === "warning" ? "Watch" : "Info"} tone={issue.tone} />
           </div>
-          <div style={{ color: t.color.textMuted, fontSize: 13, lineHeight: 1.55 }}>{issue.detail}</div>
+          <div style={{ color: t.color.textMuted, fontSize: 14, lineHeight: 1.4 }}>{issue.detail}</div>
         </div>
       ))}
     </div>
@@ -725,7 +726,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
   ];
 
   return (
-    <div className="control-shop-page" style={{ display: "grid", gap: 14, minWidth: 0 }}>
+    <div className="control-shop-page" style={{ display: "grid", gap: 10, minWidth: 0 }}>
       <ControlPageHeader
         eyebrow="Shop Profile"
         title={snapshot.name}
@@ -733,7 +734,7 @@ export default async function ShopPage({ params, searchParams }: Props) {
         actions={headerActions}
       />
 
-      <div className="control-shop-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 12 }}>
+      <div className="control-shop-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: 12 }}>
         <ControlMetricCard
           label="Billing Status"
           value={humanizeLabel(snapshot.billing_status, "Unknown")}
@@ -770,8 +771,8 @@ export default async function ShopPage({ params, searchParams }: Props) {
       />
 
       {activeTab === "overview" ? (
-        <div style={{ display: "grid", gap: 14 }}>
-          <div className="control-shop-overview-columns" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 0.8fr)", gap: 14 }}>
+        <div className="control-shop-overview" style={{ display: "grid", gap: 6 }}>
+          <div className="control-shop-overview-columns" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <ControlPanel
               title="Shop Identity"
               description="Shop details and current access."
@@ -812,9 +813,9 @@ export default async function ShopPage({ params, searchParams }: Props) {
             <ControlMetricCard label="Mobile Users" value={String(snapshot.counts.employees_mobile_ready)} meta={`${memberData.counts.mobileReviewCount} review queue item${memberData.counts.mobileReviewCount === 1 ? "" : "s"}.`} tone={memberData.counts.mobileReviewCount > 0 ? "warning" : "info"} />
           </div>
 
-          <div className="control-shop-overview-columns" style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.95fr) minmax(0, 1.05fr)", gap: 14 }}>
+          <div className="control-shop-overview-columns control-shop-summary" style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.95fr) minmax(0, 1.05fr)", gap: 8 }}>
             <ControlPanel
-              title="Recent Issues"
+              title={`Recent Issues (${issues.length})`}
               description="Billing, device and access items that need review."
             >
               <IssueList issues={issues} />
@@ -1225,7 +1226,17 @@ export default async function ShopPage({ params, searchParams }: Props) {
         </div>
       ) : null}
       <style>{`
-        .control-shop-page { container-type: inline-size; }
+        .control-shop-page { container-type: inline-size; gap: 6px !important; }
+        .control-shop-overview-columns { gap: 8px !important; }
+        .control-shop-overview .control-panel-heading { padding-top: 5px !important; padding-bottom: 5px !important; }
+        @container (min-width: 960px) {
+          .control-shop-page > .control-page-header > div:first-child { display: flex !important; align-items: baseline; gap: 10px !important; }
+          .control-shop-overview-columns:first-child .control-panel-heading > div:first-child { display: flex !important; flex-wrap: wrap; align-items: baseline; gap: 8px !important; }
+          .control-shop-overview .control-key-value-grid { gap: 6px !important; }
+          .control-shop-overview .control-key-value-item { padding: 4px 8px !important; min-height: 50px !important; gap: 2px !important; }
+          .control-shop-issues { max-height: 72px !important; }
+          .control-shop-summary [role="region"][aria-label="Scrollable data table"] { max-height: 96px !important; }
+        }
         .control-shop-page .control-shop-overview-columns > *,
         .control-shop-page .control-shop-metrics > * { min-width: 0; }
         @container (max-width: 760px) {

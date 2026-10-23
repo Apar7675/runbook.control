@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import React from "react";
 import GlassCard from "@/components/GlassCard";
 import { theme } from "@/lib/ui/theme";

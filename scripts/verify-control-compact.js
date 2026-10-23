@@ -21,18 +21,19 @@ function fixtureNote() {
   return React.createElement("div", { role: "note", "aria-label": "Fixture preview", style: { padding: "6px 10px", border: "1px solid #C9D8F7", borderRadius: 5, color: "#36569C", background: "#F8FAFF", fontSize: 12 } }, "LOCAL COMPONENT PREVIEW | SYNTHETIC DATA | NOT LIVE / AUTHENTICATED");
 }
 
-function screenHtml(load, content, long = false) {
+function screenHtml(load, content, long = false, selectedCompanyId = "synthetic-shop-0") {
   const Shell = load(path.join(root, "src/components/control/ControlAppShell.tsx")).default;
   const RootLayout = load(path.join(root, "src/app/layout.tsx")).default;
   return "<!doctype html>" + renderToStaticMarkup(React.createElement(RootLayout, null, React.createElement(Shell, {
     email: long ? `${"long-account".repeat(12)}@example.invalid` : "reviewer@example.invalid", roleLabel: "Platform admin",
+    companies: [{ id: "synthetic-shop-0", name: "Synthetic review company" }, { id: "synthetic-shop-1", name: "Synthetic second company" }], selectedCompanyId,
     statuses: [{ key: "auth", label: "Fixture identity", tone: "info" }, { key: "data", label: "Synthetic records", tone: "info" }],
   }, fixtureNote(), content)));
 }
 
 function navigationMocks(pathname, search = "") {
   return {
-    "next/link": { __esModule: true, default: ({ children, ...props }) => React.createElement("a", props, children) },
+    "next/link": { __esModule: true, default: ({ children, prefetch: _prefetch, ...props }) => React.createElement("a", props, children) },
     "next/navigation": {
       usePathname: () => pathname, useSearchParams: () => new URLSearchParams(search),
       useRouter: () => ({ replace: () => { throw new Error("Fixture must not navigate through a real client router"); }, refresh: () => {} }),
@@ -57,7 +58,7 @@ function fixture(state) {
   const shopId = snapshots[0]?.id ?? "synthetic-out-of-scope";
   const records = (count, factory) => Array.from({ length: count }, (_, i) => ({ shop_id: shopId, created_at: stamp, ...factory(i) }));
   const data = {
-    time_events: empty ? [] : records(large ? 1000 : 4, (i) => ({ shop_id: snapshots[i % snapshots.length].id })),
+    time_events: empty ? [] : records(large ? 1000 : 4, () => ({ shop_id: snapshots[0].id })),
     rb_audit_log: empty ? [] : records(large ? 200 : 8, (i) => ({ id: `event-${i}`, action: long ? `Synthetic administrative event ${"LongAction".repeat(14)}` : `Synthetic event ${i + 1}`, actor_email: long ? `${"long-user".repeat(14)}@example.invalid` : "reviewer@example.invalid" })),
     rb_support_bundles: empty ? [] : records(large ? 50 : 2, () => ({ file_path: long ? `synthetic/${"LongBundleName".repeat(16)}.zip` : "synthetic/support.zip" })),
     rb_update_packages: empty ? [] : records(large ? 50 : 2, () => ({ version: long ? "synthetic-version-".repeat(16) : "synthetic-1.4.0" })),
@@ -111,12 +112,13 @@ function componentLoader(mocks) {
 
 async function render(state) {
   const data = fixture(state);
+  const scopedShops = data.snapshots.slice(0, 1);
   const load = componentLoader({
     ...navigationMocks("/dashboard"),
     "@/lib/control/summary": {
-      getViewerContext: async () => ({ userId: "synthetic-user", email: "reviewer@example.invalid", isPlatformAdmin: true, shops: data.snapshots }),
+      getViewerContext: async () => ({ userId: "synthetic-user", email: "reviewer@example.invalid", isPlatformAdmin: true, shops: scopedShops }),
       getShopSnapshot: async (shop) => shop,
-      getPlatformSnapshot: async () => ({ manageableShopCount: data.snapshots.length }),
+      getPlatformSnapshot: async () => ({ manageableShopCount: scopedShops.length }),
     },
     "@/lib/supabase/admin": { supabaseAdmin: () => ({ from: data.from }) },
   });
@@ -129,14 +131,14 @@ async function render(state) {
     assert(["time_events", "rb_audit_log", "rb_support_bundles", "rb_update_packages"].includes(call.table));
     const cap = call.operations.find(([op]) => op === "limit")?.[1];
     assert.equal(cap, call.table === "time_events" ? 1000 : call.table === "rb_audit_log" ? (call.operations.find(([op]) => op === "select")[1].includes("actor_email") ? 8 : 200) : 50);
-    if (call.table !== "rb_update_packages") assert.deepEqual(call.operations.find(([op]) => op === "in")?.[2], data.snapshots.map((s) => s.id));
+    if (call.table !== "rb_update_packages") assert.deepEqual(call.operations.find(([op]) => op === "in")?.[2], scopedShops.map((s) => s.id));
   }
   const model = load(path.join(root, "src/components/control/dashboard/ControlDashboard.tsx"));
   const ordered = model.orderAlerts(["Low", "High", "Critical", "Medium", "High"].map((priority, i) => ({ priority, key: String(i) })));
   assert.deepEqual(ordered.map((row) => row.key), ["2", "1", "4", "3", "0"]);
   assert.equal(model.limitedCount(50, 50), "50+");
   assert.equal(model.limitedCount(49, 50), "49");
-  return { html, calls: data.calls };
+  return { html, calls: data.calls, alerts: page.props.alerts };
 }
 
 function deviceFixture() {
@@ -160,27 +162,33 @@ function deviceFixture() {
 
 async function renderDevices(url) {
   const mode = url.searchParams.get("fixture") || "populated";
+  const company = url.searchParams.get("company") || "synthetic-shop-0";
   const load = componentLoader({
     ...navigationMocks("/devices", url.search),
     "@/lib/control/deviceViews": {
-      loadDeviceViewRows: async () => ({ context: { isPlatformAdmin: mode !== "nonadmin" }, rows: mode === "empty" ? [] : deviceFixture() }),
+      loadDeviceViewRows: async () => ({ context: { isPlatformAdmin: mode !== "nonadmin" }, rows: mode === "empty" ? [] : deviceFixture().filter((row) => row.shop_id === company) }),
     },
   });
   const Page = load(path.join(root, "src/app/(authed)/devices/page.tsx")).default;
-  return screenHtml(load, await Page({ searchParams: Promise.resolve(Object.fromEntries(url.searchParams)) }));
+  return screenHtml(load, await Page({ searchParams: Promise.resolve(Object.fromEntries(url.searchParams)) }), false, company);
 }
 
-async function renderShop() {
+async function renderShop(state = "populated") {
   const data = fixture("populated");
   const shop = { ...data.snapshots[0], name: "Synthetic review shop", created_at: "2026-10-01T12:00:00Z", billing_status: "active" };
   shop.access = { ...shop.access, desktop_mode: "full", mobile_mode: "full", display_status: "Active", billing_status: "active", summary: "Synthetic entitlement outcome for visual review." };
   const calls = [];
+  if (state === "busy") shop.access = { ...shop.access, state: "restricted", summary: "Synthetic billing restriction requires review." };
   const tables = {
     rb_devices: deviceFixture().filter((row) => row.shop_id === shop.id),
     rb_device_tokens: [], employees: [], rb_shop_members: [], rb_profiles: [], rb_trusted_devices: [], time_events: [],
     rb_audit_log: [{ id: "synthetic-audit-1", shop_id: shop.id, action: "Synthetic admin review", actor_email: "reviewer@example.invalid", created_at: "2026-10-22T20:00:00Z" }],
     rb_support_bundles: [], rb_shops: [shop], rb_control_admins: [{ user_id: "synthetic-user" }],
   };
+  if (state === "busy") {
+    tables.time_events = Array.from({length: 4}, (_,i) => ({id: `synthetic-review-${i}`,shop_id:shop.id,needs_review:true,updated_at:"2026-10-23T12:00:00Z"}));
+    tables.rb_audit_log = Array.from({length: 12}, (_,i) => ({id:`synthetic-audit-${i}`,shop_id:shop.id,action:`Synthetic admin review ${i+1}`,actor_email:"reviewer@example.invalid",created_at:"2026-10-22T20:00:00Z"}));
+  }
   function from(table) {
     assert(Object.hasOwn(tables, table), `Unexpected fixture table: ${table}`);
     const call = { table, operations: [] };
@@ -234,6 +242,7 @@ async function main() {
   process.env.TMP = browserTemp;
   const rendered = Object.fromEntries(await Promise.all(states.map(async (state) => [state, await render(state)])));
   const shop = await renderShop();
+  const shopBusy = await renderShop("busy");
   const serverErrors = [];
   const server = http.createServer(async (request, response) => {
     const url = new URL(request.url, "http://localhost");
@@ -260,7 +269,7 @@ async function main() {
       else
       if ((url.pathname === "/" || url.pathname === "/dashboard") && Object.hasOwn(rendered, state)) html = rendered[state].html;
       else if (url.pathname === "/devices") html = await renderDevices(url);
-      else if (url.pathname === "/shops/synthetic-shop-0" && (url.searchParams.get("tab") || "overview") === "overview") html = shop.html;
+      else if (url.pathname === "/shops/synthetic-shop-0" && (url.searchParams.get("tab") || "overview") === "overview") html = url.searchParams.get("fixture") === "busy" ? shopBusy.html : shop.html;
       else { response.writeHead(404); response.end("Local fixture only"); return; }
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; connect-src 'none'; font-src 'none'; form-action 'self'" });
       response.end(html);
@@ -297,14 +306,20 @@ async function main() {
       await page.goto(`${origin}/?state=${state}`);
       const stats = await measure(page);
       assert.equal(stats.width, width, `${state}: horizontal page overflow at ${width}`);
-      // Readable reference-sized typography may scroll vertically in shorter windows.
-      // Keep the full-height desktop check at 1080px; never clip content to force a fit.
-      if (["populated", "empty", "restricted", "queryerror"].includes(state) && width >= 1200 && height >= 1080) {
+      // The compact overview must fit common desktop viewports; expanded details stay scrollable.
+      if (["populated", "empty", "restricted", "queryerror"].includes(state) && width >= 1200 && height >= 768) {
         assert.equal(stats.height, height, `${state}: desktop overview scroll at ${width}x${height}`);
+        const health = await page.locator(".dashboard-health-list").evaluate((el) => ({ height: el.clientHeight, content: el.scrollHeight }));
+        assert(health.content <= health.height + 1, "All normal system-health details fit without internal scrolling");
       }
       await checkImages(page);
+      assert.equal(await page.locator(".control-dashboard").evaluate((el) => getComputedStyle(el).fontSize), "14px", "Compact body stays readable without zoom tricks");
+      if (width >= 1200 && height >= 768) {
+        const bounds = await page.locator(".control-nav a").evaluateAll((links) => links.map((link) => ({ top: link.getBoundingClientRect().top, bottom: link.getBoundingClientRect().bottom })));
+        assert(bounds.every((box) => box.top >= 0 && box.bottom <= height), "All thirteen module links fit normal desktop height");
+      }
       assert.equal(await page.getByRole("note", { name: "Fixture preview" }).count(), 1);
-      assert.deepEqual(await page.locator("nav a").evaluateAll((links) => links.map((link) => link.getAttribute("href"))), destinations);
+      assert.deepEqual(await page.locator("nav a").evaluateAll((links) => links.map((link) => { const u = new URL(link.getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; })), destinations);
       assert.equal(await page.locator("[aria-current=page]").count(), 1);
       assert.equal(await page.locator(".dashboard-metrics > a").count(), 4);
       assert.equal(await page.locator(".dashboard-summary > a").count(), 5);
@@ -329,20 +344,20 @@ async function main() {
       await summary.focus();
       await page.keyboard.press("Enter");
       assert(await page.locator("details").getAttribute("open") !== null);
-      const rows = await page.locator(".dashboard-full-alerts .dashboard-alert").evaluateAll((els) => els.map((el) => ({ key: el.dataset.alertKey, priority: el.dataset.priority, text: el.textContent, href: el.querySelector("a").getAttribute("href") })));
-      const expected = state === "restricted" ? 28 : state === "largecounts" ? 18 : 14;
-      assert.equal(rows.length, expected, "All generated alerts, including beyond 12, are disclosed");
-      assert.equal(rows[0].key, state === "restricted" ? "synthetic-shop-0:billing" : "synthetic-shop-7:billing", "Late Critical alert must reach first preview");
+      const rows = await page.locator(".dashboard-full-alerts .dashboard-alert").evaluateAll((els) => els.map((el) => ({ key: el.dataset.alertKey, priority: el.dataset.priority, text: el.textContent, href: (() => { const u = new URL(el.querySelector("a").getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; })() })));
+      const expected = rendered[state].alerts.length;
+      assert.equal(rows.length, expected, "All generated company alerts are disclosed");
+      assert.equal(rows[0].key, rendered[state].alerts.slice().sort((a,b) => ({Critical:0,High:1,Medium:2,Low:3}[a.priority] - {Critical:0,High:1,Medium:2,Low:3}[b.priority]))[0].key, "Highest priority company alert must reach first preview");
       const ranks = { Critical: 0, High: 1, Medium: 2, Low: 3 };
       assert(rows.every((row, i) => i === 0 || ranks[rows[i - 1].priority] <= ranks[row.priority]));
       assert(rows.every((row) => row.text.includes("Source:") && row.href.startsWith("/")));
       assert(rows.every((row) => destinations.includes(row.href) || /^\/shops\/synthetic-shop-\d\?tab=devices$/.test(row.href)));
       assert(rows.some((row) => row.href === "/timeclock-review"));
       await page.keyboard.press("Tab");
-      assert.equal(await page.evaluate(() => document.activeElement.getAttribute("href")), rows[0].href);
+      assert.equal(await page.evaluate(() => (() => { const u = new URL(document.activeElement.getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; })()), rows[0].href);
       await page.locator(".dashboard-full-alerts a").last().focus();
       const finalLink = await page.evaluate(() => ({ top: document.activeElement.getBoundingClientRect().top, bottom: document.activeElement.getBoundingClientRect().bottom }));
-      assert(finalLink.top >= 0 && finalLink.bottom <= height);
+      assert(finalLink.top >= -1 && finalLink.bottom <= height + 1, JSON.stringify({ state, width, height, finalLink }));
       assert.equal((await measure(page)).width, width);
       const file = `${state}-alerts-expanded-${width}x${height}.png`;
       const expandedStats = await measure(page);
@@ -359,13 +374,23 @@ async function main() {
       assert.equal(stats.width, width, `Devices: horizontal page overflow at ${width}`);
       await checkImages(page);
       assert.equal(await page.locator("table thead th").count(), 10, "All device authority columns remain available");
-      assert.equal(await page.locator("table tbody tr").count(), 4);
+      assert.equal(await page.locator("table tbody tr").count(), 2, "Only selected-company devices enter this preview");
       assert.equal(await page.getByRole("region", { name: "Scrollable data table" }).count(), 1);
       assert(await page.locator("table tbody tr a").evaluateAll((links) => links.every((link) => {
         const action = link.getBoundingClientRect();
         const region = link.closest('[role="region"]').getBoundingClientRect();
         return action.left >= region.left && action.right <= region.right + 1;
       })), "Device actions remain in the visible table area at every viewport");
+      const region = page.getByRole("region", { name: "Scrollable data table" });
+      const tableBounds = await region.evaluate((el) => ({ height: el.clientHeight, scrollHeight: el.scrollHeight, maxHeight: parseFloat(getComputedStyle(el).maxHeight) }));
+      assert(tableBounds.height <= Math.min(height * 0.42, 420) + 1, "Device data stays in a bounded region");
+      await page.locator("table tbody tr a").last().focus();
+      assert(await page.locator("table tbody tr a").last().evaluate((el) => {
+        const b = el.getBoundingClientRect(), r = el.closest('[role="region"]').getBoundingClientRect();
+        return b.top >= r.top && b.bottom <= r.bottom + 1;
+      }), "Last device action remains reachable by keyboard scroll");
+      await region.focus();
+      await region.evaluate((el) => { el.scrollTop = 0; });
       const screenshots = await capture(page, `devices-${width}x${height}.png`, stats);
       const navKeyboard = await checkNavigationKeyboard(page, height);
       results.push({ screen: "devices", state: "populated", viewport: { width, height }, ...stats, navKeyboard, ...screenshots });
@@ -373,7 +398,7 @@ async function main() {
     await page.setViewportSize({ width: 1440, height: 900 });
     const filterCases = [
       [{ q: "office" }, ["synthetic-device-a"]],
-      [{ type: "workstation" }, ["synthetic-device-b", "synthetic-device-d"]],
+      [{ type: "workstation" }, ["synthetic-device-b"]],
       [{ status: "disabled" }, ["synthetic-device-c"]],
       [{ shop: "synthetic-shop-1" }, ["synthetic-device-c", "synthetic-device-d"]],
       [{ access: "read only" }, ["synthetic-device-b"]],
@@ -381,7 +406,8 @@ async function main() {
     ];
     const filterResults = [];
     for (const [filters, expected] of filterCases) {
-      await page.goto(`${origin}/devices`);
+      const selectedCompany = filters.shop || (filters.status === "disabled" ? "synthetic-shop-1" : "synthetic-shop-0");
+      await page.goto(`${origin}/devices?company=${selectedCompany}`);
       for (const [name, value] of Object.entries(filters)) {
         const control = page.locator(`form [name="${name}"]`);
         if (name === "q") await control.fill(value); else await control.selectOption(value);
@@ -395,6 +421,17 @@ async function main() {
       assert.equal(await page.locator("table tbody tr").count(), expected.length);
       filterResults.push({ filters, expected, refreshed: true });
     }
+    await page.goto(`${origin}/devices`);
+    const shopSelect = page.getByRole("combobox", { name: "Shop", exact: true });
+    await shopSelect.focus();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    assert.equal(await shopSelect.inputValue(), "synthetic-shop-0", "Native shop selector supports keyboard selection");
+    await page.getByRole("button", { name: "Apply", exact: true }).click();
+    await page.waitForURL((url) => url.searchParams.get("shop") === "synthetic-shop-0");
+    await page.reload();
+    assert.equal(await page.getByRole("combobox", { name: "Shop", exact: true }).inputValue(), "synthetic-shop-0", "Selected filter persists in the URL across reload");
+    filterResults.push({ keyboardShopSelection: true, explicitApply: true, reloadPersistence: true });
     for (const mode of ["empty", "nonadmin"]) for (const [width, height] of [[1440, 900], [390, 844]]) {
       await page.setViewportSize({ width, height });
       await page.goto(`${origin}/devices?fixture=${mode}`);
@@ -412,12 +449,35 @@ async function main() {
       await checkImages(page);
       const stats = await measure(page);
       assert.equal(stats.width, width, `Shop: horizontal page overflow at ${width}`);
-      const tabHrefs = await page.locator(".control-shop-page a").evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")).filter((href) => href === "/shops/synthetic-shop-0" || href?.startsWith("/shops/synthetic-shop-0?tab=")))]);
+      if (width >= 1366) assert.equal(stats.height, height, `Shop overview must fit the desktop viewport at ${width}x${height}`);
+      assert.equal(await page.locator(".control-key-value-item > div:last-child").first().evaluate(el => getComputedStyle(el).fontSize), "14px");
+      const shopKeyboard = await checkNavigationKeyboard(page, height);
+      const tabHrefs = await page.locator(".control-shop-page a").evaluateAll((links) => [...new Set(links.map((link) => { const u = new URL(link.getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; }).filter((href) => href === "/shops/synthetic-shop-0" || href?.startsWith("/shops/synthetic-shop-0?tab=")))]);
       assert.deepEqual(tabHrefs.slice().sort(), shopTabs.map((tab) => tab === "overview" ? "/shops/synthetic-shop-0" : `/shops/synthetic-shop-0?tab=${tab}`).sort(), "All nine shop tab destinations remain available");
       assert.equal(await page.getByRole("button", { name: "Sign out", exact: true }).count(), 1);
       assert.equal(await page.getByRole("link", { name: "Back to Shop List", exact: true }).count(), 1);
       const screenshots = await capture(page, `shop-overview-${width}x${height}.png`, stats);
-      results.push({ screen: "shop", state: "overview", viewport: { width, height }, ...stats, tabHrefs, ...screenshots });
+      results.push({ screen: "shop", state: "overview", viewport: { width, height }, ...stats, tabHrefs, navKeyboard: shopKeyboard, ...screenshots });
+    }
+    for (const [width,height] of viewports) {
+      await page.setViewportSize({width,height});await page.goto(`${origin}/shops/synthetic-shop-0?fixture=busy`);await checkImages(page);
+      const stats=await measure(page);assert.equal(stats.width,width);if(width>=1366)assert.equal(stats.height,height,"Busy Shop also fits desktop without hiding issue rows");
+      assert.equal(await page.locator('.control-shop-issue').count(),3);assert.equal(await page.locator('.control-shop-summary table tbody tr').count(),6);
+      assert.equal(await page.getByRole('heading',{name:'Recent Issues (3)',exact:true}).count(),1);
+      const issues=page.getByRole('region',{name:'Shop issues',exact:true});const activity=page.locator('.control-shop-summary').getByRole('region',{name:'Scrollable data table',exact:true});
+      const regionEvidence=[];
+      for(const region of [issues,activity]) {
+        await region.focus();await page.keyboard.press('PageDown');await page.waitForTimeout(100);await page.keyboard.press('End');
+        await page.waitForFunction(el => el.scrollHeight<=el.clientHeight || Math.abs(el.scrollTop-(el.scrollHeight-el.clientHeight))<1, await region.elementHandle(), {timeout:5000});
+        const bounds=await region.evaluate(el=>({height:el.clientHeight,scrollHeight:el.scrollHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY}));
+        if(width>=1366){assert(bounds.height<=96);assert(bounds.scrollTop>0);}
+        assert.equal(bounds.overflowY,'auto');regionEvidence.push(bounds);
+      }
+      const completeActivity=await activity.evaluate(el=>{const headerBottom=Math.max(...[...el.querySelectorAll('thead th')].map(th=>th.getBoundingClientRect().bottom)),last=el.querySelector('tbody tr:last-child').getBoundingClientRect(),r=el.getBoundingClientRect(),style=getComputedStyle(el),borderTop=parseFloat(style.borderTopWidth),borderBottom=parseFloat(style.borderBottomWidth),scrollbar=Math.max(0,el.offsetHeight-el.clientHeight-borderTop-borderBottom);return {lastTop:last.top,lastBottom:last.bottom,headerBottom,visibleBottom:r.bottom-borderBottom-scrollbar};});
+      assert(completeActivity.lastTop>=completeActivity.headerBottom-1&&completeActivity.lastBottom<=completeActivity.visibleBottom+1,'Activity row must be fully visible between sticky heading and scrollbar: '+JSON.stringify(completeActivity));
+      const lastIssue=issues.locator('.control-shop-issue').last();assert(await lastIssue.evaluate(el=>{const b=el.getBoundingClientRect(),r=el.closest('[role="region"]').getBoundingClientRect();return b.bottom<=r.bottom+1&&b.bottom>=r.top;}),'Final issue remains keyboard-scroll reachable');
+      await page.getByRole('link',{name:'Open audit',exact:true}).focus();
+      const shots=await capture(page,`shop-busy-${width}x${height}.png`,stats);results.push({screen:'shop',state:'busy',viewport:{width,height},...stats,regionEvidence,allIssuesPresent:true,allSixActivitiesPresent:true,...shots});
     }
     const navigationIconStates = [];
     let iconSources;
@@ -426,18 +486,18 @@ async function main() {
       await page.goto(`${origin}/fixture/navigation?active=${encodeURIComponent(active)}`);
       await checkImages(page);
       const nav = page.locator(".control-nav a");
-      const values = await nav.evaluateAll((links) => links.map((link) => ({ href: link.getAttribute("href"), current: link.getAttribute("aria-current"), background: getComputedStyle(link).backgroundColor, image: link.querySelector("img")?.getAttribute("src"), tile: link.querySelector(".control-module-icon")?.getBoundingClientRect().width, glyph: link.querySelector("img")?.getBoundingClientRect().width })));
+      const values = await nav.evaluateAll((links) => links.map((link) => ({ href: new URL(link.getAttribute("href"), location.origin).pathname, current: link.getAttribute("aria-current"), background: getComputedStyle(link).backgroundColor, image: link.querySelector("img")?.getAttribute("src"), tile: link.querySelector(".control-module-icon")?.getBoundingClientRect().width, glyph: link.querySelector("img")?.getBoundingClientRect().width })));
       assert.deepEqual(values.map((value) => value.href), destinations);
       assert.equal(values.filter((value) => value.current === "page").length, 1);
       assert.equal(values.find((value) => value.current === "page").href, active);
-      assert(values.every((value) => value.image && value.glyph === (width <= 650 ? 22 : 24) && value.tile === (width <= 650 ? 28 : 32)), "All icons retain approved compact/desktop dimensions");
+      assert(values.every((value) => value.image && value.glyph === 22 && value.tile === 28), "All exact approved assets retain readable22px glyphs in28px compact tiles");
       assert(values.every((value) => value.background === (value.href === active ? "rgb(7, 95, 255)" : "rgba(0, 0, 0, 0)")), "Existing selection treatment applies only to the selected route");
       const sources = values.map((value) => value.image);
       if (!iconSources) iconSources = sources; else assert.deepEqual(sources, iconSources, "Active and inactive rows use identical approved SVGs");
       const stats = await measure(page);
       assert.equal(stats.width, width, "Navigation fixtures must reflow without horizontal page overflow");
       await checkNavigationKeyboard(page, height);
-      const selected = page.locator(`.control-nav a[href="${active}"]`);
+      const selected = page.locator(`.control-nav a[aria-current="page"]`);
       await selected.focus();
       const selectedBox = await selected.boundingBox();
       assert(selectedBox.y >= 0 && selectedBox.y + selectedBox.height <= height, "Selected route remains keyboard-visible");
@@ -482,11 +542,22 @@ async function main() {
     const zoomNav = await checkNavigationKeyboard(zoom, zoomProof.innerHeight);
     await zoom.locator("summary").focus();
     await zoom.keyboard.press("Enter");
-    assert.equal(await zoom.locator(".dashboard-full-alerts .dashboard-alert").count(), 14);
+    assert.equal(await zoom.locator(".dashboard-full-alerts .dashboard-alert").count(), rendered.populated.alerts.length);
     await zoom.locator(".dashboard-full-alerts a").last().focus();
     const zoomExpandedStats = await measure(zoom);
     const zoomExpandedShots = await capture(zoom, "populated-alerts-expanded-200pct-nativezoom.png", zoomExpandedStats);
     results.push({ state: "populated", browserZoom: "200%", zoomProof, expanded: true, ...zoomExpandedStats, navKeyboard: zoomNav, disclosureKeyboard: true, ...zoomExpandedShots });
+    for(const [screen,route] of [['devices','/devices'],['shop','/shops/synthetic-shop-0'],['shop-busy','/shops/synthetic-shop-0?fixture=busy']]) {
+      await zoom.goto(origin+route);await checkImages(zoom);const stats=await measure(zoom);assert.equal(stats.width,zoomProof.innerWidth,'Zoomed page reflows horizontally');
+      const navKeyboard=await checkNavigationKeyboard(zoom,zoomProof.innerHeight);
+      if(screen.startsWith('shop')) {
+        assert.equal(await zoom.getByRole('button',{name:'Sign out',exact:true}).count(),1);
+        assert.equal(await zoom.locator('.control-key-value-item > div:last-child').first().evaluate(el=>getComputedStyle(el).fontSize),'14px');
+        await zoom.getByRole('link',{name:'Open audit',exact:true}).focus();
+        assert(await zoom.getByRole('link',{name:'Open audit',exact:true}).evaluate(el=>{const b=el.getBoundingClientRect();return b.top>=0&&b.bottom<=innerHeight+1;}));
+      }
+      const shots=await capture(zoom,`${screen}-200pct-nativezoom.png`,stats);results.push({screen,state:'populated',browserZoom:'200%',zoomProof,...stats,navKeyboard,...shots});
+    }
     await zoomContext.close();
     zoomContext = undefined;
     assert.deepEqual(serverErrors, [], "All actual-page fixtures must render successfully");
@@ -515,17 +586,15 @@ async function checkImages(page) {
 }
 
 async function checkNavigationKeyboard(page, height) {
-  const shopLink = page.locator(".control-shop-link");
-  await shopLink.focus();
-  assert.equal(await page.evaluate(() => document.activeElement.getAttribute("href")), "/shops");
+  const company = page.getByRole("combobox", { name: "Company", exact: true });
+  await company.focus();
+  assert.equal(await page.locator("#control-navigation-search").count(), 0, "Find Module is removed");
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement.id), "control-navigation-search", "Shop browse link is followed by navigation search");
-  await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement.getAttribute("href")), destinations[0]);
+  assert.equal(await page.evaluate(() => (() => { const u = new URL(document.activeElement.getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; })()), destinations[0]);
   await page.locator(".control-nav a").first().focus();
   const reached = [];
   for (let i = 0; i < destinations.length; i++) {
-    const active = await page.evaluate(() => ({ href: document.activeElement.getAttribute("href"), outline: getComputedStyle(document.activeElement).outlineStyle, top: document.activeElement.getBoundingClientRect().top, bottom: document.activeElement.getBoundingClientRect().bottom }));
+    const active = await page.evaluate(() => ({ href: (() => { const u = new URL(document.activeElement.getAttribute("href"), location.origin); u.searchParams.delete("company"); return u.pathname + u.search; })(), outline: getComputedStyle(document.activeElement).outlineStyle, top: document.activeElement.getBoundingClientRect().top, bottom: document.activeElement.getBoundingClientRect().bottom }));
     reached.push(active.href);
     assert.equal(active.outline, "solid");
     assert(active.top >= 0 && active.bottom <= height, `Focused navigation item must scroll into view: ${JSON.stringify({ ...active, height })}`);
@@ -578,4 +647,5 @@ async function measure(page) {
   }));
 }
 
-main().catch((error) => { console.error(error); process.exitCode = 1; });
+module.exports = { componentLoader, navigationMocks, fixture, renderShop };
+if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });

@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionButtonV2, ControlActionLinkV2 } from "@/components/control/v2/ControlActionButtonV2";
 import ControlBadgeV2 from "@/components/control/v2/ControlBadgeV2";
@@ -98,7 +99,7 @@ export default async function AppsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = (await searchParams) ?? {};
-  const requestedShopId = firstParam(params.shop);
+  const requestedShopId = firstParam(params.company).trim() || firstParam(params.shop);
   const appFilter = firstParam(params.app).trim().toLowerCase() || "all";
   const accessFilter = firstParam(params.access).trim().toLowerCase() || "all";
   const context = await getViewerContext();
@@ -161,7 +162,7 @@ export default async function AppsPage({
         </div>
       </div>
 
-      <form method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <CompanyForm method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <ControlSelectV2 name="shop" defaultValue={primaryShop.id} style={{ minWidth: 220 }}>
           {context.shops.map((shop) => (
             <option key={shop.id} value={shop.id}>{shop.name}</option>
@@ -188,7 +189,7 @@ export default async function AppsPage({
           Apply
         </ControlActionButtonV2>
         <ControlActionLinkV2 href={`/apps?shop=${encodeURIComponent(primaryShop.id)}`}>Clear</ControlActionLinkV2>
-      </form>
+      </CompanyForm>
 
       <div style={{ fontSize: 12, color: t.color.textQuiet }}>
         {rows.length} app row{rows.length === 1 ? "" : "s"} shown for {snapshot.name}. Access truth comes from the current shop access decision, not from optimistic client state.

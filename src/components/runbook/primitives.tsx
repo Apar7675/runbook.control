@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import React, { useState } from "react";
 import { runbookTheme } from "@/lib/ui/runbookTheme";
 

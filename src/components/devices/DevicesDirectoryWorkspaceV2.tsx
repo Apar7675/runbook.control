@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import ControlMetricStripV2 from "@/components/control/v2/ControlMetricStripV2";
 import { ControlActionButtonV2 } from "@/components/control/v2/ControlActionButtonV2";
 import ControlBadgeV2, { toneFromStatusV2 } from "@/components/control/v2/ControlBadgeV2";

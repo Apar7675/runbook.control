@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import GlassCard from "@/components/GlassCard";
 
 function Pill({ children }: { children: React.ReactNode }) {

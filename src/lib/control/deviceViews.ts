@@ -324,7 +324,10 @@ function computeUpdateStatus(currentVersion: string | null, policy: DeviceUpdate
   };
 }
 
-async function loadDeviceRows(admin: ReturnType<typeof supabaseAdmin>) {
+type DeviceReadOptions = { deviceId?: string; deviceType?: string };
+
+async function loadDeviceRows(admin: ReturnType<typeof supabaseAdmin>, shopIds: string[], options: DeviceReadOptions) {
+  if (shopIds.length === 0) return [] as DeviceBaseRow[];
   const columns = [
     "id",
     "shop_id",
@@ -339,9 +342,10 @@ async function loadDeviceRows(admin: ReturnType<typeof supabaseAdmin>) {
 
   let working = [...columns];
   for (let attempt = 0; attempt < columns.length; attempt += 1) {
-    const { data, error } = await admin
-      .from("rb_devices")
-      .select(working.join(","))
+    let query = admin.from("rb_devices").select(working.join(",")).in("shop_id", shopIds);
+    if (options.deviceId) query = query.eq("id", options.deviceId);
+    if (options.deviceType) query = query.eq("device_type", options.deviceType);
+    const { data, error } = await query
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -487,11 +491,13 @@ async function loadSnapshotsByShop(context: ViewerContext) {
   return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
 }
 
-export async function loadDeviceViewRows() {
+export async function loadDeviceViewRows(options: DeviceReadOptions = {}) {
   const context = await getViewerContext();
+  const scopedShopIds = context.shops.map((shop) => shop.id);
+  if (scopedShopIds.length === 0) return { context, rows: [] as DeviceViewRow[] };
   const admin = supabaseAdmin();
   const [devices, shopSnapshotsById] = await Promise.all([
-    loadDeviceRows(admin),
+    loadDeviceRows(admin, scopedShopIds, options),
     loadSnapshotsByShop(context),
   ]);
 
@@ -540,7 +546,7 @@ export async function loadDeviceViewRows() {
 }
 
 export async function loadDeviceDetail(deviceId: string) {
-  const { context, rows } = await loadDeviceViewRows();
+  const { context, rows } = await loadDeviceViewRows({ deviceId });
   const device = rows.find((row) => row.id === deviceId) ?? null;
   if (!device) {
     return {
@@ -559,6 +565,7 @@ export async function loadDeviceDetail(deviceId: string) {
       .from("rb_audit_log")
       .select("id,action,actor_email,created_at,target_type,target_id")
       .eq("target_id", deviceId)
+      .eq("shop_id", device.shop_id)
       .order("created_at", { ascending: false })
       .limit(12),
     device.shop_id

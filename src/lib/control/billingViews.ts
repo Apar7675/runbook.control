@@ -95,7 +95,8 @@ function buildTrialStateLabel(row: ShopBillingRow, effectiveStatus: string) {
   return "normal";
 }
 
-async function loadBillingRows() {
+async function loadBillingRows(shopIds: string[]) {
+  if (shopIds.length === 0) return [] as BillingDbRow[];
   const admin = supabaseAdmin();
   const columns = ["created_at", "updated_at", "name", ...SHOP_BILLING_SELECT_COLUMNS];
   let working = [...columns];
@@ -104,6 +105,7 @@ async function loadBillingRows() {
     const { data, error } = await admin
       .from("rb_shops")
       .select(working.join(","))
+      .in("id", shopIds)
       .order("name", { ascending: true })
       .limit(1000);
 
@@ -123,7 +125,7 @@ async function loadBillingRows() {
 
 export async function loadBillingViews(): Promise<BillingViewsData> {
   const context = await getViewerContext();
-  const rawRows = await loadBillingRows();
+  const rawRows = await loadBillingRows(context.shops.map((shop) => shop.id));
 
   const rows = rawRows.map((row) => {
     const shopRow: ShopBillingRow = {

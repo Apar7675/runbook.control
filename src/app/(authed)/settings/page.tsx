@@ -99,7 +99,7 @@ export default async function SettingsPage({
         <ControlMetricCard label="Security" value={data.currentAal.toUpperCase()} meta={data.mfaRequired ? "Platform-admin sessions require MFA/AAL2." : "MFA is available from this page."} tone={data.currentAal === "aal2" ? "success" : "warning"} />
         <ControlMetricCard label="Update Policy" value={String(data.policies.update.totalPolicies)} meta={`${data.policies.update.minimumCount} minimum rules and ${data.policies.update.pinnedCount} pinned rules surfaced.`} tone={data.policies.update.totalPolicies > 0 ? "info" : "neutral"} />
         <ControlMetricCard label="Mobile Policy" value={String(data.policies.mobile.enabledShops)} meta={`${data.policies.mobile.pendingReviewModeCount} shop${data.policies.mobile.pendingReviewModeCount === 1 ? "" : "s"} use pending-review mobile failure mode.`} tone={data.policies.mobile.enabledShops > 0 ? "info" : "neutral"} />
-        <ControlMetricCard label="Webhooks / Billing" value={data.policies.webhooks.stripeWebhookConfigured ? "Configured" : "Missing"} meta={`${data.policies.billing.fullAccess} full-access shops, ${data.policies.billing.restricted} restricted shops.`} tone={data.policies.webhooks.stripeWebhookConfigured ? "success" : "warning"} />
+        <ControlMetricCard label="Platform webhooks" value={data.policies.webhooks.stripeWebhookConfigured ? "Configured" : "Missing"} meta={`${data.policies.billing.fullAccess} full-access shops, ${data.policies.billing.restricted} restricted shops.`} tone={data.policies.webhooks.stripeWebhookConfigured ? "success" : "warning"} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 18 }}>
@@ -117,7 +117,7 @@ export default async function SettingsPage({
               children: <NoviceModeToggle initialOn={data.noviceOn} />,
             })}
             {policyBlock({
-              title: "Session Context",
+              title: "Your account / session",
               description: "Control role and session state are derived from the authenticated server session and authorized scope.",
               source: "getViewerContext() + Supabase auth session",
               stateLabel: data.context.isPlatformAdmin ? "Platform admin" : "Member session",
@@ -125,7 +125,7 @@ export default async function SettingsPage({
               children: (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
                   {kv("Session email", data.context.email ?? "Not surfaced")}
-                  {kv("Authorized shops", String(data.context.shops.length))}
+                  {kv("Selected company", data.context.shops[0]?.name ?? "None available")}
                 </div>
               ),
             })}
@@ -191,7 +191,7 @@ export default async function SettingsPage({
             stateTone: "info",
             children: (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
-                {kv("Packages", String(data.policies.update.packagesCount))}
+                {kv("Platform packages", String(data.policies.update.packagesCount))}
                 {kv("Channels", data.policies.update.channels.length > 0 ? data.policies.update.channels.join(", ") : "Not surfaced")}
                 {kv("Policy editing", "Shop-scoped")}
                 {kv("Action", <ControlActionLink href="/updates/packages">Upload package</ControlActionLink>)}
@@ -235,11 +235,11 @@ export default async function SettingsPage({
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 18 }}>
         <ControlPanel
-          title="Webhooks"
-          description="Webhook visibility is real where environment or event data is surfaced. No fake save toggles are introduced."
+          title="Platform webhooks"
+          description="Platform-wide configuration and event counts; company selection does not filter these diagnostics."
         >
           {policyBlock({
-            title: "Stripe Webhooks",
+            title: "Platform Stripe webhooks",
             description: "Webhook processing depends on configured secrets and the optional webhook event table.",
             source: "process.env + rb_webhook_events when available",
             stateLabel: data.policies.webhooks.stripeWebhookConfigured ? "Configured" : "Missing secret",
@@ -248,19 +248,19 @@ export default async function SettingsPage({
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
                 {kv("Webhook secret", data.policies.webhooks.stripeWebhookConfigured ? "Present" : "Missing")}
                 {kv("Event table", data.policies.webhooks.webhookEventsAvailable ? "Available" : "Not surfaced")}
-                {kv("Stored events", data.policies.webhooks.webhookEventCount === null ? "Not surfaced" : String(data.policies.webhooks.webhookEventCount))}
+                {kv("Platform stored events", data.policies.webhooks.webhookEventCount === null ? "Not surfaced" : String(data.policies.webhooks.webhookEventCount))}
               </div>
             ),
           })}
         </ControlPanel>
 
         <ControlPanel
-          title="Developer / Diagnostics"
+          title="Platform diagnostics"
           description="These diagnostics are visible here, but the deeper operational surface remains the dedicated status page."
           actions={<ControlActionLink href="/status">Open status page</ControlActionLink>}
         >
           {policyBlock({
-            title: "Environment Diagnostics",
+            title: "Platform environment diagnostics",
             description: "Useful for admin troubleshooting without implying that this page persists configuration changes.",
             source: "process.env + existing status surfaces",
             stateLabel: "Read only",

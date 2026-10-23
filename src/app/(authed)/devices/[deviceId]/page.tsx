@@ -1,3 +1,6 @@
+import { redirect } from "next/navigation";
+import { getViewerContext } from "@/lib/control/summary";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
 import ControlKeyValueGrid from "@/components/control/ControlKeyValueGrid";
@@ -64,6 +67,19 @@ function updateTone(label: string): ControlStatusTone {
 export default async function DeviceDetailPage({ params, searchParams }: Props) {
   const { deviceId } = await params;
   const query = (await searchParams) ?? {};
+  const viewer = await getViewerContext();
+  if (!viewer.companySelectionExplicit && viewer.isPlatformAdmin) {
+    const ids = (viewer.authorizedShops ?? viewer.shops).map((company) => company.id);
+    if (ids.length > 0) {
+      const { data } = await supabaseAdmin().from("rb_devices").select("shop_id").eq("id", deviceId).in("shop_id", ids).maybeSingle();
+      if (data?.shop_id) {
+        const retained = new URLSearchParams();
+        for (const [key, value] of Object.entries(query)) if (typeof value === "string") retained.set(key, value);
+        retained.set("company", String(data.shop_id));
+        redirect(`/devices/${encodeURIComponent(deviceId)}?${retained}`);
+      }
+    }
+  }
   const activeTab = normalizeTab(query.tab);
   const { context, device, tokens, auditRows, supportRows } = await loadDeviceDetail(deviceId);
 

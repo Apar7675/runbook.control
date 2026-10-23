@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import React from "react";
 import { controlTheme as t } from "@/components/control/controlTheme";
 
@@ -15,14 +15,14 @@ const baseStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  gap: 8,
-  minHeight: 40,
-  padding: "0 16px",
-  borderRadius: 9,
+  gap: 6,
+  minHeight: 34,
+  padding: "0 11px",
+  borderRadius: 7,
   borderWidth: 1,
   borderStyle: "solid",
   textDecoration: "none",
-  fontSize: 16,
+  fontSize: 14,
   fontWeight: 600,
   cursor: "pointer",
   transition: "transform 120ms ease, opacity 120ms ease, border-color 120ms ease",

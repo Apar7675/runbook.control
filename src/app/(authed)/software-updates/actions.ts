@@ -1,5 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
+import { COMPANY_HEADER } from "@/lib/control/companyScope";
+import { getViewerContext } from "@/lib/control/summary";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requirePlatformAdminAal2 } from "@/lib/authz";
@@ -69,7 +72,7 @@ function asBoolean(value: FormDataEntryValue | null) {
   return text === "true" || text === "on" || text === "1";
 }
 
-function encodeEditorUrl(args: {
+async function encodeEditorUrl(args: {
   mode?: "new" | "edit";
   flash?: string;
   error?: string;
@@ -96,10 +99,13 @@ function encodeEditorUrl(args: {
   if (fields.package_sha256) params.set("release_package_sha256", fields.package_sha256);
   if (fields.package_size_bytes) params.set("release_package_size_bytes", fields.package_size_bytes);
 
+  const requestedCompany = (await headers()).get(COMPANY_HEADER);
+  const company = requestedCompany || (await getViewerContext()).selectedCompanyId;
+  if (company) params.set("company", company);
   return `/software-updates?${params.toString()}`;
 }
 
-function encodePackageEditorUrl(args: {
+async function encodePackageEditorUrl(args: {
   packageMode?: "new" | "edit";
   selectedReleaseId?: string;
   flash?: string;
@@ -123,10 +129,13 @@ function encodePackageEditorUrl(args: {
   if (fields.platform) params.set("package_platform", fields.platform);
   if (fields.architecture) params.set("package_architecture", fields.architecture);
 
+  const requestedCompany = (await headers()).get(COMPANY_HEADER);
+  const company = requestedCompany || (await getViewerContext()).selectedCompanyId;
+  if (company) params.set("company", company);
   return `/software-updates?${params.toString()}`;
 }
 
-function encodeRolloutEditorUrl(args: {
+async function encodeRolloutEditorUrl(args: {
   rolloutMode?: "new" | "edit";
   flash?: string;
   error?: string;
@@ -148,6 +157,9 @@ function encodeRolloutEditorUrl(args: {
   if (fields.status) params.set("rollout_status", fields.status);
   if (fields.starts_at) params.set("rollout_starts_at", fields.starts_at);
 
+  const requestedCompany = (await headers()).get(COMPANY_HEADER);
+  const company = requestedCompany || (await getViewerContext()).selectedCompanyId;
+  if (company) params.set("company", company);
   return `/software-updates?${params.toString()}`;
 }
 
@@ -308,7 +320,7 @@ export async function saveSoftwareReleaseAction(formData: FormData) {
   const validationError = validateReleaseFields(fields);
 
   if (validationError) {
-    redirect(encodeEditorUrl({ mode, error: validationError, fields }));
+    redirect(await encodeEditorUrl({ mode, error: validationError, fields }));
   }
 
   const admin = supabaseAdmin();
@@ -377,17 +389,17 @@ export async function saveSoftwareReleaseAction(formData: FormData) {
     const message = error instanceof Error && error.message === "__DUPLICATE_RELEASE__"
       ? "That app, version, and channel combination already exists."
       : error instanceof Error ? error.message : "Release save failed.";
-    redirect(encodeEditorUrl({ mode, error: message, fields }));
+    redirect(await encodeEditorUrl({ mode, error: message, fields }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeEditorUrl({ flash: fields.release_id ? "Release updated." : "Release created." }));
+  redirect(await encodeEditorUrl({ flash: fields.release_id ? "Release updated." : "Release created." }));
 }
 
 export async function activateSoftwareReleaseAction(formData: FormData) {
   const { user } = await requirePlatformAdminAal2();
   const releaseId = asText(formData.get("release_id"));
-  if (!releaseId) redirect(encodeEditorUrl({ error: "Release id is required." }));
+  if (!releaseId) redirect(await encodeEditorUrl({ error: "Release id is required." }));
 
   try {
     const existing = await loadReleaseOrThrow(releaseId);
@@ -404,17 +416,17 @@ export async function activateSoftwareReleaseAction(formData: FormData) {
     if (error) throw new Error(error.message);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Release activation failed.";
-    redirect(encodeEditorUrl({ error: message }));
+    redirect(await encodeEditorUrl({ error: message }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeEditorUrl({ flash: "Release activated." }));
+  redirect(await encodeEditorUrl({ flash: "Release activated." }));
 }
 
 export async function retireSoftwareReleaseAction(formData: FormData) {
   await requirePlatformAdminAal2();
   const releaseId = asText(formData.get("release_id"));
-  if (!releaseId) redirect(encodeEditorUrl({ error: "Release id is required." }));
+  if (!releaseId) redirect(await encodeEditorUrl({ error: "Release id is required." }));
 
   try {
     await loadReleaseOrThrow(releaseId);
@@ -427,11 +439,11 @@ export async function retireSoftwareReleaseAction(formData: FormData) {
     if (error) throw new Error(error.message);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Release retire failed.";
-    redirect(encodeEditorUrl({ error: message }));
+    redirect(await encodeEditorUrl({ error: message }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeEditorUrl({ flash: "Release retired." }));
+  redirect(await encodeEditorUrl({ flash: "Release retired." }));
 }
 
 export async function saveSoftwarePackageAction(formData: FormData) {
@@ -441,7 +453,7 @@ export async function saveSoftwarePackageAction(formData: FormData) {
   const validationError = validatePackageFields(fields);
 
   if (validationError) {
-    redirect(encodePackageEditorUrl({ packageMode, selectedReleaseId: fields.release_id, error: validationError, fields }));
+    redirect(await encodePackageEditorUrl({ packageMode, selectedReleaseId: fields.release_id, error: validationError, fields }));
   }
 
   try {
@@ -469,18 +481,18 @@ export async function saveSoftwarePackageAction(formData: FormData) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Package metadata save failed.";
-    redirect(encodePackageEditorUrl({ packageMode, selectedReleaseId: fields.release_id, error: message, fields }));
+    redirect(await encodePackageEditorUrl({ packageMode, selectedReleaseId: fields.release_id, error: message, fields }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodePackageEditorUrl({ selectedReleaseId: fields.release_id, flash: fields.package_id ? "Package metadata updated." : "Package metadata added." }));
+  redirect(await encodePackageEditorUrl({ selectedReleaseId: fields.release_id, flash: fields.package_id ? "Package metadata updated." : "Package metadata added." }));
 }
 
 export async function removeSoftwarePackageAction(formData: FormData) {
   await requirePlatformAdminAal2();
   const packageId = asText(formData.get("package_id"));
   const selectedReleaseId = asText(formData.get("release_id"));
-  if (!packageId) redirect(encodePackageEditorUrl({ selectedReleaseId, error: "Package id is required." }));
+  if (!packageId) redirect(await encodePackageEditorUrl({ selectedReleaseId, error: "Package id is required." }));
 
   try {
     await loadPackageOrThrow(packageId);
@@ -489,11 +501,11 @@ export async function removeSoftwarePackageAction(formData: FormData) {
     if (error) throw new Error(error.message);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Package metadata removal failed.";
-    redirect(encodePackageEditorUrl({ selectedReleaseId, error: message }));
+    redirect(await encodePackageEditorUrl({ selectedReleaseId, error: message }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodePackageEditorUrl({ selectedReleaseId, flash: "Package metadata removed." }));
+  redirect(await encodePackageEditorUrl({ selectedReleaseId, flash: "Package metadata removed." }));
 }
 
 export async function saveSoftwareRolloutAction(formData: FormData) {
@@ -503,7 +515,7 @@ export async function saveSoftwareRolloutAction(formData: FormData) {
   const validationError = validateRolloutFields(fields);
 
   if (validationError) {
-    redirect(encodeRolloutEditorUrl({ rolloutMode, error: validationError, fields }));
+    redirect(await encodeRolloutEditorUrl({ rolloutMode, error: validationError, fields }));
   }
 
   try {
@@ -533,17 +545,17 @@ export async function saveSoftwareRolloutAction(formData: FormData) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Rollout save failed.";
-    redirect(encodeRolloutEditorUrl({ rolloutMode, error: message, fields }));
+    redirect(await encodeRolloutEditorUrl({ rolloutMode, error: message, fields }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeRolloutEditorUrl({ flash: fields.rollout_id ? "Rollout updated." : "Rollout created." }));
+  redirect(await encodeRolloutEditorUrl({ flash: fields.rollout_id ? "Rollout updated." : "Rollout created." }));
 }
 
 export async function activateSoftwareRolloutAction(formData: FormData) {
   await requirePlatformAdminAal2();
   const rolloutId = asText(formData.get("rollout_id"));
-  if (!rolloutId) redirect(encodeRolloutEditorUrl({ error: "Rollout id is required." }));
+  if (!rolloutId) redirect(await encodeRolloutEditorUrl({ error: "Rollout id is required." }));
 
   try {
     await loadRolloutOrThrow(rolloutId);
@@ -552,17 +564,17 @@ export async function activateSoftwareRolloutAction(formData: FormData) {
     if (error) throw new Error(error.message);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Rollout activation failed.";
-    redirect(encodeRolloutEditorUrl({ error: message }));
+    redirect(await encodeRolloutEditorUrl({ error: message }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeRolloutEditorUrl({ flash: "Rollout activated." }));
+  redirect(await encodeRolloutEditorUrl({ flash: "Rollout activated." }));
 }
 
 export async function pauseSoftwareRolloutAction(formData: FormData) {
   await requirePlatformAdminAal2();
   const rolloutId = asText(formData.get("rollout_id"));
-  if (!rolloutId) redirect(encodeRolloutEditorUrl({ error: "Rollout id is required." }));
+  if (!rolloutId) redirect(await encodeRolloutEditorUrl({ error: "Rollout id is required." }));
 
   try {
     await loadRolloutOrThrow(rolloutId);
@@ -571,17 +583,17 @@ export async function pauseSoftwareRolloutAction(formData: FormData) {
     if (error) throw new Error(error.message);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Rollout pause failed.";
-    redirect(encodeRolloutEditorUrl({ error: message }));
+    redirect(await encodeRolloutEditorUrl({ error: message }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeRolloutEditorUrl({ flash: "Rollout paused." }));
+  redirect(await encodeRolloutEditorUrl({ flash: "Rollout paused." }));
 }
 
 export async function cancelSoftwareRolloutAction(formData: FormData) {
   await requirePlatformAdminAal2();
   const rolloutId = asText(formData.get("rollout_id"));
-  if (!rolloutId) redirect(encodeRolloutEditorUrl({ error: "Rollout id is required." }));
+  if (!rolloutId) redirect(await encodeRolloutEditorUrl({ error: "Rollout id is required." }));
 
   try {
     await loadRolloutOrThrow(rolloutId);
@@ -590,9 +602,9 @@ export async function cancelSoftwareRolloutAction(formData: FormData) {
     if (error) throw new Error(error.message);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Rollout cancel failed.";
-    redirect(encodeRolloutEditorUrl({ error: message }));
+    redirect(await encodeRolloutEditorUrl({ error: message }));
   }
 
   revalidatePath("/software-updates");
-  redirect(encodeRolloutEditorUrl({ flash: "Rollout cancelled." }));
+  redirect(await encodeRolloutEditorUrl({ flash: "Rollout cancelled." }));
 }

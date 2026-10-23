@@ -61,15 +61,15 @@ export default async function UpdatesPage() {
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <ControlMetricCard label="Total Packages" value={String(data.summary.totalPackages)} meta="Recorded package inventory in Control." tone="neutral" />
-        <ControlMetricCard label="Current / Stable" value={String(data.summary.stablePackages)} meta="Packages currently marked with the stable channel." tone={data.summary.stablePackages > 0 ? "success" : "neutral"} />
+        <ControlMetricCard label="Platform Packages" value={String(data.summary.totalPackages)} meta="Recorded package inventory in Control." tone="neutral" />
+        <ControlMetricCard label="Platform Stable Packages" value={String(data.summary.stablePackages)} meta="Packages currently marked with the stable channel." tone={data.summary.stablePackages > 0 ? "success" : "neutral"} />
         <ControlMetricCard label="Required Minimum Version" value={data.summary.minimumVersionLabel} meta="Shown as a single version only when policy is uniform; otherwise kept explicitly shop-specific." tone={data.summary.minimumVersionLabel === "Not surfaced" ? "neutral" : "warning"} />
         <ControlMetricCard label="Pinned Version" value={data.summary.pinnedVersionLabel} meta="Shown as a single version only when policy is uniform; otherwise kept explicitly shop-specific." tone={data.summary.pinnedVersionLabel === "Not surfaced" ? "neutral" : "info"} />
         <ControlMetricCard label="Devices Behind" value={String(data.summary.devicesBehind)} meta="Derived from current reported device versions against surfaced minimum and pinned policy rules." tone={data.summary.devicesBehind > 0 ? "warning" : "success"} />
       </div>
 
       <ControlPanel
-        title="Update Inventory"
+        title="Platform-wide package catalog"
         description="Package metadata and policy references. This page does not invent a latest deployed version when Control only stores package inventory and shop-specific validation rules."
       >
         {data.rows.length === 0 ? (

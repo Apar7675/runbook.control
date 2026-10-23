@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import ControlAppShell from "@/components/control/ControlAppShell";
 import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
+import { getViewerContext, type ViewerContext } from "@/lib/control/summary";
 import DeviceIdBootstrap from "@/components/DeviceIdBootstrap";
 import { buildControlHeaderStatuses } from "@/lib/connection-status";
 import { isPlatformAdmin } from "@/lib/authz";
@@ -71,6 +72,10 @@ export default async function AuthedLayout({
     if (!trusted) redirect("/mfa");
   }
 
+  let companyContext: ViewerContext | null = null;
+  let companyError: string | null = null;
+  try { companyContext = await getViewerContext(); } catch { companyError = "Companies could not be loaded."; }
+
   return (
     <>
       <DeviceIdBootstrap />
@@ -78,8 +83,12 @@ export default async function AuthedLayout({
         email={email}
         roleLabel="Platform admin"
         statuses={headerStatuses}
+        companies={companyContext?.authorizedShops ?? []}
+        selectedCompanyId={companyContext?.selectedCompanyId ?? null}
+        companyUnavailable={companyContext?.companyUnavailable ?? false}
+        companyError={companyError}
       >
-        {children}
+        {companyError || companyContext?.companyUnavailable ? <section role="alert" style={{ padding: 16, border: "1.25px solid #5E7DA5", borderRadius: 9, background: "#FFFFFF" }}><h1 style={{ marginTop: 0, fontSize: 24 }}>Company unavailable</h1><p>{companyError ?? "This company is no longer available to this session. Choose another company from the sidebar."}</p></section> : children}
       </ControlAppShell>
     </>
   );

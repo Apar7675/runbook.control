@@ -183,7 +183,8 @@ async function loadSupportBundles(shopIds: string[]) {
   return asArray<SupportBundleDbRow>(data);
 }
 
-async function loadCapabilityRows() {
+async function loadCapabilityRows(deviceIds: string[]) {
+  if (deviceIds.length === 0) return [] as CapabilityDbRow[];
   const admin = supabaseAdmin();
   const columns = [
     "device_id",
@@ -201,6 +202,7 @@ async function loadCapabilityRows() {
       const { data, error } = await admin
         .from("rb_device_capability_snapshots")
         .select(working.join(","))
+        .in("device_id", deviceIds)
         .order("reported_at", { ascending: false })
         .limit(500);
 
@@ -220,8 +222,8 @@ async function loadCapabilityRows() {
   return [] as CapabilityDbRow[];
 }
 
-async function loadDevices(deviceIds: string[]) {
-  const ids = [...new Set(deviceIds.filter(Boolean))];
+async function loadDevices(shopIds: string[]) {
+  const ids = [...new Set(shopIds.filter(Boolean))];
   const deviceMap = new Map<string, DeviceDbRow>();
   if (ids.length === 0) return deviceMap;
 
@@ -229,7 +231,7 @@ async function loadDevices(deviceIds: string[]) {
   const { data, error } = await admin
     .from("rb_devices")
     .select("id,shop_id,name")
-    .in("id", ids);
+    .in("shop_id", ids);
 
   if (error) return deviceMap;
   for (const row of asArray<DeviceDbRow>(data)) {
@@ -240,12 +242,14 @@ async function loadDevices(deviceIds: string[]) {
   return deviceMap;
 }
 
-async function loadDeleteOperations() {
+async function loadDeleteOperations(shopIds: string[]) {
+  if (shopIds.length === 0) return [] as DeleteOperationDbRow[];
   const admin = supabaseAdmin();
   try {
     const { data, error } = await admin
       .from("rb_delete_operations")
       .select("id,shop_id,shop_name,status,started_at,completed_at,result_json,error_json")
+      .in("shop_id", shopIds)
       .order("started_at", { ascending: false })
       .limit(50);
 
@@ -319,15 +323,15 @@ async function loadSchemaSummary() {
 export async function loadSupportViews(): Promise<SupportViewsData> {
   const context = await getViewerContext();
   const shopIds = context.shops.map((shop) => shop.id);
+  const deviceMap = await loadDevices(shopIds);
   const [shopSnapshots, bundleRows, capabilityRowsRaw, deleteOperationsRaw, schemaSummary] = await Promise.all([
     loadShopSnapshots(context),
     loadSupportBundles(shopIds),
-    loadCapabilityRows(),
-    loadDeleteOperations(),
+    loadCapabilityRows([...deviceMap.keys()]),
+    loadDeleteOperations(shopIds),
     loadSchemaSummary(),
   ]);
 
-  const deviceMap = await loadDevices(capabilityRowsRaw.map((row) => asText(row.device_id)));
 
   const bundles = bundleRows.map((row) => ({
     id: asText(row.id),

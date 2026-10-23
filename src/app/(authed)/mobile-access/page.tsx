@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
@@ -34,7 +35,7 @@ export default async function MobileAccessPage({
   searchParams?: Promise<SearchParams>;
 }) {
   const params = (await searchParams) ?? {};
-  const shopFilter = firstParam(params.shop).trim();
+  const shopFilter = firstParam(params.company).trim() || firstParam(params.shop).trim();
   const data = await loadPeopleViews();
   const rows = data.mobileRows.filter((row) => (shopFilter ? row.shop_id === shopFilter : true));
 
@@ -59,13 +60,13 @@ export default async function MobileAccessPage({
         title="Mobile Access Directory"
         description="Shop-level mobile entitlement stays visible alongside employee-level mobile and timeclock flags. This page does not invent user-specific access modes beyond the fields Control already stores."
       >
-        <form method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <CompanyForm method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <select
             name="shop"
             defaultValue={shopFilter}
             style={{ minHeight: 38, minWidth: 240, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }}
           >
-            <option value="">All shops</option>
+            <option value="">Selected company</option>
             {data.context.shops.map((shop) => (
               <option key={shop.id} value={shop.id}>{shop.name}</option>
             ))}
@@ -77,7 +78,7 @@ export default async function MobileAccessPage({
             Apply
           </button>
           <ControlActionLink href="/mobile-access">Clear</ControlActionLink>
-        </form>
+        </CompanyForm>
 
         {rows.length === 0 ? (
           <ControlEmptyState

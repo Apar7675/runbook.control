@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import ControlBadgeV2, { toneFromStatusV2 } from "@/components/control/v2/ControlBadgeV2";
 import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 import type { ShopSnapshot } from "@/lib/control/summary";

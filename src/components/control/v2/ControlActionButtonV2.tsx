@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import React from "react";
 import { controlV2Theme as t } from "@/components/control/v2/controlV2Theme";
 

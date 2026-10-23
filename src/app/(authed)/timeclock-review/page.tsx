@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
@@ -34,8 +35,8 @@ export default async function TimeclockReviewPage({
   searchParams?: Promise<SearchParams>;
 }) {
   const params = (await searchParams) ?? {};
-  const shopFilter = firstParam(params.shop).trim();
-  const data = await loadPeopleViews();
+  const shopFilter = firstParam(params.company).trim() || firstParam(params.shop).trim();
+  const data = await loadPeopleViews({ pendingReviewOnly: true });
   const rows = data.timeclockRows.filter((row) => (shopFilter ? row.shop_id === shopFilter : true));
 
   return (
@@ -57,7 +58,7 @@ export default async function TimeclockReviewPage({
 
       <ControlPanel
         title="Review Queue"
-        description="Control can see the queue state, timestamps, and policy reasons. The repo does not currently surface approve/reject mutations here, so rows stay read-only."
+        description="Latest 1,500 pending company events, with queue state, timestamps, and policy reasons. The repo does not currently surface approve/reject mutations here, so rows stay read-only."
       >
         <div
           style={{
@@ -73,13 +74,13 @@ export default async function TimeclockReviewPage({
           Approval action not surfaced yet. Use this queue to identify which employee and shop need follow-up, then continue into the relevant shop mobile tab or the existing audit/support flows.
         </div>
 
-        <form method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <CompanyForm method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <select
             name="shop"
             defaultValue={shopFilter}
             style={{ minHeight: 38, minWidth: 240, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }}
           >
-            <option value="">All shops</option>
+            <option value="">Selected company</option>
             {data.context.shops.map((shop) => (
               <option key={shop.id} value={shop.id}>{shop.name}</option>
             ))}
@@ -91,11 +92,11 @@ export default async function TimeclockReviewPage({
             Apply
           </button>
           <ControlActionLink href="/timeclock-review">Clear</ControlActionLink>
-        </form>
+        </CompanyForm>
 
         {rows.length === 0 ? (
           <ControlEmptyState
-            title="No review items are pending"
+            title="No pending review items in the loaded results"
             description="Control does not currently see any timeclock events flagged for review in the selected scope."
           />
         ) : (

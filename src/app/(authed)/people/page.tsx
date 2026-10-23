@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
@@ -18,7 +19,7 @@ type PeopleTab = "all" | "control" | "members" | "employees" | "mobile";
 
 const PEOPLE_TABS: Array<{ key: PeopleTab; label: string }> = [
   { key: "all", label: "All People" },
-  { key: "control", label: "Control Users" },
+  { key: "control", label: "Control Users (platform-wide)" },
   { key: "members", label: "Shop Members" },
   { key: "employees", label: "Employees" },
   { key: "mobile", label: "Mobile Access" },
@@ -78,14 +79,14 @@ export default async function PeoplePage({
 }) {
   const params = (await searchParams) ?? {};
   const activeTab = normalizeTab(firstParam(params.tab).trim().toLowerCase());
-  const shopFilter = firstParam(params.shop).trim();
+  const shopFilter = firstParam(params.company).trim() || firstParam(params.shop).trim();
 
-  const data = await loadPeopleViews();
+  const data = await loadPeopleViews({ platformAdminsOnly: activeTab === "control" });
   const shopOptions = data.context.shops;
 
   const filteredRows = data.peopleRows.filter((row) => {
-    if (shopFilter && row.shop_id !== shopFilter) return false;
     if (activeTab === "control") return row.type === "Control User";
+    if (shopFilter && row.shop_id !== shopFilter) return false;
     if (activeTab === "members") return hasMembershipRecord(row);
     if (activeTab === "employees") return hasEmployeeRecord(row);
     if (activeTab === "mobile") return row.mobile_access_label !== "Not surfaced";
@@ -96,13 +97,13 @@ export default async function PeoplePage({
     <div style={{ display: "grid", gap: 18 }}>
       <ControlPageHeader
         eyebrow="People"
-        title="People & Access"
-        description="Cloud authority view of Control users, shop memberships, and employee access. Linked membership and employee records are shown as one person row."
+        title={activeTab === "control" ? "Platform Control Users" : "People & Access"}
+        description={activeTab === "control" ? "Platform-wide administrator accounts. Company selection does not filter this tab." : "Memberships and employee access for the selected company. Linked records appear as one person row."}
         actions={<ControlActionLink href="/mobile-access">Open mobile access</ControlActionLink>}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
-        <ControlMetricCard label="Total People" value={String(data.summary.totalPeople)} meta="Deduplicated people known to this Control session across admin, member, and employee records." tone="neutral" />
+        <ControlMetricCard label="Total People" value={String(data.summary.totalPeople)} meta={activeTab === "control" ? "Platform-wide administrator accounts." : "Deduplicated members and employees in the selected company."} tone="neutral" />
         <ControlMetricCard label="Shop Members" value={String(data.summary.shopMembers)} meta="Membership rows from Control's shop authority." tone={data.summary.shopMembers > 0 ? "info" : "neutral"} />
         <ControlMetricCard label="Employees" value={String(data.summary.employees)} meta="Employee directory rows tied to authorized shops." tone={data.summary.employees > 0 ? "success" : "neutral"} />
         <ControlMetricCard label="Mobile Enabled" value={String(data.summary.mobileEnabled)} meta={`${data.summary.mobileQueueOnly} queue-only and ${data.summary.mobileBlocked} blocked by policy or employee state.`} tone={data.summary.mobileEnabled > 0 ? "info" : "neutral"} />
@@ -128,7 +129,7 @@ export default async function PeoplePage({
           PIN, mobile, and Workstation readiness.
         </div>
 
-        <form method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <CompanyForm method="get" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div
             style={{
               display: "flex",
@@ -156,7 +157,7 @@ export default async function PeoplePage({
             defaultValue={shopFilter}
             style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: `1px solid ${t.color.softBorder}`, background: "#ffffff", color: t.color.text, padding: "0 12px" }}
           >
-            <option value="">All shops</option>
+            <option value="">Selected company</option>
             {shopOptions.map((shop) => (
               <option key={shop.id} value={shop.id}>{shop.name}</option>
             ))}
@@ -169,7 +170,7 @@ export default async function PeoplePage({
             Apply
           </button>
           <ControlActionLink href="/people">Clear</ControlActionLink>
-        </form>
+        </CompanyForm>
 
         {filteredRows.length === 0 ? (
           <ControlEmptyState

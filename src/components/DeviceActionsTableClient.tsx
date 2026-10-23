@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/control/CompanyLink";
 import { formatDateTime } from "@/lib/ui/dates";
 import { useIsMounted } from "@/lib/ui/useIsMounted";
 

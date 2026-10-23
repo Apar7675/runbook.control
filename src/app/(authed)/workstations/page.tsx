@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlEmptyState from "@/components/control/ControlEmptyState";
@@ -42,10 +43,10 @@ export default async function WorkstationsPage({
 }) {
   const params = (await searchParams) ?? {};
   const statusFilter = firstParam(params.status).trim().toLowerCase() || "all";
-  const shopFilter = firstParam(params.shop).trim();
+  const shopFilter = firstParam(params.company).trim() || firstParam(params.shop).trim();
   const accessFilter = firstParam(params.access).trim().toLowerCase() || "all";
 
-  const { context, rows } = await loadDeviceViewRows();
+  const { context, rows } = await loadDeviceViewRows({ deviceType: "workstation" });
 
   if (!context.isPlatformAdmin) {
     return (
@@ -99,7 +100,7 @@ export default async function WorkstationsPage({
         title="Workstation Directory"
         description="Table-first workstation surface using the same Control authority data as the broader Devices area."
       >
-        <form method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <CompanyForm method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <select
             name="status"
             defaultValue={statusFilter}
@@ -114,7 +115,7 @@ export default async function WorkstationsPage({
             defaultValue={shopFilter}
             style={{ minHeight: 38, minWidth: 220, borderRadius: 12, border: "1px solid #DEE6FA", background: "#ffffff", color: "#08164F", padding: "0 12px" }}
           >
-            <option value="">All shops</option>
+            <option value="">Selected company</option>
             {uniqueShops.map(([shopId, shopName]) => (
               <option key={shopId} value={shopId}>{shopName}</option>
             ))}
@@ -135,12 +136,12 @@ export default async function WorkstationsPage({
             Apply
           </button>
           <ControlActionLink href="/workstations">Clear</ControlActionLink>
-        </form>
+        </CompanyForm>
 
         {filteredRows.length === 0 ? (
           <ControlEmptyState
             title="No workstations matched the current filters"
-            description="Try a wider filter combination or wait for workstation registrations to appear in Control."
+            description="No matches in the latest 500 workstation registrations for the selected company. Try wider filters."
           />
         ) : (
           <ControlTableWrap>

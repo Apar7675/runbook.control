@@ -1,3 +1,4 @@
+import { CompanyForm } from "@/components/control/CompanyScope";
 import React from "react";
 import ControlActionButton, { ControlActionLink } from "@/components/control/ControlActionButton";
 import ControlMetricCard from "@/components/control/ControlMetricCard";
@@ -1173,7 +1174,7 @@ function ReleasesTab({
         {packageEditor.error ? <div style={{ fontSize: 12.5, color: t.color.danger }}>{packageEditor.error}</div> : null}
 
         {releaseRecords.length > 0 ? (
-          <form method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <CompanyForm method="get" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <input type="hidden" name="tab" value="releases" />
             <select name="selected_release_id" defaultValue={selectedRelease?.id ?? ""} style={{ ...inputStyle(), minWidth: 300 }}>
               {releaseRecords.map((record) => (
@@ -1183,7 +1184,7 @@ function ReleasesTab({
               ))}
             </select>
             <ControlActionButton type="submit">Load</ControlActionButton>
-          </form>
+          </CompanyForm>
         ) : null}
 
         {showPackageEditor && selectedRelease && packageCrudEnabled ? (

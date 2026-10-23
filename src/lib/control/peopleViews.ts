@@ -311,7 +311,7 @@ async function loadProfiles(userIds: string[]) {
   return profileMap;
 }
 
-async function loadTimeEventRows(shopIds: string[]) {
+async function loadTimeEventRows(shopIds: string[], pendingOnly = false) {
   if (shopIds.length === 0) return [] as TimeEventDbRow[];
 
   const admin = supabaseAdmin();
@@ -333,10 +333,9 @@ async function loadTimeEventRows(shopIds: string[]) {
   let working = [...columns];
 
   for (let attempt = 0; attempt < columns.length; attempt += 1) {
-    const { data, error } = await admin
-      .from("time_events")
-      .select(working.join(","))
-      .in("shop_id", shopIds)
+    let query = admin.from("time_events").select(working.join(",")).in("shop_id", shopIds);
+    if (pendingOnly && working.includes("needs_review")) query = query.eq("needs_review", true);
+    const { data, error } = await query
       .order("updated_at", { ascending: false })
       .limit(1500);
 
@@ -430,15 +429,15 @@ function lastActivityByEmployee(events: TimeEventDbRow[]) {
   return result;
 }
 
-export async function loadPeopleViews(): Promise<PeopleViewsData> {
+export async function loadPeopleViews(options: { platformAdminsOnly?: boolean; pendingReviewOnly?: boolean } = {}): Promise<PeopleViewsData> {
   const context = await getViewerContext();
   const shopIds = context.shops.map((shop) => shop.id);
   const [shopSnapshots, employeesRaw, membersRaw, controlAdminsRaw, timeEventRows] = await Promise.all([
     loadShopSnapshots(context),
-    loadEmployees(shopIds),
-    loadMembers(shopIds),
-    loadControlAdmins(context.isPlatformAdmin),
-    loadTimeEventRows(shopIds),
+    options.platformAdminsOnly ? Promise.resolve([] as EmployeeDbRow[]) : loadEmployees(shopIds),
+    options.platformAdminsOnly ? Promise.resolve([] as MemberDbRow[]) : loadMembers(shopIds),
+    loadControlAdmins(context.isPlatformAdmin && options.platformAdminsOnly === true),
+    options.platformAdminsOnly ? Promise.resolve([] as TimeEventDbRow[]) : loadTimeEventRows(shopIds, options.pendingReviewOnly),
   ]);
 
   const employeeSeeds = employeesRaw.map(employeeSeed).filter((row): row is EmployeeViewSeed => Boolean(row));
