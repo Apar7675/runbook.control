@@ -134,6 +134,32 @@ async function main() {
   assert.equal(result.body.updates[0].version, "1.10.0");
   assert.equal(result.body.updates[0].package.packageId, "right-latest", "Wrong architecture must not win by row order");
 
+  // Invalid labels must be removed before sorting; mixing id fallback ordering
+  // with numeric ordering makes the comparator nontransitive.
+  const interleaved = [
+    release("z-high", "1.10.0"), release("a-invalid", "invalid"),
+    release("m-low", "1.2.0"), release("z-invalid", "v9.0.0"),
+    release("a-medium", "1.9.0"), release("m-invalid", "unknown"),
+  ];
+  const arrangements = [
+    interleaved,
+    interleaved.slice().reverse(),
+    [interleaved[2], interleaved[1], interleaved[4], interleaved[5], interleaved[0], interleaved[3]],
+    [interleaved[3], interleaved[4], interleaved[0], interleaved[1], interleaved[2], interleaved[5]],
+  ];
+  for (const arrangement of arrangements) {
+    const shuffled = database({
+      ...authenticatedSeed,
+      rb_software_releases: arrangement,
+      rb_software_packages: arrangement.map((row) => pkg("p-" + row.id, row.id)),
+      rb_software_rollouts: arrangement.map((row) => rollout("r-" + row.id, row.id)),
+    });
+    const selected = await routeFor(shuffled).POST(request());
+    assert.equal(selected.status, 200);
+    assert.equal(selected.body.updates.length, 1);
+    assert.equal(selected.body.updates[0].releaseId, "z-high", "Invalid interleaved rows disrupted highest-version selection");
+  }
+
   const current = await route.POST(request({ desktopVersion: "2.0.0" }));
   assert.equal(current.body.updates.length, 0, "Downgrade was offered");
   const equal = await route.POST(request({ desktopVersion: "1.10.0.0+build" }));

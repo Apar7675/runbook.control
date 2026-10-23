@@ -119,7 +119,7 @@ export function selectEligibleSoftwareUpdates(args: {
   platform: string; architecture: string; now: number;
 }) {
   const selectedApps = new Set<string>();
-  const releases = args.releases.slice().sort((a, b) =>
+  const releases = args.releases.filter((row) => parseSoftwareVersion(row.version)).sort((a, b) =>
     (compareSoftwareVersions(b.version, a.version) ?? 0) || text(a.id).localeCompare(text(b.id)));
   return releases.flatMap((release) => {
     const releaseId = text(release.id), appName = text(release.app_name).toLowerCase();

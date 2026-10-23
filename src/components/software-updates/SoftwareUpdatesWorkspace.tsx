@@ -346,7 +346,7 @@ function buildWorkflowSteps(data: SoftwareUpdatesWorkspaceData): WorkflowStep[] 
         "Save SHA256 checksum.",
         "Confirm platform and architecture match the build.",
       ],
-      statusLabel: packageCount > 0 ? countLabel(packageCount, "package record") : data.sourceKind === "unavailable" ? "Phase 2C metadata only" : "Metadata missing",
+      statusLabel: packageCount > 0 ? countLabel(packageCount, "package record") : data.sourceKind === "unavailable" ? "Data unavailable" : "Metadata missing",
       statusTone: packageCount > 0 ? "success" : "warning",
     },
     {
@@ -1344,7 +1344,7 @@ function DevicesTab({ deviceRows, sourceKind }: { deviceRows: SoftwareUpdatesWor
     <ControlPanel
       title="Device update status"
       description={sourceKind === "unavailable"
-        ? "Sample rows show how Control can become the remote visibility layer for reported desktop, service, workstation, and mobile versions without taking on local installation authority."
+        ? "Device version reports could not be loaded. No fleet status or device counts are available."
         : "Device status rows are reading from rb_device_software_status when records are available, without giving Control local installation authority."}
     >
       {deviceRows.length === 0 && sourceKind !== "unavailable" ? (
