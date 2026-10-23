@@ -3,7 +3,6 @@
 import Link from "@/components/control/CompanyLink";
 import { usePathname, useSearchParams } from "next/navigation";
 import React from "react";
-import { CompanySelector } from "@/components/control/CompanyScope";
 import type { ControlStatusTone } from "@/components/control/ControlStatusChip";
 
 type NavItem = {
@@ -55,7 +54,6 @@ export default function ControlSidebar({ email, roleLabel, statuses }: {
         {/* Approved original logo and source-verified module artwork; see artwork provenance. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="control-brand" src="/artwork/control-sample2/runbook-logo.png" alt="RunBook" width={796} height={229} style={{ display: "block", width: "100%", maxWidth: 180, height: "auto", margin: "0 auto" }} />
-        <CompanySelector />
       </div>
       <nav className="control-nav" aria-label="Control navigation" style={{ minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "0 2px 3px", margin: "0 -2px", scrollbarWidth: "thin", scrollbarColor: "#385573 transparent" }}>
         <div className="control-nav-items" style={{ display: "grid", gap: 1 }}>
@@ -103,7 +101,6 @@ export default function ControlSidebar({ email, roleLabel, statuses }: {
         .control-sidebar .control-nav-item { scroll-margin-block: 6px; }
         .control-sidebar .control-nav-item:hover { background-color: rgba(102, 153, 204, 0.12) !important; }
         .control-sidebar .control-nav-item[aria-current="page"]:hover { border-color: #8BD7FF !important; }
-        .control-sidebar .control-shop-link:hover { border-color: #72A8D4 !important; }
       `}</style>
     </aside>
   );
