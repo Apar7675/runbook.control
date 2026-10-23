@@ -179,7 +179,7 @@ async function main() {
   const providerCount = f.state.provider.length;
   const enrollment = flow.auth.mfa.enroll({ factorType: "totp" });
   f.replace(OTHER);
-  await rejected(() => enrollment);
+  await rejected(() => enrollment, /^The signed-in session changed\. Reload before continuing\.$/);
   check(f.state.provider.length === providerCount && f.state.writes.length === 0, "SDK-internal await cannot send provider mutation or cookie write after account switch");
   check(decodedCookies(f).access_token === OTHER.access_token && decodedCookies(f).refresh_token === OTHER.refresh_token, "new account token pair remains intact");
   flow.dispose();
@@ -189,7 +189,7 @@ async function main() {
   const inFlight = flow.auth.mfa.enroll({ factorType: "totp" });
   await f.state.providerEntered.promise;
   f.state.current = false; flow.dispose(); f.state.providerGate.resolve();
-  await rejected(() => inFlight);
+  await rejected(() => inFlight, /^The signed-in session changed\. Reload before continuing\.$/);
   check(f.state.provider.at(-1).signal.aborted === true && f.state.provider.at(-1).bearer === ORIGINAL.access_token && f.state.writes.length === 0, "retirement aborts captured-account transport and blocks late cookie writes");
 
   f = fixture(); flow = await f.capture();
