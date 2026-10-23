@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       .select("role")
       .eq("shop_id", shop_id)
       .eq("user_id", user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });

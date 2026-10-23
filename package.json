@@ -13,7 +13,8 @@
     "test:f06:static": "node scripts/verify-f06-messaging-boundary.js",
     "test:f06:api": "node scripts/verify-f06-api-boundary.js",
     "test:f06": "npm run test:f06:static && npm run test:f06:api",
-    "test:f03:authorization": "node scripts/verify-f03-administrative-authorization.js"
+    "test:f03:authorization": "node scripts/verify-f03-administrative-authorization.js",
+    "test:desktop-access": "node scripts/verify-desktop-access-boundary.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

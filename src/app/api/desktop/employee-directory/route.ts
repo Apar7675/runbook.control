@@ -56,12 +56,15 @@ async function authorizeDesktop(req: Request, admin: any, shopId: string) {
   const user = authenticated.user;
   if (!user?.id || user.is_anonymous === true)
     throw new DesktopDirectoryAccessError(401, "Sign in to read the employee directory.");
+  let canReadSensitiveEmployeeData = false;
   try {
-    await ensureMembership(admin, shopId, user.id);
+    const membership = await ensureMembership(admin, shopId, user.id);
+    const role = text(membership.role).toLowerCase();
+    canReadSensitiveEmployeeData = role === "owner" || role === "admin";
   } catch {
     throw new DesktopDirectoryAccessError(403, "Not authorized for this shop.");
   }
-  return { mode: "user", userId: user.id } as const;
+  return { mode: "user", userId: user.id, canReadSensitiveEmployeeData } as const;
 }
 
 async function createAvatarDisplayUrl(admin: any, path: string) {
@@ -91,7 +94,12 @@ export async function GET(req: NextRequest) {
     let employees: any[] = [];
     const modern = await admin
       .from("employees")
-      .select("id, shop_id, auth_user_id, source_device_id, source_local_employee_id, employee_code, display_name, full_name, preferred_name, username, email, phone, department, job_title, company_name, status, home_address_1, home_address_2, home_city, home_state, home_postal_code, social_security_number, avatar_url_256, avatar_url_512, role, is_active, runbook_access_enabled, mobile_access_enabled, mobile_timeclock_enabled, mobile_timeclock_requires_review, workstation_access_enabled, can_dashboard, can_po_entry, can_components, can_ballooning, can_inspection, can_gcoding, can_routing_db, can_work_orders, can_messaging, can_library, can_hr_department, can_settings, can_timeclock, can_dashboard_view, can_jobs_module, can_inspection_entry, can_camera_view, can_administrative_complete_close, workstation_session_timeout_minutes, mobile_pin_salt_base64, mobile_pin_hash_base64")
+      .select([
+        "id,shop_id,auth_user_id,source_device_id,source_local_employee_id,employee_code,display_name,full_name,preferred_name,username,email,phone,department,job_title,company_name,status,avatar_url_256,avatar_url_512,role,is_active,runbook_access_enabled,mobile_access_enabled,mobile_timeclock_enabled,mobile_timeclock_requires_review,workstation_access_enabled,can_dashboard,can_po_entry,can_components,can_ballooning,can_inspection,can_gcoding,can_routing_db,can_work_orders,can_messaging,can_library,can_hr_department,can_settings,can_timeclock,can_dashboard_view,can_jobs_module,can_inspection_entry,can_camera_view,can_administrative_complete_close,workstation_session_timeout_minutes",
+        ...(auth.canReadSensitiveEmployeeData
+          ? ["home_address_1,home_address_2,home_city,home_state,home_postal_code,social_security_number,mobile_pin_salt_base64,mobile_pin_hash_base64"]
+          : []),
+      ].join(","))
       .eq("shop_id", shopId)
       .order("display_name", { ascending: true });
 
@@ -183,12 +191,14 @@ export async function GET(req: NextRequest) {
           job_title: text(employee.job_title),
           company_name: text(employee.company_name),
           status: text(employee.status),
-          home_address_1: text(employee.home_address_1),
-          home_address_2: text(employee.home_address_2),
-          home_city: text(employee.home_city),
-          home_state: text(employee.home_state),
-          home_postal_code: text(employee.home_postal_code),
-          social_security_number: text(employee.social_security_number),
+          ...(auth.canReadSensitiveEmployeeData ? {
+            home_address_1: text(employee.home_address_1),
+            home_address_2: text(employee.home_address_2),
+            home_city: text(employee.home_city),
+            home_state: text(employee.home_state),
+            home_postal_code: text(employee.home_postal_code),
+            social_security_number: text(employee.social_security_number),
+          } : {}),
           avatar_url_256: avatar256,
           avatar_url_512: avatar512,
           avatar_display_url_256: displayUrl256,
@@ -226,8 +236,10 @@ export async function GET(req: NextRequest) {
                 ]
               : [],
           workstation_session_timeout_minutes: Number(employee.workstation_session_timeout_minutes ?? 15) || 15,
-          mobile_pin_salt_base64: text(employee.mobile_pin_salt_base64),
-          mobile_pin_hash_base64: text(employee.mobile_pin_hash_base64),
+          ...(auth.canReadSensitiveEmployeeData ? {
+            mobile_pin_salt_base64: text(employee.mobile_pin_salt_base64),
+            mobile_pin_hash_base64: text(employee.mobile_pin_hash_base64),
+          } : {}),
         };
       })
     );

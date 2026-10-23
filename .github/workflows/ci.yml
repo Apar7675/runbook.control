@@ -41,3 +41,6 @@ jobs:
 
       - name: Software update policy and route regressions
         run: node scripts/verify-software-update-policy.js
+
+      - name: Desktop access boundary route regressions
+        run: npm run test:desktop-access

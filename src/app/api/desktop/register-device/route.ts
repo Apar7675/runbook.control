@@ -120,9 +120,13 @@ export async function POST(req: Request) {
       .select("role")
       .eq("shop_id", shop_id)
       .eq("user_id", user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
-    if (!mem) return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
+    const membershipRole = String(mem?.role ?? "").trim().toLowerCase();
+    if (!mem || (membershipRole !== "owner" && membershipRole !== "admin")) {
+      return NextResponse.json({ ok: false, error: "Access denied" }, { status: 403 });
+    }
     await requireShopEntitlementWriteAllowed(shop_id, "desktop.register_device");
 
     const existing = await loadExistingDevice(admin, device_id);
@@ -141,7 +145,13 @@ export async function POST(req: Request) {
         }, { status: 403 });
       }
 
-      await updateDeviceWithAutoStrip(admin, device_id, { status: "active", device_type: "desktop", ...localIdentity });
+      if (String(existing.status ?? "").trim().toLowerCase() !== "active") {
+        return NextResponse.json({ ok: false, error: "device_inactive" }, { status: 403 });
+      }
+
+      // Registration is idempotent enrollment, not authority to reactivate a device.
+      // Preserve a concurrent administrative disable instead of writing status again.
+      await updateDeviceWithAutoStrip(admin, device_id, { device_type: "desktop", ...localIdentity });
 
       return NextResponse.json({ ok: true, existing: true, device_id, shop_id, status: "active", device_role: String(existing.device_role ?? "").trim() });
     }
