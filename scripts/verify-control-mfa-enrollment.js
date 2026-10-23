@@ -12,7 +12,7 @@ const SVG = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>';
 const enrollment = { userId: USER, factorId: FACTOR, secret: SECRET, qrImage: "data:image/svg+xml;utf-8," + encodeURIComponent(SVG) };
 let checks = 0;
 const check = (condition, label) => { assert.ok(condition, label); checks++; };
-const same = (actual, expected, label) => { assert.equal(JSON.stringify(actual), JSON.stringify(expected), label); checks++; };
+const same = (actual, expected, label) => { assert.deepStrictEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), label); checks++; };
 const rejected = async (work, pattern) => { await assert.rejects(work, pattern); checks++; };
 const jsx = (type, props) => ({ type, props });
 function load(file, mocks = {}, globals = {}) {
