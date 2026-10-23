@@ -47,3 +47,31 @@ jobs:
 
       - name: Authorized shop directory and company scope regressions
         run: npm run test:company-scope
+
+  timeclock-summary-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      timeclockdb:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: runbook_timeclock_test
+        options: >-
+          --health-cmd "pg_isready -U postgres -d runbook_timeclock_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Weekly timeclock SQL and RLS regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat supabase/tests/timeclock_weekly_summary_fixture.sql \
+            supabase/migrations/20261023235500_timeclock_weekly_summary_utc.sql \
+            supabase/tests/timeclock_weekly_summary.sql |
+            docker exec -i '${{ job.services.timeclockdb.id }}' \
+              psql -U postgres -d runbook_timeclock_test --no-psqlrc --set ON_ERROR_STOP=on
