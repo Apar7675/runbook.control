@@ -38,3 +38,6 @@ jobs:
 
       - name: Static authorization checks
         run: npm run test:f03:authorization
+
+      - name: Software update policy and route regressions
+        run: node scripts/verify-software-update-policy.js
