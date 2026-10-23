@@ -15,7 +15,25 @@ const KEY = "sb-fixture-auth-token";
 let checks = 0;
 const clients = [];
 const check = (value, label) => { assert.ok(value, label); checks++; };
-const rejected = async (work, pattern = /session changed|AAL2|Web Locks|already in progress/i) => { await assert.rejects(work, pattern); checks++; };
+const rejected = async (work, pattern = /session changed|AAL2|Web Locks|already in progress/i) => {
+  let result;
+  try { result = await work(); }
+  catch (error) {
+    assert.match(String(error?.message ?? error), pattern);
+    checks++;
+    return error;
+  }
+  // The pinned SDK converts a fetch guard throw to an AuthError result.
+  // Require its exact failure shape rather than accepting a resolved operation.
+  assert.ok(result?.error, "expected a rejection or SDK error result");
+  assert.equal(result.data, null, "failed SDK operation must not return data");
+  assert.equal(result.error.name, "AuthRetryableFetchError");
+  assert.equal(result.error.status, 0);
+  assert.equal(result.error.code, undefined);
+  assert.match(result.error.message, pattern);
+  checks++;
+  return result.error;
+};
 const deferred = () => { let resolve; const promise = new Promise((yes) => { resolve = yes; }); return { promise, resolve }; };
 function jwt(user = A, aal = "aal1", session = SID) {
   const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -162,8 +180,8 @@ async function main() {
   const enrollment = flow.auth.mfa.enroll({ factorType: "totp" });
   f.replace(OTHER);
   await rejected(() => enrollment);
-  check(f.state.provider.length === providerCount, "SDK-internal await cannot send mutation after account cookie switch");
-  check(decodedCookies(f).access_token === OTHER.access_token, "new account cookies remain intact");
+  check(f.state.provider.length === providerCount && f.state.writes.length === 0, "SDK-internal await cannot send provider mutation or cookie write after account switch");
+  check(decodedCookies(f).access_token === OTHER.access_token && decodedCookies(f).refresh_token === OTHER.refresh_token, "new account token pair remains intact");
   flow.dispose();
 
   f = fixture(); flow = await f.capture();
@@ -172,7 +190,7 @@ async function main() {
   await f.state.providerEntered.promise;
   f.state.current = false; flow.dispose(); f.state.providerGate.resolve();
   await rejected(() => inFlight);
-  check(f.state.provider.at(-1).signal.aborted === true && f.state.writes.length === 0, "retirement aborts flow transport and blocks late result");
+  check(f.state.provider.at(-1).signal.aborted === true && f.state.provider.at(-1).bearer === ORIGINAL.access_token && f.state.writes.length === 0, "retirement aborts captured-account transport and blocks late cookie writes");
 
   f = fixture(); flow = await f.capture();
   f.state.jsonGate = deferred(); f.state.jsonEntered = deferred();
