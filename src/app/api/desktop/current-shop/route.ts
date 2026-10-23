@@ -15,13 +15,26 @@ function rankRole(role: string) {
 export async function GET(req: Request) {
   try {
     const { user } = await requireSessionUser(req);
+    // A targeted lookup must never select another shop or trust a caller's user id.
+    const requested = new URL(req.url).searchParams.getAll("shop_id");
+    if (requested.length > 1) {
+      return NextResponse.json({ ok: false, error: "Specify one shop_id." }, { status: 400 });
+    }
+    const requestedShopId = requested.length === 0 ? null : requested[0].trim().toLowerCase();
+    if (requestedShopId !== null && (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(requestedShopId) ||
+      requestedShopId === "00000000-0000-0000-0000-000000000000")) {
+      return NextResponse.json({ ok: false, error: "Invalid shop_id." }, { status: 400 });
+    }
     const admin = supabaseAdmin();
 
-    const { data, error } = await admin
+    let query = admin
       .from("rb_shop_members")
       .select("shop_id, role, rb_shops:rb_shops(name)")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
+      .eq("is_active", true);
+    if (requestedShopId !== null) query = query.eq("shop_id", requestedShopId);
+    const { data, error } = await query.order("created_at", { ascending: true });
 
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
@@ -33,8 +46,13 @@ export async function GET(req: Request) {
       }))
       .filter((row) => row.shop_id.length > 0);
 
+    if (requestedShopId !== null && shops.length !== 1) {
+      return NextResponse.json({ ok: false, error: "Active shop membership could not be verified." },
+        { status: shops.length === 0 ? 403 : 409 });
+    }
+
     if (shops.length === 0) {
-      return NextResponse.json({ ok: true, found: false, multiple_shops: false });
+      return NextResponse.json({ ok: true, found: false, multiple_shops: false, user_id: user.id });
     }
 
     shops.sort((a, b) => {
@@ -47,6 +65,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       found: true,
+      user_id: user.id,
       multiple_shops: shops.length > 1,
       shop_id: selected.shop_id,
       shop_name: selected.shop_name,

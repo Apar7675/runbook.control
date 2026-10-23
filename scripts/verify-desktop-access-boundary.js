@@ -24,7 +24,7 @@ function harness(options = {}) {
     can_administrative_complete_close: true,
     ...Object.fromEntries(PRIVATE_FIELDS.map(field => [field, "synthetic-" + field])) };
   const tables = {
-    rb_shop_members: options.noMembership ? [] : [member],
+    rb_shop_members: options.memberships ? clone(options.memberships) : (options.noMembership ? [] : [member]),
     employees: [employee],
     rb_devices: options.newDevice ? [] : [{ id: DEVICE, shop_id: options.deviceShop || SHOP,
       status: options.deviceStatus || "active", device_role: "primary" }],
@@ -37,11 +37,14 @@ function harness(options = {}) {
     const filters = [];
     const matches = row => filters.every(([key, value]) => row[key] === value);
     const project = row => columns === "*" ? clone(row) : Object.fromEntries(
-      columns.split(",").map(x => x.trim()).filter(Boolean).map(key => [key, clone(row[key])]));
+      columns.split(",").map(x => x.trim()).filter(Boolean).map(key => key === "rb_shops:rb_shops(name)"
+        ? ["rb_shops", clone(row.rb_shops)] : [key, clone(row[key])]));
     const run = async () => {
       if (result) return result;
       result = Promise.resolve().then(() => {
         calls.queries.push({ table, operation, columns, filters: clone(filters) });
+        if (operation === "select" && table === "rb_shop_members" && options.membershipError)
+          return { data: null, error: { message: "Synthetic membership lookup failed" } };
         if (operation === "select") return { data: tables[table].filter(matches).map(project), error: null };
         if (options.disableDuringUpdate && table === "rb_devices" && operation === "update") {
           tables.rb_devices[0].status = "disabled";
@@ -123,14 +126,17 @@ function harness(options = {}) {
   return { calls, tables, async request(routeName, extra = {}) {
     const url = new URL("https://control.example.invalid/api/desktop/" + routeName);
     const isDirectory = routeName === "employee-directory";
+    const isGet = isDirectory || routeName === "current-shop";
     if (isDirectory) url.searchParams.set("shop_id", SHOP);
-    for (const [key, value] of Object.entries(extra.query || {})) url.searchParams.set(key, value);
-    const req = new Request(url, { method: isDirectory ? "GET" : "POST",
+    for (const [key, value] of Object.entries(extra.query || {})) {
+      for (const entry of Array.isArray(value) ? value : [value]) url.searchParams.append(key, entry);
+    }
+    const req = new Request(url, { method: isGet ? "GET" : "POST",
       headers: { authorization: "Bearer synthetic-session", "content-type": "application/json" },
-      ...(isDirectory ? {} : { body: JSON.stringify({ shop_id: SHOP, device_id: DEVICE, ...extra.body }) }) });
+      ...(isGet ? {} : { body: JSON.stringify({ shop_id: SHOP, device_id: DEVICE, ...extra.body }) }) });
     Object.defineProperty(req, "nextUrl", { value: url });
     const route = loadActual("src/app/api/desktop/" + routeName + "/route.ts");
-    const response = await route[isDirectory ? "GET" : "POST"](req);
+    const response = await route[isGet ? "GET" : "POST"](req);
     return { status: response.status, body: await response.json() };
   } };
 }
@@ -237,6 +243,90 @@ async function main() {
       assert.equal(h.tables.rb_devices[0].local_install_id, "synthetic-install");
     });
   }
+
+  const membership = (shopId, role, active = true, userId = USER, name = "Synthetic Shop") =>
+    ({ shop_id: shopId, role, is_active: active, user_id: userId, rb_shops: { name } });
+  const targetQuery = { shop_id: SHOP };
+  for (const role of ["owner", "admin", "member", "viewer"]) {
+    await test("target shop returns only authenticated active " + role + " membership", async () => {
+      const h = harness({ memberships: [membership(OTHER_SHOP, "owner"), membership(SHOP, role)] });
+      const r = await h.request("current-shop", { query: targetQuery });
+      assert.equal(r.status, 200); assert.equal(r.body.found, true);
+      assert.equal(r.body.user_id, USER); assert.equal(r.body.shop_id, SHOP);
+      assert.equal(r.body.member_role, role); assert.equal(r.body.multiple_shops, false);
+      const q = h.calls.queries.find(q => q.table === "rb_shop_members");
+      for (const filter of [["user_id", USER], ["is_active", true], ["shop_id", SHOP]])
+        assert.ok(q.filters.some(actual => actual[0] === filter[0] && actual[1] === filter[1]));
+      assert.equal(h.calls.writes.length, 0); assert.equal(h.calls.entitlements, 0);
+    });
+  }
+  for (const memberships of [
+    [membership(SHOP, "owner", false), membership(OTHER_SHOP, "owner")],
+    [membership(SHOP, "owner", true, DEVICE), membership(OTHER_SHOP, "owner")],
+    [],
+  ]) {
+    await test("target lookup cannot substitute inactive, other-user or absent membership", async () => {
+      const h = harness({ memberships }); const r = await h.request("current-shop", { query: targetQuery });
+      assert.equal(r.status, 403); assert.equal(r.body.ok, false);
+      assert.equal(Object.hasOwn(r.body, "shop_id"), false);
+      assert.equal(h.calls.writes.length, 0);
+    });
+  }
+  await test("target lookup ignores forged user identity and never retargets", async () => {
+    const h = harness({ memberships: [membership(SHOP, "member"), membership(SHOP, "owner", true, DEVICE)] });
+    const r = await h.request("current-shop", { query: { shop_id: SHOP, user_id: DEVICE } });
+    assert.equal(r.status, 200); assert.equal(r.body.user_id, USER);
+    assert.equal(r.body.member_role, "member"); assert.equal(h.calls.writes.length, 0);
+  });
+  await test("target lookup refuses ambiguous active membership", async () => {
+    const h = harness({ memberships: [membership(SHOP, "owner"), membership(SHOP, "member")] });
+    const r = await h.request("current-shop", { query: targetQuery });
+    assert.equal(r.status, 409); assert.equal(r.body.ok, false);
+  });
+  for (const shop_id of ["", "not-a-uuid", "00000000-0000-0000-0000-000000000000", [SHOP, OTHER_SHOP]]) {
+    await test("target lookup rejects malformed or duplicate shop parameter " + JSON.stringify(shop_id), async () => {
+      const h = harness(); const r = await h.request("current-shop", { query: { shop_id } });
+      assert.equal(r.status, 400); assert.equal(h.calls.queries.length, 0);
+    });
+  }
+  await test("target lookup canonicalizes a UUID without selecting another shop", async () => {
+    const target = "abcdefab-1234-4000-8000-abcdefabcdef";
+    const h = harness({ memberships: [membership(target, "admin")] });
+    const r = await h.request("current-shop", { query: { shop_id: " " + target.toUpperCase() + " " } });
+    assert.equal(r.status, 200); assert.equal(r.body.shop_id, target); assert.equal(r.body.user_id, USER);
+  });
+  await test("legacy current shop sorts only active own memberships and returns caller identity", async () => {
+    const h = harness({ memberships: [
+      membership(SHOP, "owner", false, USER, "Inactive"),
+      membership(OTHER_SHOP, "admin", true, USER, "Active"),
+      membership(SHOP, "owner", true, DEVICE, "Foreign"),
+    ] });
+    const r = await h.request("current-shop");
+    assert.equal(r.status, 200); assert.equal(r.body.shop_id, OTHER_SHOP);
+    assert.equal(r.body.user_id, USER); assert.equal(r.body.member_role, "admin"); assert.equal(r.body.multiple_shops, false);
+  });
+  await test("legacy shop selection preserves role and name ranking among active shops", async () => {
+    const h = harness({ memberships: [
+      membership(SHOP, "admin", true, USER, "A"), membership(OTHER_SHOP, "owner", true, USER, "Z"),
+    ] });
+    const r = await h.request("current-shop");
+    assert.equal(r.status, 200); assert.equal(r.body.shop_id, OTHER_SHOP); assert.equal(r.body.multiple_shops, true);
+  });
+  await test("legacy no membership remains a successful empty lookup", async () => {
+    const h = harness({ noMembership: true }); const r = await h.request("current-shop");
+    assert.equal(r.status, 200); assert.equal(r.body.found, false); assert.equal(r.body.user_id, USER);
+  });
+  for (const query of [undefined, targetQuery]) {
+    await test("current shop requires an authenticated session before membership lookup", async () => {
+      const h = harness({ unauthenticated: true }); const r = await h.request("current-shop", { query });
+      assert.equal(r.status, 401); assert.equal(h.calls.queries.length, 0);
+    });
+    await test("current shop fails closed on membership read error", async () => {
+      const h = harness({ membershipError: true }); const r = await h.request("current-shop", { query });
+      assert.equal(r.status, 500); assert.equal(r.body.ok, false); assert.equal(h.calls.writes.length, 0);
+    });
+  }
+
   console.log("Desktop access boundary regression: " + passed + " cases passed; network calls=0; real records=0; file writes=0");
 }
 module.exports = { main };
