@@ -87,7 +87,7 @@ function fixture(options = {}) {
   } };
   const source = fs.readFileSync(path.join(process.cwd(), "src/lib/auth/mfaSession.ts"), "utf8");
   const compiled = ts.transpileModule(source, { fileName: "src/lib/auth/mfaSession.ts", compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } }).outputText;
-  const module = { exports: {} };
+  const mod = { exports: {} };
   vm.runInNewContext("(function(require,module,exports){" + compiled + "\n})", {
     URL, Headers, Request, Response, AbortController, crypto: webcrypto, Error,
     document, navigator: options.locks === false ? {} : { locks }, fetch: provider,
@@ -96,7 +96,7 @@ function fixture(options = {}) {
     if (name === "@supabase/supabase-js") return wrappedSdk;
     if (name === "@supabase/ssr") return ssr;
     throw new Error("Unexpected dependency " + name);
-  }, module, module.exports);
+  }, mod, mod.exports);
   const mainCalls = [];
   const main = {
     getSession: async () => { mainCalls.push("getSession"); return { data: { session: { ...ORIGINAL, user: user(A) } }, error: null }; },
@@ -106,7 +106,7 @@ function fixture(options = {}) {
     refreshSession() { throw new Error("main.refreshSession must not be used"); },
     signOut() { throw new Error("cleanup must not sign out main session"); },
   };
-  const api = module.exports;
+  const api = mod.exports;
   return { state, cookies, document, replace, main, mainCalls, api, capture: () => api.captureMfaFlow(main, A, () => state.current) };
 }
 function decodedCookies(f) {
