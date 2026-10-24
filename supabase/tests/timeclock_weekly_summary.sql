@@ -81,10 +81,25 @@ begin
  assert not exists((table source_before except table public.time_events) union all (table public.time_events except table source_before)), 'summary must not mutate source';
 end
 $test$;
--- Open streams clamp at transaction now; a future punch never contributes time/state.
+-- Integer output floors elapsed seconds per UTC day. Exercise fractional
+-- evidence explicitly instead of depending on the runner's fractional clock.
 insert into public.time_events(employee_id,shop_id,event_type,client_ts)
 values
-('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-000000000011','CLOCK_IN',now()-interval '90 minutes'),
+('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-000000000011','CLOCK_IN','2026-03-01 23:30:00.500+00'),
+('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-000000000011','CLOCK_OUT','2026-03-02 00:30:00.500+00');
+do $test$
+declare first_day bigint; second_day bigint;
+begin
+ select work_seconds into first_day from public.timeclock_weekly_summary('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000a1','2026-03-01') where day='2026-03-01';
+ select work_seconds into second_day from public.timeclock_weekly_summary('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-0000000000a1','2026-03-01') where day='2026-03-02';
+ assert first_day=1799 and second_day=1800, 'fractional overnight evidence floors each UTC day';
+end
+$test$;
+-- Open streams clamp at transaction now; a future punch never contributes time/state.
+-- Whole-second input keeps the exact 90-minute expectation valid at UTC midnight.
+insert into public.time_events(employee_id,shop_id,event_type,client_ts)
+values
+('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-000000000011','CLOCK_IN',date_trunc('second',now())-interval '90 minutes'),
 ('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-000000000011','CLOCK_OUT',now()+interval '1 day');
 do $test$
 declare total bigint;
