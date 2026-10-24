@@ -30,7 +30,7 @@ function harness(options = {}) {
       status: options.deviceStatus || "active", device_role: "primary" }],
     rb_shops: [{ id: SHOP, trial_ends_at: null }],
   };
-  const calls = { queries: [], writes: [], entitlements: 0, foreground: 0, avatar: 0 };
+  const calls = { queries: [], writes: [], entitlements: 0, foreground: 0, avatar: 0, authTokens: [] };
   function from(table) {
     assert.ok(Object.hasOwn(tables, table), "Unexpected table " + table);
     let operation = "select", columns = "*", payload, result;
@@ -70,7 +70,7 @@ function harness(options = {}) {
   const admin = { from, storage: { from() { return { async createSignedUrl() {
     calls.avatar++; throw new Error("Avatar provider unexpectedly called"); } }; } } };
   const environment = {
-    RUNBOOK_DESKTOP_ENTITLEMENT_PRIVATE_KEY_PEM: privatePem,
+    RUNBOOK_DESKTOP_ENTITLEMENT_PRIVATE_KEY_PEM: options.missingSigningKey ? "" : privatePem,
     RUNBOOK_DESKTOP_ENTITLEMENT_KEY_ID: "synthetic-v1",
     RUNBOOK_LICENSE_SIGNING_SECRET: "synthetic-license-secret",
   };
@@ -96,6 +96,7 @@ function harness(options = {}) {
       return new Response(JSON.stringify(body), { ...init, headers: { "content-type": "application/json", ...init.headers } });
     } } };
     if (name === "@/lib/desktopAuth") return { async requireSessionUser(req) {
+      calls.authTokens.push(req.headers.get("authorization"));
       if (options.unauthenticated || req.headers.get("authorization") !== "Bearer synthetic-session") throw new Error("Not authenticated");
       return { user: { id: USER }, accessToken: "synthetic-session" };
     } };
@@ -108,8 +109,8 @@ function harness(options = {}) {
       return { state: e.allowed ? "active" : "restricted", desktop_mode: e.allowed ? "full" : "read_only",
         mobile_mode: e.allowed ? "full" : "queue_only", workstation_mode: e.allowed ? "full" : "blocked" };
     } };
-    if (name === "@/lib/control/cleanup") return { async loadPendingCleanup() { return { preferred: null }; },
-      formatCleanupResponse() { throw new Error("Unexpected cleanup"); } };
+    if (name === "@/lib/control/cleanup") return { async loadPendingCleanup() { return { preferred: options.cleanupRequired ? { id: "synthetic-cleanup" } : null }; },
+      formatCleanupResponse() { if (!options.cleanupRequired) throw new Error("Unexpected cleanup"); return { id: "synthetic-cleanup" }; } };
     if (name === "@/lib/business/businessForegroundIdentity") return {
       BUSINESS_FOREGROUND_PROJECTION: "business-foreground-v1",
       async businessForegroundMetadata() { calls.foreground++; return Response.json({ ok: true, projection: "synthetic-foreground" }); },
@@ -119,6 +120,17 @@ function harness(options = {}) {
       ADMINISTRATIVE_COMPLETION_CAPABILITY_VERSION: 1,
       ADMINISTRATIVE_COMPLETION_DIRECTORY_CONTRACT_VERSION: 1,
     };
+    if (name === "../entitlement/route") {
+      const issuer = loadActual("src/app/api/desktop/entitlement/route.ts");
+      return { ...issuer, async POST(req) {
+        const response = await issuer.POST(req);
+        if (options.changeSigningKey) {
+          environment.RUNBOOK_DESKTOP_ENTITLEMENT_PRIVATE_KEY_PEM =
+            crypto.generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" });
+        }
+        return response;
+      } };
+    }
     if (name === "@/lib/device/localIdentity") return loadActual("src/lib/device/localIdentity.ts");
     if (name === "@/lib/billing/writeGuard") return loadActual("src/lib/billing/writeGuard.ts");
     throw new Error("Unexpected dependency " + name);
@@ -137,7 +149,7 @@ function harness(options = {}) {
     Object.defineProperty(req, "nextUrl", { value: url });
     const route = loadActual("src/app/api/desktop/" + routeName + "/route.ts");
     const response = await route[isGet ? "GET" : "POST"](req);
-    return { status: response.status, body: await response.json() };
+    return { status: response.status, body: await response.json(), headers: Object.fromEntries(response.headers.entries()) };
   } };
 }
 
@@ -324,6 +336,58 @@ async function main() {
     await test("current shop fails closed on membership read error", async () => {
       const h = harness({ membershipError: true }); const r = await h.request("current-shop", { query });
       assert.equal(r.status, 500); assert.equal(r.body.ok, false); assert.equal(h.calls.writes.length, 0);
+    });
+  }
+
+
+  for (const role of ["owner", "admin", "member", "viewer"]) {
+    await test("existing global public verification recovery is available to active " + role + " without a module grant", async () => {
+      const h = harness({ role }); const r = await h.request("entitlement-key", { body: { user_id: DEVICE, role: "owner" } });
+      assert.equal(r.status, 200); assert.equal(r.headers["cache-control"], "no-store");
+      assert.deepEqual(Object.keys(r.body).sort(), ["ok", "trust", "envelope"].sort());
+      const t = r.body.trust, e = r.body.envelope;
+      assert.equal(t.version, 1); assert.equal(t.issuer, "runbook.control"); assert.equal(t.algorithm, "RS256");
+      assert.equal(t.user_id, USER); assert.equal(t.shop_id, SHOP); assert.equal(t.device_id, DEVICE);
+      assert.equal(t.key_id, e.key_id); assert.ok(t.public_key_pem.startsWith("-----BEGIN PUBLIC KEY-----"));
+      assert.equal(JSON.stringify(r.body).includes("PRIVATE KEY"), false);
+      const publicKey = crypto.createPublicKey(t.public_key_pem);
+      assert.equal(publicKey.export({ type: "spki", format: "pem" }), keys.publicKey.export({ type: "spki", format: "pem" }));
+      assert.ok(crypto.verify("RSA-SHA256", Buffer.from(e.payload_b64, "base64url"), publicKey, Buffer.from(e.signature_b64, "base64url")));
+      const signed = JSON.parse(Buffer.from(e.payload_b64, "base64url").toString("utf8"));
+      assert.equal(t.issued_at_utc, signed.server_time_utc);
+      assert.equal(signed.shop_id, SHOP); assert.equal(signed.device_id, DEVICE);
+      assert.deepEqual(h.calls.authTokens, ["Bearer synthetic-session", "Bearer synthetic-session"]);
+      assert.equal(h.calls.entitlements, 1); assert.equal(h.calls.writes.length, 0);
+    });
+  }
+  await test("restricted shop recovers verification trust with its actual restricted signed evidence", async () => {
+    const h = harness({ role: "member", entitlement: { status: "expired", allowed: false, restricted: true, reason: "synthetic_expired", grace_active: false } });
+    const r = await h.request("entitlement-key"); assert.equal(r.status, 200);
+    const e = r.body.envelope;
+    const signed = JSON.parse(Buffer.from(e.payload_b64, "base64url").toString("utf8"));
+    assert.equal(signed.entitlement.allowed, false); assert.equal(signed.entitlement.restricted, true);
+    assert.equal(signed.access.desktop_mode, "read_only"); assert.equal(h.calls.writes.length, 0);
+  });
+  for (const options of [{ unauthenticated: true }, { active: false }, { noMembership: true },
+    { deviceStatus: "revoked" }, { deviceShop: OTHER_SHOP }, { cleanupRequired: true }]) {
+    await test("verification recovery preserves genuine security denial " + JSON.stringify(options), async () => {
+      const h = harness(options); const r = await h.request("entitlement-key");
+      assert.equal(r.status, options.unauthenticated ? 401 : options.cleanupRequired ? 410 : 403);
+      assert.equal(Object.hasOwn(r.body, "trust"), false); assert.equal(h.calls.entitlements, 0);
+      assert.equal(h.calls.writes.length, 0);
+    });
+  }
+  for (const body of [{ shop_id: "" }, { device_id: "invalid" }, { shop_id: "00000000-0000-0000-0000-000000000000" }]) {
+    await test("verification recovery rejects invalid fixed identity before issuing " + JSON.stringify(body), async () => {
+      const h = harness(); const r = await h.request("entitlement-key", { body });
+      assert.equal(r.status, 400); assert.equal(h.calls.queries.length, 0); assert.equal(h.calls.entitlements, 0);
+    });
+  }
+  for (const options of [{ missingSigningKey: true }, { changeSigningKey: true }]) {
+    await test("verification recovery never publishes partial or mismatched issuer trust " + JSON.stringify(options), async () => {
+      const h = harness(options); const r = await h.request("entitlement-key");
+      assert.notEqual(r.status, 200); assert.equal(Object.hasOwn(r.body, "trust"), false);
+      assert.equal(JSON.stringify(r.body).includes("PRIVATE KEY"), false); assert.equal(h.calls.writes.length, 0);
     });
   }
 
